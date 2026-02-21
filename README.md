@@ -45,20 +45,15 @@ Connect your Garmin watch to Claude Desktop. Ask Claude about your health & fitn
 
 **No data is stored or collected by this app.** Your data flows directly between your machine and the Garmin Connect API — there is no intermediate server.
 
+<details>
+<summary>Learn more</summary>
+
 - **Your credentials stay private.** You sign in through a secure login form rendered inside Claude Desktop. The login and MFA tools are marked as app-only (`visibility: ["app"]`), meaning Claude (the LLM) cannot call them and **never sees your email, password, or MFA code**.
 - **Claude doesn't know who you are.** The LLM only receives the health/fitness data you ask for (steps, sleep, etc.) — it has no access to your Garmin account credentials or OAuth tokens.
 - **Tokens are stored locally.** OAuth tokens are saved on your machine at `~/.garminconnect/` with restrictive file permissions (`0600`). They are never sent anywhere other than the Garmin Connect API.
 - **You can log out anytime.** Logging out clears all saved tokens from your machine.
 
-## Example prompts
-
-- "Show me my steps for the past week"
-- "How did I sleep last night?"
-- "What's my training readiness today?"
-- "Show my heart rate zones for my last run"
-- "What are my predicted race times?"
-- "Create a 5K interval workout with 4x800m repeats"
-- "Schedule my tempo run for next Monday"
+</details>
 
 ---
 

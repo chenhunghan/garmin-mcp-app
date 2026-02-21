@@ -105,14 +105,31 @@ export function StepsChart({
       setLoading(true);
       setError(null);
       try {
+        const totalDays = RANGES[r].days;
         const end = new Date();
         const start = new Date();
-        start.setDate(end.getDate() - RANGES[r].days + 1);
-        const result = await callTool("get-steps", {
-          date: formatDate(start),
-          endDate: formatDate(end),
-        });
-        const transformed = transformStepsData(result);
+        start.setDate(end.getDate() - totalDays + 1);
+
+        // Garmin API caps at 28-day ranges — split into chunks if needed
+        const MAX_RANGE = 28;
+        const chunks: { start: Date; end: Date }[] = [];
+        const cur = new Date(start);
+        while (cur <= end) {
+          const chunkEnd = new Date(cur);
+          chunkEnd.setDate(cur.getDate() + MAX_RANGE - 1);
+          if (chunkEnd > end) chunkEnd.setTime(end.getTime());
+          chunks.push({ start: new Date(cur), end: new Date(chunkEnd) });
+          cur.setDate(chunkEnd.getDate() + 1);
+        }
+
+        const results = await Promise.all(
+          chunks.map((c) =>
+            callTool("get-steps", { date: formatDate(c.start), endDate: formatDate(c.end) }),
+          ),
+        );
+
+        const merged = results.flatMap((r) => (Array.isArray(r) ? r : []));
+        const transformed = transformStepsData(merged);
         setData(transformed);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load steps");

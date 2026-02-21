@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type App, useApp, useHostStyles } from "@modelcontextprotocol/ext-apps/react";
 import { StepsChart } from "./steps-chart.tsx";
+import { ActivitiesChart } from "./activities-chart.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Card,
@@ -277,6 +278,7 @@ export function GarminApp() {
             </Button>
           </div>
           <StepsChart callTool={callTool} />
+          <ActivitiesChart callTool={callTool} />
         </div>
       );
   }

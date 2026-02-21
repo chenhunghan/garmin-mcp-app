@@ -10,36 +10,25 @@ Connect your Garmin watch to Claude Desktop. Ask Claude about your health & fitn
 
 ## What you can do
 
-### Health & Wellness
+Ask Claude about your health, training, and fitness — it reads your Garmin data and shows interactive charts right in the conversation.
 
-- **Steps** — daily step counts with trend chart
-- **Heart Rate** — resting HR and daily heart rate data with chart
-- **Sleep** — sleep stages (deep, light, REM, awake) with breakdown chart
-- **Stress** — daily stress levels with chart
-- **Body Battery** — charged/drained energy levels over a date range
-- **HRV** — heart rate variability (nightly avg, weekly avg, baseline, status)
+- **Review your day** — steps, heart rate, sleep, stress, body battery, and HRV
+- **Analyze your workouts** — activity details, pace splits, HR zones, and training effect
+- **Track your fitness** — training readiness, training load, VO2 Max trends, and race predictions
+- **Plan your training** — create structured workouts, schedule them on your Garmin calendar, or edit existing ones
 
-### Training & Performance
+<details>
+<summary>Full list of supported Garmin Connect data</summary>
 
-- **Activities** — recent activities list with interactive chart
-- **Activity Details** — full details for any activity (distance, time, pace, elevation, training effect)
-- **Activity Splits** — per-km/mile pace, HR, and cadence with chart
-- **Activity HR Zones** — time-in-zone breakdown with chart
-- **Training Readiness** — readiness score and breakdown (sleep, HRV, recovery, stress) with chart
-- **Training Status** — acute/chronic load and load status
-- **VO2 Max** — VO2 Max trend over a date range
+| Category     | Data                                                                  |
+| ------------ | --------------------------------------------------------------------- |
+| Daily health | Steps, heart rate, sleep stages, stress, body battery, HRV            |
+| Activities   | Activity list, activity details, per-km/mile splits, HR time-in-zones |
+| Training     | Training readiness, training status & load, VO2 Max, race predictions |
+| Profile      | Age, weight, height, HR zones, lactate threshold                      |
+| Workouts     | List, create, update, delete, and schedule workouts                   |
 
-### Fitness Benchmarks
-
-- **Race Predictions** — predicted times for 5K, 10K, half marathon, and marathon with chart
-- **User Settings** — profile info including age, weight, height, and HR zones
-
-### Workout Management
-
-- **List / View Workouts** — browse saved workouts
-- **Create Workout** — build structured workouts (warmup, intervals, cooldown) and sync to Garmin
-- **Update / Delete Workouts** — edit or remove saved workouts
-- **Schedule Workout** — assign a workout to a calendar date
+</details>
 
 ## Privacy & Security
 

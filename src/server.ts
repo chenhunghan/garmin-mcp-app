@@ -5,6 +5,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { registerAuthTools } from "./tools/auth.js";
 import { registerDataTools } from "./tools/data.js";
+import { registerWorkoutTools } from "./tools/workouts.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +35,7 @@ export function createServer(version: string) {
 
   registerAuthTools(server, resourceUri);
   registerDataTools(server, resourceUri);
+  registerWorkoutTools(server, resourceUri);
 
   return server;
 }

@@ -69,6 +69,8 @@ After authenticating, Claude can access the following from your Garmin Connect a
 - VO2 Max
 - Race predictions
 - User settings (age, weight, zones)
+- Workout management (create, update, delete, schedule)
+- Training effect (aerobic/anaerobic)
 
 ## Commit Convention
 

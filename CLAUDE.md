@@ -112,6 +112,25 @@ curl -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/metrics-se
 
 # User settings
 curl -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/userprofile-service/userprofile/user-settings"
+
+# Workouts (list)
+curl -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/workout-service/workouts?start=0&limit=5"
+
+# Workout (get by ID)
+curl -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/workout-service/workout/WORKOUT_ID"
+
+# Workout (create) — POST with JSON body
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"workoutName":"Test Run","sportType":{"sportTypeId":1,"sportTypeKey":"running"},"workoutSegments":[]}' \
+  "https://connectapi.garmin.com/workout-service/workout"
+
+# Workout (delete) — returns 204 No Content
+curl -X DELETE -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/workout-service/workout/WORKOUT_ID"
+
+# Workout (schedule on date)
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"date":"2026-02-25"}' \
+  "https://connectapi.garmin.com/workout-service/schedule/WORKOUT_ID"
 ```
 
 Key gotchas:
@@ -119,4 +138,6 @@ Key gotchas:
 - Some endpoints use `?date=` query params (heart rate, sleep, summary); path params return 403
 - Steps endpoint uses `/{start}/{end}` date range format
 - Stress endpoint uses `/{date}` path param (works fine)
+- Workout DELETE returns 204 No Content (no JSON body)
+- Training effect (aerobic/anaerobic) is included in `get-activity-details` response under `summaryDTO.trainingEffect` and `summaryDTO.anaerobicTrainingEffect`
 - API paths match Python [garth](https://github.com/matin/garth) library — use it as reference for new endpoints

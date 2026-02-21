@@ -121,6 +121,9 @@ export class GarminClient {
       throw new GarminError(`API error: ${resp.status} ${resp.statusText}`);
     }
 
+    if (resp.status === 204 || resp.headers.get("content-length") === "0") {
+      return undefined as T;
+    }
     return resp.json() as Promise<T>;
   }
 
@@ -227,6 +230,32 @@ export class GarminClient {
 
   async getDeviceLastUsed(): Promise<unknown> {
     return this.connectapi("/device-service/deviceregistration/devices/usage");
+  }
+
+  // ── Workouts ──────────────────────────────────────────
+
+  async getWorkouts(start = 0, limit = 20): Promise<unknown> {
+    return this.connectapi(`/workout-service/workouts?start=${start}&limit=${limit}`);
+  }
+
+  async getWorkout(workoutId: string): Promise<unknown> {
+    return this.connectapi(`/workout-service/workout/${workoutId}`);
+  }
+
+  async createWorkout(workout: Record<string, unknown>): Promise<unknown> {
+    return this.connectapi("/workout-service/workout", "POST", workout);
+  }
+
+  async updateWorkout(workoutId: string, workout: Record<string, unknown>): Promise<unknown> {
+    return this.connectapi(`/workout-service/workout/${workoutId}`, "PUT", workout);
+  }
+
+  async deleteWorkout(workoutId: string): Promise<unknown> {
+    return this.connectapi(`/workout-service/workout/${workoutId}`, "DELETE");
+  }
+
+  async scheduleWorkout(workoutId: string, date: string): Promise<unknown> {
+    return this.connectapi(`/workout-service/schedule/${workoutId}`, "POST", { date });
   }
 
   // ── Private ───────────────────────────────────────────

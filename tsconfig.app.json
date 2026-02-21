@@ -12,7 +12,17 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["src/app.tsx", "src/app-entry.tsx", "src/dev.tsx", "src/steps-chart.tsx"]
+  "include": [
+    "src/app.tsx",
+    "src/app-entry.tsx",
+    "src/dev.tsx",
+    "src/steps-chart.tsx",
+    "src/lib/**/*.ts",
+    "src/components/**/*.tsx"
+  ]
 }

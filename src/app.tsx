@@ -1,6 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type App, useApp } from "@modelcontextprotocol/ext-apps/react";
 import { StepsChart } from "./steps-chart.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { Label } from "@/components/ui/input.tsx";
 import "./app.css";
 
 type AuthState = "checking" | "login" | "mfa" | "authenticated";
@@ -18,40 +28,49 @@ function LoginForm({
   const [password, setPassword] = useState("");
 
   return (
-    <form
-      className="flex flex-col gap-3 w-full max-w-80 p-6"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit(email, password);
-      }}
-    >
-      <h2 className="text-lg font-semibold text-center mb-1">Sign in to Garmin Connect</h2>
-      {error && <div className="text-red-600 text-sm text-center">{error}</div>}
-      <input
-        className="px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-        autoFocus
-      />
-      <input
-        className="px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
-      <button
-        className="px-4 py-2.5 bg-blue-600 text-white rounded-md text-sm font-medium cursor-pointer transition-colors hover:not-disabled:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-        type="submit"
-        disabled={loading}
-      >
-        {loading ? "Signing in..." : "Sign in"}
-      </button>
-    </form>
+    <Card className="w-full max-w-sm">
+      <CardHeader className="text-center">
+        <CardTitle>Sign in to Garmin Connect</CardTitle>
+        <CardDescription>Enter your credentials to continue</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(email, password);
+          }}
+        >
+          {error && <div className="text-sm text-center text-destructive">{error}</div>}
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? "Signing in..." : "Sign in"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -67,35 +86,40 @@ function MfaForm({
   const [code, setCode] = useState("");
 
   return (
-    <form
-      className="flex flex-col gap-3 w-full max-w-80 p-6"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit(code);
-      }}
-    >
-      <h2 className="text-lg font-semibold text-center mb-1">Enter verification code</h2>
-      <p className="text-gray-500 text-sm text-center">Check your email or authenticator app</p>
-      {error && <div className="text-red-600 text-sm text-center">{error}</div>}
-      <input
-        className="px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
-        type="text"
-        placeholder="Verification code"
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        required
-        autoFocus
-        inputMode="numeric"
-        autoComplete="one-time-code"
-      />
-      <button
-        className="px-4 py-2.5 bg-blue-600 text-white rounded-md text-sm font-medium cursor-pointer transition-colors hover:not-disabled:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-        type="submit"
-        disabled={loading}
-      >
-        {loading ? "Verifying..." : "Verify"}
-      </button>
-    </form>
+    <Card className="w-full max-w-sm">
+      <CardHeader className="text-center">
+        <CardTitle>Enter verification code</CardTitle>
+        <CardDescription>Check your email or authenticator app</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(code);
+          }}
+        >
+          {error && <div className="text-sm text-center text-destructive">{error}</div>}
+          <div className="grid gap-2">
+            <Label htmlFor="mfa-code">Verification code</Label>
+            <Input
+              id="mfa-code"
+              type="text"
+              placeholder="123456"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              required
+              autoFocus
+              inputMode="numeric"
+              autoComplete="one-time-code"
+            />
+          </div>
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? "Verifying..." : "Verify"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -204,29 +228,33 @@ export function GarminApp() {
 
   if (connError)
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen text-destructive">
         Error: {connError.message}
       </div>
     );
   if (!isConnected)
-    return <div className="flex items-center justify-center min-h-screen">Connecting...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen text-muted-foreground">
+        Connecting...
+      </div>
+    );
 
   switch (authState) {
     case "checking":
       return (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-screen text-muted-foreground">
           Checking authentication...
         </div>
       );
     case "login":
       return (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-screen p-4">
           <LoginForm onSubmit={handleLogin} loading={loading} error={error} />
         </div>
       );
     case "mfa":
       return (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-screen p-4">
           <MfaForm onSubmit={handleMfa} loading={loading} error={error} />
         </div>
       );
@@ -234,17 +262,13 @@ export function GarminApp() {
       return (
         <div className="flex flex-col min-h-screen p-4 gap-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-[15px] text-gray-700">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="w-2 h-2 rounded-full bg-green-500" />
               Connected to Garmin
             </div>
-            <button
-              className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors"
-              onClick={handleLogout}
-              disabled={loading}
-            >
+            <Button variant="ghost" size="sm" onClick={handleLogout} disabled={loading}>
               {loading ? "Logging out..." : "Log out"}
-            </button>
+            </Button>
           </div>
           <StepsChart callTool={callTool} />
         </div>

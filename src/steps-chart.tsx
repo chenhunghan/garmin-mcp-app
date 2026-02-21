@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
+import { ComposedChart, Bar, Line, XAxis, YAxis, ReferenceLine } from "recharts";
 import {
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ReferenceLine,
-  ResponsiveContainer,
-} from "recharts";
-import type { Payload } from "recharts/types/component/DefaultTooltipContent";
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from "@/components/ui/chart.tsx";
+import type { ChartConfig } from "@/components/ui/chart.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 
 type RangeKey = "7d" | "14d" | "30d";
 
@@ -25,6 +25,17 @@ const RANGES: Record<RangeKey, { days: number; label: string }> = {
   "14d": { days: 14, label: "14d" },
   "30d": { days: 30, label: "30d" },
 };
+
+const chartConfig = {
+  steps: {
+    label: "Steps",
+    color: "var(--chart-1)",
+  },
+  avg: {
+    label: "7-day avg",
+    color: "var(--chart-4)",
+  },
+} satisfies ChartConfig;
 
 function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -65,28 +76,6 @@ function transformStepsData(raw: unknown): StepDay[] {
   return days;
 }
 
-function CustomTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: Payload<number, string>[];
-  label?: string;
-}) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 text-xs">
-      <p className="font-medium text-gray-700 mb-1">{label}</p>
-      {payload.map((entry) => (
-        <p key={entry.dataKey as string} style={{ color: entry.color }}>
-          {entry.name}: {(entry.value ?? 0).toLocaleString()}
-        </p>
-      ))}
-    </div>
-  );
-}
-
 export function StepsChart({
   callTool,
 }: {
@@ -110,7 +99,6 @@ export function StepsChart({
         const start = new Date();
         start.setDate(end.getDate() - totalDays + 1);
 
-        // Garmin API caps at 28-day ranges — split into chunks if needed
         const MAX_RANGE = 28;
         const chunks: { start: Date; end: Date }[] = [];
         const cur = new Date(start);
@@ -145,84 +133,88 @@ export function StepsChart({
   }, [range, fetchSteps]);
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-700">Daily Steps</h3>
+    <Card>
+      <CardHeader className="flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm">Daily Steps</CardTitle>
         <div className="flex gap-1">
           {(Object.keys(RANGES) as RangeKey[]).map((key) => (
-            <button
+            <Button
               key={key}
+              variant={range === key ? "default" : "secondary"}
+              size="sm"
               onClick={() => setRange(key)}
-              className={`px-2.5 py-1 text-xs rounded-md font-medium cursor-pointer transition-colors ${
-                range === key
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
             >
               {RANGES[key].label}
-            </button>
+            </Button>
           ))}
         </div>
-      </div>
+      </CardHeader>
+      <CardContent>
+        {loading && (
+          <div className="flex items-center justify-center h-48 text-sm text-muted-foreground">
+            Loading steps...
+          </div>
+        )}
 
-      {loading && (
-        <div className="flex items-center justify-center h-48 text-sm text-gray-500">
-          Loading steps...
-        </div>
-      )}
+        {error && (
+          <div className="flex items-center justify-center h-48 text-sm text-destructive">
+            {error}
+          </div>
+        )}
 
-      {error && (
-        <div className="flex items-center justify-center h-48 text-sm text-red-600">{error}</div>
-      )}
+        {!loading && !error && data.length === 0 && (
+          <div className="flex items-center justify-center h-48 text-sm text-muted-foreground">
+            No step data available
+          </div>
+        )}
 
-      {!loading && !error && data.length === 0 && (
-        <div className="flex items-center justify-center h-48 text-sm text-gray-400">
-          No step data available
-        </div>
-      )}
-
-      {!loading && !error && data.length > 0 && (
-        <ResponsiveContainer width="100%" height={220}>
-          <ComposedChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 11, fill: "#9ca3af" }}
-              tickLine={false}
-              axisLine={false}
-              interval={labelInterval(range)}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: "#9ca3af" }}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <ReferenceLine
-              y={10000}
-              stroke="#22c55e"
-              strokeDasharray="4 4"
-              strokeWidth={1.5}
-              label={{ value: "10k goal", position: "right", fontSize: 10, fill: "#22c55e" }}
-            />
-            <Bar
-              dataKey="steps"
-              name="Steps"
-              fill="#3b82f6"
-              radius={[3, 3, 0, 0]}
-              barSize={range === "30d" ? 8 : 16}
-            />
-            <Line
-              dataKey="avg"
-              name="7-day avg"
-              stroke="#f59e0b"
-              strokeWidth={2}
-              dot={false}
-              connectNulls
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      )}
-    </div>
+        {!loading && !error && data.length > 0 && (
+          <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
+            <ComposedChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                interval={labelInterval(range)}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
+              />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend content={<ChartLegendContent />} />
+              <ReferenceLine
+                y={10000}
+                stroke="var(--color-chart-3)"
+                strokeDasharray="4 4"
+                strokeWidth={1.5}
+                label={{
+                  value: "10k goal",
+                  position: "right",
+                  fontSize: 10,
+                  fill: "var(--color-muted-foreground)",
+                }}
+              />
+              <Bar
+                dataKey="steps"
+                name="Steps"
+                fill="var(--color-steps)"
+                radius={[3, 3, 0, 0]}
+                barSize={range === "30d" ? 8 : 16}
+              />
+              <Line
+                dataKey="avg"
+                name="7-day avg"
+                stroke="var(--color-avg)"
+                strokeWidth={2}
+                dot={false}
+                connectNulls
+              />
+            </ComposedChart>
+          </ChartContainer>
+        )}
+      </CardContent>
+    </Card>
   );
 }

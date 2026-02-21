@@ -122,5 +122,6 @@
   body {
     background-color: transparent;
     color: var(--foreground);
+    overflow: clip;
   }
 }

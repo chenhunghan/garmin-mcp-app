@@ -2,6 +2,9 @@
   "name": "garmin-mcp-app",
   "version": "0.1.0",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "node scripts/build.mjs",
     "build:check": "tsc --noEmit && tsc --noEmit -p tsconfig.app.json",
@@ -9,10 +12,12 @@
     "dev": "concurrently \"vite build --watch\" \"esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --watch\"",
     "dev:ui": "vite --config vite.config.dev.ts",
     "lint": "oxlint",
-    "fmt": "oxfmt --write src/",
-    "fmt:check": "oxfmt src/",
+    "fmt": "oxfmt --write src/ packages/",
+    "fmt:check": "oxfmt src/ packages/",
     "pack": "npm run build && mcpb pack . garmin-mcp-app.mcpb",
-    "pack:validate": "mcpb validate manifest.json"
+    "pack:validate": "mcpb validate manifest.json",
+    "test:lib": "npm test --workspace=packages/garmin-connect",
+    "typecheck:lib": "tsc --noEmit --project packages/garmin-connect/tsconfig.json"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.0.1",

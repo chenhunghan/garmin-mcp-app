@@ -1,0 +1,42 @@
+{
+  "name": "garmin-connect",
+  "version": "0.1.0",
+  "description": "TypeScript client for Garmin Connect OAuth authentication and API access",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "tough-cookie": "^5.1.2",
+    "oauth-1.0a": "^2.2.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/tough-cookie": "^4.0.5",
+    "vitest": "^3.2.1"
+  },
+  "engines": {
+    "node": ">=23.6.0"
+  },
+  "license": "MIT"
+}

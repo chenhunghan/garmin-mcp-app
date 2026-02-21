@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.2.0...garmin-mcp-app-v0.3.0) (2026-02-21)
+
+
+### Features
+
+* add race predictions and training charts, enhance sleep chart ([c32e41e](https://github.com/chenhunghan/garmin-mcp-app/commit/c32e41edfee70d6381da6f20a2ed1cb7ba93ccbc))
+
+
+### Bug Fixes
+
+* enhance JSON-RPC message handling to prevent parsing errors ([819867d](https://github.com/chenhunghan/garmin-mcp-app/commit/819867d5d8e353568567ca4daf6a3fb87341b423))
+* enhance VO2 Max data transformation for improved accuracy and flexibility ([566cae1](https://github.com/chenhunghan/garmin-mcp-app/commit/566cae1206a9f70023b5395697b3b77f49d694d0))
+* improve HRV value selection logic for better data accuracy ([2de375e](https://github.com/chenhunghan/garmin-mcp-app/commit/2de375e115a37ded65849e5b62fbb437901273dd))
+* replace ResponsiveContainer with custom size measurement to avoid layout warnings ([ef1a5b0](https://github.com/chenhunghan/garmin-mcp-app/commit/ef1a5b03ecca362d8d9fa1adea5e810e8901a88f))
+* set minWidth and minHeight for ResponsiveContainer to prevent layout issues ([7a2885d](https://github.com/chenhunghan/garmin-mcp-app/commit/7a2885d8e5d558af835607e15b780654871565fc))
+
 ## [0.2.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.1.0...garmin-mcp-app-v0.2.0) (2026-02-21)
 
 

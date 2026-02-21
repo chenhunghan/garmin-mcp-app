@@ -127,11 +127,11 @@ export class GarminClient {
   // ── API Methods (date format: "YYYY-MM-DD") ──────────
 
   async getUserProfile(): Promise<unknown> {
-    return this.connectapi("/userprofile-service/usersocialprofile");
+    return this.connectapi("/userprofile-service/socialProfile");
   }
 
   async getFullName(): Promise<string> {
-    const profile = (await this.connectapi("/userprofile-service/usersocialprofile")) as Record<
+    const profile = (await this.connectapi("/userprofile-service/socialProfile")) as Record<
       string,
       unknown
     >;
@@ -139,19 +139,19 @@ export class GarminClient {
   }
 
   async getUserSummary(date: string): Promise<unknown> {
-    return this.connectapi(`/usersummary-service/usersummary/daily/${date}`);
+    return this.connectapi(`/usersummary-service/usersummary/daily?calendarDate=${date}`);
   }
 
   async getSteps(date: string): Promise<unknown> {
-    return this.connectapi(`/usersummary-service/stats/steps/daily/${date}/7`);
+    return this.connectapi(`/usersummary-service/stats/steps/daily/${date}/${date}`);
   }
 
   async getHeartRates(date: string): Promise<unknown> {
-    return this.connectapi(`/wellness-service/wellness/dailyHeartRate/${date}`);
+    return this.connectapi(`/wellness-service/wellness/dailyHeartRate?date=${date}`);
   }
 
   async getSleepData(date: string): Promise<unknown> {
-    return this.connectapi(`/wellness-service/wellness/dailySleepData/${date}`);
+    return this.connectapi(`/wellness-service/wellness/dailySleepData?date=${date}`);
   }
 
   async getStressData(date: string): Promise<unknown> {
@@ -208,7 +208,7 @@ export class GarminClient {
     body: unknown,
     accessToken: string,
   ): Promise<Response> {
-    const url = `https://connect.${this.domain}/proxy/${path.replace(/^\//, "")}`;
+    const url = `https://connectapi.${this.domain}/${path.replace(/^\//, "")}`;
     return fetch(url, {
       method,
       headers: {

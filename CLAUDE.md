@@ -142,6 +142,23 @@ Key gotchas:
 - Training effect (aerobic/anaerobic) is included in `get-activity-details` response under `summaryDTO.trainingEffect` and `summaryDTO.anaerobicTrainingEffect`
 - API paths match Python [garth](https://github.com/matin/garth) library — use it as reference for new endpoints
 
+## UI Stack
+
+- **[shadcn/ui](https://ui.shadcn.com)** — component source files in `src/components/ui/` (copied, not imported as a package)
+- **[Tailwind CSS v4](https://tailwindcss.com)** — styling via `@tailwindcss/vite`; theme configured inline in `src/app.css` using OKLCH CSS variables + `@theme` block
+- **[Recharts v3](https://recharts.org)** — charting library, externalized to esm.sh CDN
+- **[shadcn Chart component](https://ui.shadcn.com/docs/components/base/chart)** — `src/components/ui/chart.tsx`, adapted for Recharts v3 (official shadcn doesn't support v3 yet)
+
+### Recharts v3 + shadcn compatibility
+
+shadcn's official chart component targets Recharts v2. Since we use Recharts v3, `chart.tsx` is a community-adapted version. Tracking issue and community patches:
+
+- Issue: https://github.com/shadcn-ui/ui/issues/7669
+- noxify's gist: https://gist.github.com/noxify/92bc410cc2d01109f4160002da9a61e5
+- arolariu's PR-based version (latest): https://github.com/shadcn-ui/ui/pull/8486#issuecomment-3627835576
+
+When shadcn officially ships Recharts v3 support, replace `chart.tsx` with the official version.
+
 ## MCP App in Claude Desktop
 
 ### Testing with Claude Desktop

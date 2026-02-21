@@ -1,0 +1,37 @@
+{
+  "name": "garmin-mcp-app",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:check": "tsc --noEmit && tsc --noEmit -p tsconfig.app.json",
+    "start": "node dist/index.js",
+    "dev": "concurrently \"vite build --watch\" \"esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --watch\"",
+    "dev:ui": "vite --config vite.config.dev.ts",
+    "lint": "oxlint",
+    "fmt": "oxfmt --write src/",
+    "fmt:check": "oxfmt src/",
+    "pack": "npm run build && mcpb pack . garmin-mcp-app.mcpb",
+    "pack:validate": "mcpb validate manifest.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.0.1",
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.27.3",
+    "oxfmt": "^0.34.0",
+    "oxlint": "^1.49.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-singlefile": "^2.3.0"
+  }
+}

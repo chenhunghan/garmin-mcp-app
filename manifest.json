@@ -1,0 +1,31 @@
+{
+  "manifest_version": "0.3",
+  "name": "garmin-mcp",
+  "display_name": "Garmin MCP",
+  "version": "0.1.0",
+  "description": "MCP server for Garmin integration",
+  "author": {
+    "name": "chh"
+  },
+  "license": "MIT",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"]
+    }
+  },
+  "tools": [
+    {
+      "name": "hello",
+      "description": "Say hello with an interactive UI"
+    }
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

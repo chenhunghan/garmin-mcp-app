@@ -1,0 +1,14 @@
+node_modules/
+src/
+*.ts
+!*.d.ts
+tsconfig.json
+tsconfig.app.json
+vite.config.ts
+vite.config.dev.ts
+index.html
+scripts/
+.gitignore
+.git/
+.env
+*.mcpb

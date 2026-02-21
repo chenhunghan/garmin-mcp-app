@@ -22,7 +22,19 @@ import { createRoot } from "react-dom/client";
 import { GarminApp } from "./app.tsx";
 
 window.addEventListener("message", (e) => {
-  if (e.data?.jsonrpc !== "2.0" || !e.data.method) return;
+  // In dev mode, window.parent === window so all postMessages echo back.
+  // Filter out anything that isn't a JSON-RPC *request* (must have method).
+  // This prevents the ext-apps PostMessageTransport from trying to parse
+  // non-JSON-RPC messages (Vite HMR, extensions, etc.) and logging errors.
+  if (e.data?.jsonrpc !== "2.0") {
+    e.stopImmediatePropagation();
+    return;
+  }
+  if (!e.data.method) {
+    // JSON-RPC response (has result/error but no method) — let it through
+    // to the transport so it can resolve pending promises.
+    return;
+  }
 
   if (e.data.method === "ui/initialize") {
     e.stopImmediatePropagation();

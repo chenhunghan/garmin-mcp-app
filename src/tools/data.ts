@@ -251,4 +251,112 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     },
     async () => withAuth(() => getClient().getUserSettings()),
   );
+
+  // ── Composite: Training Context ───────────────────────
+
+  registerAppTool(
+    server,
+    "get-training-context",
+    {
+      title: "Get Training Context",
+      description:
+        "Collects comprehensive training context for workout planning: recent running activities, sleep, HRV, training readiness, body battery, VO2 max, and training status. Use this before planning a workout.",
+      inputSchema: {
+        date: z.string().describe("Reference date (YYYY-MM-DD), typically today"),
+      },
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ date }) =>
+      withAuth(async () => {
+        const client = getClient();
+
+        // Compute relative dates
+        const refDate = new Date(date + "T00:00:00");
+        const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+        const days7Ago = new Date(refDate);
+        days7Ago.setDate(days7Ago.getDate() - 7);
+        const start7 = fmt(days7Ago);
+
+        const days14Ago = new Date(refDate);
+        days14Ago.setDate(days14Ago.getDate() - 14);
+        const start14 = fmt(days14Ago);
+
+        const days30Ago = new Date(refDate);
+        days30Ago.setDate(days30Ago.getDate() - 30);
+        const start30 = fmt(days30Ago);
+
+        // Fetch all data in parallel
+        const [
+          activitiesResult,
+          sleepResult,
+          hrvResult,
+          readinessResult,
+          batteryResult,
+          vo2Result,
+          statusResult,
+        ] = await Promise.allSettled([
+          client.getActivities(0, 20),
+          client.getSleepData(date),
+          client.getHrvData(start14, date),
+          client.getTrainingReadiness(date),
+          client.getBodyBattery(start7, date),
+          client.getVo2Max(start30, date),
+          client.getTrainingStatus(date),
+        ]);
+
+        const val = <T>(r: PromiseSettledResult<T>): T | null =>
+          r.status === "fulfilled" ? r.value : null;
+
+        // Filter to running activities
+        const allActivities = (val(activitiesResult) as Array<Record<string, unknown>>) ?? [];
+        const runningActivities = allActivities.filter((a) => {
+          const typeKey = (a.activityType as Record<string, unknown>)?.typeKey as
+            | string
+            | undefined;
+          const sportTypeId = a.sportTypeId as number | undefined;
+          return (typeKey && typeKey.includes("running")) || sportTypeId === 1;
+        });
+        const recentRuns = runningActivities.slice(0, 10);
+
+        // Days since last run
+        let daysSinceLastRun: number | null = null;
+        if (recentRuns.length > 0) {
+          const lastRunDate = new Date(recentRuns[0].startTimeLocal as string);
+          daysSinceLastRun = Math.floor(
+            (refDate.getTime() - lastRunDate.getTime()) / (1000 * 60 * 60 * 24),
+          );
+        }
+
+        // Weekly volume: runs in the last 7 days
+        const weekCutoff = days7Ago.getTime();
+        const runsThisWeek = runningActivities.filter((a) => {
+          const t = new Date(a.startTimeLocal as string).getTime();
+          return t >= weekCutoff;
+        });
+        const weeklyVolume = {
+          distanceKm: runsThisWeek.reduce(
+            (sum, a) => sum + ((a.distance as number) ?? 0) / 1000,
+            0,
+          ),
+          durationHours: runsThisWeek.reduce(
+            (sum, a) => sum + ((a.duration as number) ?? 0) / 3600,
+            0,
+          ),
+          count: runsThisWeek.length,
+        };
+
+        return {
+          recentRuns,
+          daysSinceLastRun,
+          weeklyVolume,
+          sleep: val(sleepResult),
+          hrv: val(hrvResult),
+          trainingReadiness: val(readinessResult),
+          bodyBattery: val(batteryResult),
+          vo2Max: val(vo2Result),
+          trainingStatus: val(statusResult),
+        };
+      }, "run-planner"),
+  );
 }

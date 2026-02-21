@@ -107,8 +107,24 @@ export function registerWorkoutTools(server: McpServer, resourceUri: string) {
     "create-workout",
     {
       title: "Create Workout",
-      description:
-        'Create a structured workout on Garmin Connect. The workout object must include workoutName, sportType ({sportTypeId, sportTypeKey}), and workoutSegments array. Each segment contains workoutSteps — use type "ExecutableStepDTO" for steps (warmup/interval/recovery/cooldown) and "RepeatGroupDTO" for repeat groups. Steps need stepType, endCondition (time in seconds, distance in meters, or lap.button), and optionally targetType with target values for pace/HR zones.',
+      description: `Create a new workout on Garmin Connect.
+
+Workout structure:
+- sportType: { sportTypeId: 1, sportTypeKey: 'running' } for running
+- workoutSegments: array of segments, each with segmentOrder and workoutSteps
+- Each step uses type "ExecutableStepDTO" for regular steps, "RepeatGroupDTO" for repeat groups
+- Common step structure: { stepOrder, stepType, endCondition, endConditionValue, targetType, targetValueLow, targetValueHigh }
+
+Step types: warmup, cooldown, interval, rest, recovery, repeat
+End conditions: time (seconds), distance (meters), lap.button (manual lap)
+Target types: heart.rate.zone (1-5), pace.zone, speed.zone, no.target
+
+Example - 5x1000m intervals:
+- Warmup: 15min easy (endCondition: time, endConditionValue: 900)
+- Repeat group (numberOfIterations: 5):
+  - Interval: 1000m (endCondition: distance, endConditionValue: 1000)
+  - Recovery: 90s jog (endCondition: time, endConditionValue: 90)
+- Cooldown: 10min easy (endCondition: time, endConditionValue: 600)`,
       inputSchema: workoutBodySchema,
       _meta: { ui: { resourceUri } },
     },

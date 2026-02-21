@@ -32,6 +32,7 @@
     "src/splits-chart.tsx",
     "src/stress-chart.tsx",
     "src/hr-zones-chart.tsx",
+    "src/run-planner.tsx",
     "src/lib",
     "src/components"
   ]

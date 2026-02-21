@@ -9,6 +9,7 @@ import { RacePredictionsChart } from "./race-predictions-chart.tsx";
 import { HrZonesChart } from "./hr-zones-chart.tsx";
 import { StressChart } from "./stress-chart.tsx";
 import { SplitsChart } from "./splits-chart.tsx";
+import { RunPlanner } from "./run-planner";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Card,
@@ -133,6 +134,7 @@ function MfaForm({
 
 // Views that can be shown — tools declare their view via structuredContent.view
 const VALID_VIEWS = new Set([
+  "run-planner",
   "steps",
   "activities",
   "sleep",
@@ -235,6 +237,7 @@ export function GarminApp() {
       if (typeof __DEV_UI__ !== "undefined" && __DEV_UI__) {
         setVisibleCharts(
           new Set([
+            "run-planner",
             "steps",
             "activities",
             "sleep",
@@ -329,6 +332,7 @@ export function GarminApp() {
               {loading ? "Logging out..." : "Log out"}
             </Button>
           </div>
+          {visibleCharts?.has("run-planner") && <RunPlanner callTool={callTool} />}
           {visibleCharts?.has("steps") && <StepsChart callTool={callTool} />}
           {visibleCharts?.has("activities") && <ActivitiesChart callTool={callTool} />}
           {visibleCharts?.has("heart-rate") && <HeartRateChart callTool={callTool} />}

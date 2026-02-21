@@ -145,8 +145,8 @@ export class GarminClient {
     return this.connectapi(`/usersummary-service/usersummary/daily?calendarDate=${date}`);
   }
 
-  async getSteps(date: string): Promise<unknown> {
-    return this.connectapi(`/usersummary-service/stats/steps/daily/${date}/${date}`);
+  async getSteps(date: string, endDate?: string): Promise<unknown> {
+    return this.connectapi(`/usersummary-service/stats/steps/daily/${date}/${endDate ?? date}`);
   }
 
   async getHeartRates(date: string): Promise<unknown> {

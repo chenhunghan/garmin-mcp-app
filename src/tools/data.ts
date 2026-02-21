@@ -65,11 +65,15 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     "get-steps",
     {
       title: "Get Steps",
-      description: "Get step count data for a given date from Garmin Connect",
-      inputSchema: dateSchema,
+      description:
+        "Get step count data from Garmin Connect. Supports a single date or a date range.",
+      inputSchema: {
+        date: z.string().describe("Start date in YYYY-MM-DD format"),
+        endDate: z.string().optional().describe("End date in YYYY-MM-DD format (defaults to date)"),
+      },
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getSteps(date)),
+    async ({ date, endDate }) => withAuth(() => getClient().getSteps(date, endDate)),
   );
 
   registerAppTool(

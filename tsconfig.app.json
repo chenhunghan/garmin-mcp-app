@@ -14,5 +14,5 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["src/app.tsx", "src/app-entry.tsx", "src/dev.tsx"]
+  "include": ["src/app.tsx", "src/app-entry.tsx", "src/dev.tsx", "src/steps-chart.tsx"]
 }

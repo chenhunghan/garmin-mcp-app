@@ -142,34 +142,35 @@ function extractPredictions(raw: unknown): RacePrediction[] {
 
 /**
  * Transform VO2 Max API response into chart-ready data.
- * The API returns an array with calendarDate and vo2MaxPreciseValue or generic field.
+ * The API returns an array where each entry has a nested `generic` object:
+ * { generic: { calendarDate, vo2MaxPreciseValue, vo2MaxValue } }
  */
 function transformVo2Data(raw: unknown): Vo2Point[] {
   if (!Array.isArray(raw)) return [];
 
-  const sorted = [...raw]
-    .filter((entry) => {
-      if (!entry || typeof entry !== "object") return false;
-      const val =
-        (entry as Record<string, unknown>).vo2MaxPreciseValue ??
-        (entry as Record<string, unknown>).generic;
-      return typeof val === "number" && val > 0;
-    })
-    .sort((a, b) => {
-      const da = (a as Record<string, unknown>)?.calendarDate ?? "";
-      const db = (b as Record<string, unknown>)?.calendarDate ?? "";
-      return da < db ? -1 : da > db ? 1 : 0;
-    });
-
-  return sorted.map((entry) => {
+  const points: Vo2Point[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
     const e = entry as Record<string, unknown>;
-    const dateStr = (e.calendarDate as string) ?? "";
-    const vo2 = (e.vo2MaxPreciseValue as number) ?? (e.generic as number) ?? 0;
+
+    // VO2 data may be at top level or nested under `generic`
+    const generic = e.generic as Record<string, unknown> | undefined;
+    const vo2 =
+      (generic?.vo2MaxPreciseValue as number) ??
+      (generic?.vo2MaxValue as number) ??
+      (e.vo2MaxPreciseValue as number) ??
+      0;
+    const dateStr = (generic?.calendarDate as string) ?? (e.calendarDate as string) ?? "";
+
+    if (!dateStr || vo2 <= 0) continue;
+
     const parts = dateStr.split("-");
     const label =
       parts.length === 3 ? `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}` : dateStr;
-    return { date: dateStr, label, vo2 };
-  });
+    points.push({ date: dateStr, label, vo2 });
+  }
+
+  return points.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
 export function RacePredictionsChart({

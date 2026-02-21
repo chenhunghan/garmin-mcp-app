@@ -1,10 +1,6 @@
 import { CookieJar } from "tough-cookie";
 import type { MfaState } from "./types.ts";
-import {
-  GarminAuthError,
-  GarminNetworkError,
-  GarminRateLimitError,
-} from "./errors.ts";
+import { GarminAuthError, GarminNetworkError, GarminRateLimitError } from "./errors.ts";
 
 const CSRF_RE = /name="_csrf"\s+value="(.+?)"/;
 const TITLE_RE = /<title>(.+?)<\/title>/;
@@ -48,35 +44,27 @@ export async function login(
   await fetchWithCookies(`${SSO_EMBED}?${SSO_EMBED_PARAMS}`, jar, config);
 
   // Step 2: Get CSRF token from signin page
-  const signinResp = await fetchWithCookies(
-    `${SSO}/signin?${SIGNIN_PARAMS}`,
-    jar,
-    config,
-    { headers: { Referer: SSO_EMBED } },
-  );
+  const signinResp = await fetchWithCookies(`${SSO}/signin?${SIGNIN_PARAMS}`, jar, config, {
+    headers: { Referer: SSO_EMBED },
+  });
   const signinHtml = await signinResp.text();
   const csrfToken = extractCsrf(signinHtml);
 
   // Step 3: Submit credentials
-  const loginResp = await fetchWithCookies(
-    `${SSO}/signin?${SIGNIN_PARAMS}`,
-    jar,
-    config,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Referer: `${SSO}/signin?${SIGNIN_PARAMS}`,
-      },
-      body: new URLSearchParams({
-        username: email,
-        password: password,
-        embed: "true",
-        _csrf: csrfToken,
-      }),
-      redirect: "manual",
+  const loginResp = await fetchWithCookies(`${SSO}/signin?${SIGNIN_PARAMS}`, jar, config, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Referer: `${SSO}/signin?${SIGNIN_PARAMS}`,
     },
-  );
+    body: new URLSearchParams({
+      username: email,
+      password: password,
+      embed: "true",
+      _csrf: csrfToken,
+    }),
+    redirect: "manual",
+  });
 
   if (loginResp.status === 429) {
     throw new GarminRateLimitError();
@@ -114,25 +102,20 @@ export async function submitMfa(
   const SSO = `https://sso.${config.domain}/sso`;
   const params = new URLSearchParams(mfaState.signinParams);
 
-  const resp = await fetchWithCookies(
-    `${SSO}/verifyMFA/loginEnterMfaCode?${params}`,
-    jar,
-    config,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Referer: `${SSO}/verifyMFA/loginEnterMfaCode?${params}`,
-      },
-      body: new URLSearchParams({
-        "mfa-code": mfaCode,
-        embed: "true",
-        _csrf: mfaState.csrfToken,
-        fromPage: "setupEnterMfaCode",
-      }),
-      redirect: "manual",
+  const resp = await fetchWithCookies(`${SSO}/verifyMFA/loginEnterMfaCode?${params}`, jar, config, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Referer: `${SSO}/verifyMFA/loginEnterMfaCode?${params}`,
     },
-  );
+    body: new URLSearchParams({
+      "mfa-code": mfaCode,
+      embed: "true",
+      _csrf: mfaState.csrfToken,
+      fromPage: "setupEnterMfaCode",
+    }),
+    redirect: "manual",
+  });
 
   if (resp.status === 429) {
     throw new GarminRateLimitError();
@@ -168,9 +151,7 @@ async function fetchWithCookies(
   try {
     resp = await fetch(url, { ...init, headers, redirect: init?.redirect ?? "follow" });
   } catch (err) {
-    throw new GarminNetworkError(
-      err instanceof Error ? err.message : "Network request failed",
-    );
+    throw new GarminNetworkError(err instanceof Error ? err.message : "Network request failed");
   }
 
   // Store response cookies

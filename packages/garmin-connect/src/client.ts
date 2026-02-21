@@ -7,11 +7,7 @@ import type {
 } from "./types.ts";
 import type { TokenStorage } from "./storage.ts";
 import { FileTokenStorage } from "./storage.ts";
-import {
-  GarminAuthError,
-  GarminError,
-  GarminTokenExpiredError,
-} from "./errors.ts";
+import { GarminAuthError, GarminError, GarminTokenExpiredError } from "./errors.ts";
 import * as sso from "./sso.ts";
 import * as oauth from "./oauth.ts";
 
@@ -35,9 +31,7 @@ export class GarminClient {
     if (config?.storage) {
       this.storage = config.storage;
     } else {
-      this.storage = new FileTokenStorage(
-        config?.storagePath ?? "~/.garminconnect",
-      );
+      this.storage = new FileTokenStorage(config?.storagePath ?? "~/.garminconnect");
     }
   }
 
@@ -111,21 +105,14 @@ export class GarminClient {
 
     if (resp.status === 401) {
       await this.refreshOAuth2();
-      resp = await this.makeApiRequest(
-        path,
-        method,
-        body,
-        this.oauth2Token!.access_token,
-      );
+      resp = await this.makeApiRequest(path, method, body, this.oauth2Token!.access_token);
       if (resp.status === 401) {
         throw new GarminTokenExpiredError("Token rejected after refresh");
       }
     }
 
     if (!resp.ok) {
-      throw new GarminError(
-        `API error: ${resp.status} ${resp.statusText}`,
-      );
+      throw new GarminError(`API error: ${resp.status} ${resp.statusText}`);
     }
 
     return resp.json() as Promise<T>;
@@ -138,50 +125,35 @@ export class GarminClient {
   }
 
   async getFullName(): Promise<string> {
-    const profile = (await this.connectapi(
-      "/userprofile-service/usersocialprofile",
-    )) as Record<string, unknown>;
-    return (
-      (profile.displayName as string) ??
-      (profile.fullName as string) ??
-      "Unknown"
-    );
+    const profile = (await this.connectapi("/userprofile-service/usersocialprofile")) as Record<
+      string,
+      unknown
+    >;
+    return (profile.displayName as string) ?? (profile.fullName as string) ?? "Unknown";
   }
 
   async getUserSummary(date: string): Promise<unknown> {
-    return this.connectapi(
-      `/usersummary-service/usersummary/daily/${date}`,
-    );
+    return this.connectapi(`/usersummary-service/usersummary/daily/${date}`);
   }
 
   async getSteps(date: string): Promise<unknown> {
-    return this.connectapi(
-      `/usersummary-service/stats/steps/daily/${date}/7`,
-    );
+    return this.connectapi(`/usersummary-service/stats/steps/daily/${date}/7`);
   }
 
   async getHeartRates(date: string): Promise<unknown> {
-    return this.connectapi(
-      `/wellness-service/wellness/dailyHeartRate/${date}`,
-    );
+    return this.connectapi(`/wellness-service/wellness/dailyHeartRate/${date}`);
   }
 
   async getSleepData(date: string): Promise<unknown> {
-    return this.connectapi(
-      `/wellness-service/wellness/dailySleepData/${date}`,
-    );
+    return this.connectapi(`/wellness-service/wellness/dailySleepData/${date}`);
   }
 
   async getStressData(date: string): Promise<unknown> {
-    return this.connectapi(
-      `/wellness-service/wellness/dailyStress/${date}`,
-    );
+    return this.connectapi(`/wellness-service/wellness/dailyStress/${date}`);
   }
 
   async getBodyComposition(date: string): Promise<unknown> {
-    return this.connectapi(
-      `/weight-service/weight/dateRange?startDate=${date}&endDate=${date}`,
-    );
+    return this.connectapi(`/weight-service/weight/dateRange?startDate=${date}&endDate=${date}`);
   }
 
   async getActivities(start = 0, limit = 20): Promise<unknown> {
@@ -195,26 +167,18 @@ export class GarminClient {
   }
 
   async getHydrationData(date: string): Promise<unknown> {
-    return this.connectapi(
-      `/usersummary-service/usersummary/hydration/daily/${date}`,
-    );
+    return this.connectapi(`/usersummary-service/usersummary/hydration/daily/${date}`);
   }
 
   async getDeviceLastUsed(): Promise<unknown> {
-    return this.connectapi(
-      "/device-service/deviceregistration/devices/usage",
-    );
+    return this.connectapi("/device-service/deviceregistration/devices/usage");
   }
 
   // ── Private ───────────────────────────────────────────
 
   private async exchangeAndSave(ticket: string): Promise<void> {
     const consumer = await oauth.getConsumer(this.oauthConsumerOverride);
-    this.oauth1Token = await oauth.getOAuth1Token(
-      ticket,
-      this.domain,
-      consumer,
-    );
+    this.oauth1Token = await oauth.getOAuth1Token(ticket, this.domain, consumer);
     this.oauth2Token = await oauth.exchangeOAuth2(this.oauth1Token, consumer);
     await this.storage.save(this.oauth1Token, this.oauth2Token);
   }

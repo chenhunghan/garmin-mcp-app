@@ -48,8 +48,6 @@ export class FileTokenStorage implements TokenStorage {
 
   async clear(): Promise<void> {
     const files = ["oauth1_token.json", "oauth2_token.json"];
-    await Promise.all(
-      files.map((f) => rm(join(this.dirPath, f), { force: true })),
-    );
+    await Promise.all(files.map((f) => rm(join(this.dirPath, f), { force: true })));
   }
 }

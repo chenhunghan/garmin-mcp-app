@@ -8,8 +8,7 @@ import {
   GarminTokenExpiredError,
 } from "./errors.ts";
 
-const OAUTH_CONSUMER_URL =
-  "https://thegarth.s3.amazonaws.com/oauth_consumer.json";
+const OAUTH_CONSUMER_URL = "https://thegarth.s3.amazonaws.com/oauth_consumer.json";
 
 // Hardcoded fallback (these rarely change)
 const FALLBACK_CONSUMER: OAuthConsumer = {
@@ -19,9 +18,7 @@ const FALLBACK_CONSUMER: OAuthConsumer = {
 
 let cachedConsumer: OAuthConsumer | null = null;
 
-export async function getConsumer(
-  override?: OAuthConsumer,
-): Promise<OAuthConsumer> {
+export async function getConsumer(override?: OAuthConsumer): Promise<OAuthConsumer> {
   if (override) return override;
   if (cachedConsumer) return cachedConsumer;
 
@@ -49,9 +46,7 @@ export async function getOAuth1Token(
   const url = `https://connectapi.${domain}/oauth-service/oauth/preauthorized?ticket=${encodeURIComponent(ticket)}&login-url=${encodeURIComponent(loginUrl)}&accepts-mfa-tokens=true`;
 
   const oauth = createOAuth(consumer);
-  const authHeader = oauth.toHeader(
-    oauth.authorize({ url, method: "GET" }),
-  );
+  const authHeader = oauth.toHeader(oauth.authorize({ url, method: "GET" }));
 
   let resp: Response;
   try {
@@ -62,9 +57,7 @@ export async function getOAuth1Token(
       },
     });
   } catch (err) {
-    throw new GarminNetworkError(
-      err instanceof Error ? err.message : "Network request failed",
-    );
+    throw new GarminNetworkError(err instanceof Error ? err.message : "Network request failed");
   }
 
   if (resp.status === 401) {
@@ -74,9 +67,7 @@ export async function getOAuth1Token(
     throw new GarminRateLimitError();
   }
   if (!resp.ok) {
-    throw new GarminAuthError(
-      `OAuth1 preauthorization failed: ${resp.status} ${resp.statusText}`,
-    );
+    throw new GarminAuthError(`OAuth1 preauthorization failed: ${resp.status} ${resp.statusText}`);
   }
 
   const text = await resp.text();
@@ -92,8 +83,7 @@ export async function getOAuth1Token(
     oauth_token: oauthToken,
     oauth_token_secret: oauthTokenSecret,
     mfa_token: parsed.get("mfa_token") || undefined,
-    mfa_expiration_timestamp:
-      parsed.get("mfa_expiration_timestamp") || undefined,
+    mfa_expiration_timestamp: parsed.get("mfa_expiration_timestamp") || undefined,
     domain,
   };
 }
@@ -115,9 +105,7 @@ export async function exchangeOAuth2(
     data.mfa_token = oauth1.mfa_token;
   }
 
-  const authHeader = oauth.toHeader(
-    oauth.authorize({ url, method: "POST", data }, token),
-  );
+  const authHeader = oauth.toHeader(oauth.authorize({ url, method: "POST", data }, token));
 
   let resp: Response;
   try {
@@ -131,9 +119,7 @@ export async function exchangeOAuth2(
       body: new URLSearchParams(data),
     });
   } catch (err) {
-    throw new GarminNetworkError(
-      err instanceof Error ? err.message : "Network request failed",
-    );
+    throw new GarminNetworkError(err instanceof Error ? err.message : "Network request failed");
   }
 
   if (resp.status === 401) {
@@ -143,9 +129,7 @@ export async function exchangeOAuth2(
     throw new GarminRateLimitError();
   }
   if (!resp.ok) {
-    throw new GarminAuthError(
-      `OAuth2 exchange failed: ${resp.status} ${resp.statusText}`,
-    );
+    throw new GarminAuthError(`OAuth2 exchange failed: ${resp.status} ${resp.statusText}`);
   }
 
   const json = (await resp.json()) as Record<string, unknown>;

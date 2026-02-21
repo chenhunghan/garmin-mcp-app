@@ -1,6 +1,8 @@
 # Garmin MCP App
 
-Connect your Garmin watch to Claude Desktop. Ask Claude about your health & fitness data and get interactive charts — all inside the conversation.
+Connect your Garmin watch to Claude Desktop. Explore interactive charts.
+
+![demo](https://github.com/user-attachments/assets/62b5ec61-a772-4502-b717-c32c4ea89195)
 
 ## Install
 

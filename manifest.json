@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "garmin-mcp",
   "display_name": "Garmin MCP",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for Garmin integration",
   "author": {
     "name": "chh"
@@ -13,7 +13,9 @@
     "entry_point": "dist/index.js",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/dist/index.js"]
+      "args": [
+        "${__dirname}/dist/index.js"
+      ]
     }
   },
   "tools": [
@@ -51,7 +53,11 @@
     }
   ],
   "compatibility": {
-    "platforms": ["darwin", "win32", "linux"],
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
     "runtimes": {
       "node": ">=18.0.0"
     }

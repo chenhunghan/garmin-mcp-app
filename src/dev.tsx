@@ -1,11 +1,31 @@
+/**
+ * Browser entry point for `npm run dev:ui`.
+ *
+ * Stands in for the MCP host (e.g. Claude Desktop) by intercepting the App's
+ * JSON-RPC postMessages and either mocking them (host protocol) or proxying
+ * them to the real MCP server via the Vite dev server's /api/tools/call endpoint.
+ *
+ * Host protocol messages (ui/initialize, ping) are mocked locally — they are
+ * part of the app ↔ host handshake and have no server-side equivalent.
+ *
+ * Tool calls (tools/call) are forwarded via fetch to /api/tools/call, which
+ * the Vite plugin (dev-plugin.ts) routes to the real MCP server in-process.
+ *
+ * stopImmediatePropagation() is called on every handled message because in dev
+ * mode window.parent === window, so postMessages echo back to the App's own
+ * PostMessageTransport. Without stopping propagation, the transport receives
+ * the echoed request, sends a "method not found" error with the same request
+ * id, and prematurely resolves the App's pending promise before our real
+ * response arrives.
+ */
 import { createRoot } from "react-dom/client";
 import { GarminApp } from "./app.tsx";
 
-// Mock the host's postMessage responses so useApp connects standalone
 window.addEventListener("message", (e) => {
-  if (e.data?.jsonrpc !== "2.0") return;
+  if (e.data?.jsonrpc !== "2.0" || !e.data.method) return;
 
   if (e.data.method === "ui/initialize") {
+    e.stopImmediatePropagation();
     window.postMessage(
       {
         jsonrpc: "2.0",
@@ -21,38 +41,33 @@ window.addEventListener("message", (e) => {
       "*",
     );
   } else if (e.data.method === "ping") {
+    e.stopImmediatePropagation();
     window.postMessage({ jsonrpc: "2.0", id: e.data.id, result: {} }, "*");
   } else if (e.data.method === "tools/call") {
+    e.stopImmediatePropagation();
     const { name, arguments: args } = e.data.params ?? {};
-    let result: unknown;
-
-    if (name === "garmin-check-auth") {
-      result = {
-        content: [{ type: "text", text: JSON.stringify({ authenticated: false }) }],
-      };
-    } else if (name === "garmin-login") {
-      console.log("[dev-mock] garmin-login called with", args);
-      result = {
-        content: [{ type: "text", text: JSON.stringify({ status: "needs_mfa" }) }],
-      };
-    } else if (name === "garmin-submit-mfa") {
-      console.log("[dev-mock] garmin-submit-mfa called with", args);
-      result = {
-        content: [{ type: "text", text: JSON.stringify({ status: "success" }) }],
-      };
-    } else {
-      result = {
-        isError: true,
-        content: [
+    fetch("/api/tools/call", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, arguments: args }),
+    })
+      .then((r) => r.json())
+      .then((result) => {
+        window.postMessage({ jsonrpc: "2.0", id: e.data.id, result }, "*");
+      })
+      .catch((err) => {
+        window.postMessage(
           {
-            type: "text",
-            text: JSON.stringify({ code: "not_authenticated", message: "Not authenticated" }),
+            jsonrpc: "2.0",
+            id: e.data.id,
+            result: {
+              isError: true,
+              content: [{ type: "text", text: String(err) }],
+            },
           },
-        ],
-      };
-    }
-
-    window.postMessage({ jsonrpc: "2.0", id: e.data.id, result }, "*");
+          "*",
+        );
+      });
   }
   // Silently ignore notifications (ui/notifications/*)
 });

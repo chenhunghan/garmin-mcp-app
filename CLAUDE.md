@@ -23,9 +23,28 @@ The host (e.g. Claude Desktop) brokers all communication: Server ←stdio→ Hos
 npm workspaces (`packages/*`). Root scripts:
 
 - `npm run dev` — watch-build server + UI
-- `npm run dev:ui` — standalone UI dev with mocked MCP host
+- `npm run dev:ui` — standalone UI dev wired to the MCP server
 - `npm run test:lib` — run garmin-connect tests
 - `npm run pack` — build + package `.mcpb` bundle
+
+### Dev UI (`npm run dev:ui`)
+
+Runs the React UI standalone in a browser at `localhost:5173`, wired to the MCP server running in-process. This lets you test MCP app against the actual MCP server connecting to Garmin API without deploying to Claude Desktop.
+
+**Debugging the dev UI with agent-browser:**
+
+Use the `agent-browser` skill to inspect and interact with the dev UI:
+
+```bash
+agent-browser open http://localhost:5173/   # Open the dev UI
+agent-browser snapshot                       # Full accessibility tree
+agent-browser snapshot -i                    # Interactive elements only (forms, buttons)
+agent-browser screenshot /tmp/dev-ui.png     # Take a screenshot
+agent-browser console                        # Check browser console messages
+agent-browser eval "document.body.innerHTML" # Inspect raw DOM
+```
+
+This is the preferred way to debug the MCP app UI during development — it can read elements, check auth state, interact with forms, and inspect console logs without needing a real browser window.
 
 ### garmin-connect library
 

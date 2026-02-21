@@ -101,7 +101,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: dateSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getStressData(date)),
+    async ({ date }) => withAuth(() => getClient().getStressData(date), "stress"),
   );
 
   registerAppTool(
@@ -197,7 +197,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: activityIdSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ activityId }) => withAuth(() => getClient().getActivitySplits(activityId)),
+    async ({ activityId }) => withAuth(() => getClient().getActivitySplits(activityId), "splits"),
   );
 
   registerAppTool(
@@ -209,7 +209,8 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: activityIdSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ activityId }) => withAuth(() => getClient().getActivityHrZones(activityId)),
+    async ({ activityId }) =>
+      withAuth(() => getClient().getActivityHrZones(activityId), "hr-zones"),
   );
 
   // ── Fitness Benchmarks ──────────────────────────────

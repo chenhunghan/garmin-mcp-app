@@ -27,6 +27,9 @@
     "src/heart-rate-chart.tsx",
     "src/training-chart.tsx",
     "src/race-predictions-chart.tsx",
+    "src/splits-chart.tsx",
+    "src/stress-chart.tsx",
+    "src/hr-zones-chart.tsx",
     "src/lib/**/*.ts",
     "src/components/**/*.tsx",
     "src/env.d.ts"

@@ -6,6 +6,9 @@ import { SleepChart } from "./sleep-chart.tsx";
 import { HeartRateChart } from "./heart-rate-chart.tsx";
 import { TrainingChart } from "./training-chart.tsx";
 import { RacePredictionsChart } from "./race-predictions-chart.tsx";
+import { HrZonesChart } from "./hr-zones-chart.tsx";
+import { StressChart } from "./stress-chart.tsx";
+import { SplitsChart } from "./splits-chart.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Card,
@@ -136,6 +139,9 @@ const VALID_VIEWS = new Set([
   "heart-rate",
   "training",
   "race-predictions",
+  "hr-zones",
+  "stress",
+  "splits",
 ]);
 
 export function GarminApp() {
@@ -228,7 +234,17 @@ export function GarminApp() {
       // Claude Desktop: stay null until ontoolresult sets the view.
       if (typeof __DEV_UI__ !== "undefined" && __DEV_UI__) {
         setVisibleCharts(
-          new Set(["steps", "activities", "sleep", "heart-rate", "training", "race-predictions"]),
+          new Set([
+            "steps",
+            "activities",
+            "sleep",
+            "heart-rate",
+            "training",
+            "race-predictions",
+            "hr-zones",
+            "stress",
+            "splits",
+          ]),
         );
       }
 
@@ -319,6 +335,9 @@ export function GarminApp() {
           {visibleCharts?.has("sleep") && <SleepChart callTool={callTool} />}
           {visibleCharts?.has("training") && <TrainingChart callTool={callTool} />}
           {visibleCharts?.has("race-predictions") && <RacePredictionsChart callTool={callTool} />}
+          {visibleCharts?.has("hr-zones") && <HrZonesChart callTool={callTool} />}
+          {visibleCharts?.has("stress") && <StressChart callTool={callTool} />}
+          {visibleCharts?.has("splits") && <SplitsChart callTool={callTool} />}
         </div>
       );
   }

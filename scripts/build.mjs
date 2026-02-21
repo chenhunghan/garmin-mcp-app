@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { rmSync, renameSync, existsSync } from "node:fs";
+import { rmSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 const run = (cmd) => {
@@ -19,15 +19,10 @@ if (existsSync(dist)) {
 run("tsc --noEmit");
 run("tsc --noEmit -p tsconfig.app.json");
 
-// 3. Vite build → dist/src/app.html
+// 3. Vite build → dist/app.html (flattenAppHtml plugin handles the move)
 run("vite build");
 
-// 4. Move dist/src/app.html → dist/app.html
-renameSync(resolve(dist, "src", "app.html"), resolve(dist, "app.html"));
-rmSync(resolve(dist, "src"), { recursive: true });
-console.log("Moved dist/src/app.html → dist/app.html");
-
-// 5. esbuild server
+// 4. esbuild server
 run("esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js");
 
 console.log("\nBuild complete!");

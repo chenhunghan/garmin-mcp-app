@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { getClient } from "../garmin.js";
+import { notifyAuth } from "../auth-gate.js";
 
 export function registerAuthTools(server: McpServer, resourceUri: string) {
   registerAppTool(
@@ -44,6 +45,7 @@ export function registerAuthTools(server: McpServer, resourceUri: string) {
           content: [{ type: "text" as const, text: JSON.stringify({ status: "needs_mfa" }) }],
         };
       }
+      notifyAuth();
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ status: "success" }) }],
       };
@@ -62,6 +64,7 @@ export function registerAuthTools(server: McpServer, resourceUri: string) {
     async ({ code }) => {
       const client = getClient();
       await client.submitMfa(code);
+      notifyAuth();
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ status: "success" }) }],
       };

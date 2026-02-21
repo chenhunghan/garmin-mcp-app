@@ -3,6 +3,7 @@ import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { GarminAuthError, GarminTokenExpiredError } from "garmin-connect";
 import { getClient } from "../garmin.js";
+import { waitForAuth } from "../auth-gate.js";
 
 type ToolResult = {
   content: Array<{ type: "text"; text: string }>;
@@ -15,18 +16,9 @@ async function withAuth(fn: () => Promise<unknown>): Promise<ToolResult> {
     try {
       await client.resume();
     } catch {
-      return {
-        isError: true,
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({
-              code: "not_authenticated",
-              message: "Not authenticated with Garmin Connect",
-            }),
-          },
-        ],
-      };
+      // Wait for the user to log in through the MCP App UI.
+      // The tool stays "pending" while the iframe shows the login form.
+      await waitForAuth();
     }
   }
   try {
@@ -36,14 +28,11 @@ async function withAuth(fn: () => Promise<unknown>): Promise<ToolResult> {
     };
   } catch (err) {
     if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
+      // Token expired mid-session — wait for re-auth through the UI
+      await waitForAuth();
+      const data = await fn();
       return {
-        isError: true,
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({ code: "not_authenticated", message: err.message }),
-          },
-        ],
+        content: [{ type: "text", text: JSON.stringify(data) }],
       };
     }
     throw err;

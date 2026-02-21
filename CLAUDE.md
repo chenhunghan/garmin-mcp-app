@@ -13,7 +13,7 @@ The host (e.g. Claude Desktop) brokers all communication: Server ←stdio→ Hos
 ## Key concepts
 
 - `ui://` URIs are opaque identifiers, not real URLs — the host fetches them as MCP resources
-- `vite-plugin-singlefile` inlines all app JS/CSS into `dist/app.html`; React + ext-apps loaded from `esm.sh` CDN at runtime
+- `vite-plugin-singlefile` inlines all app JS/CSS into `dist/app.html`; React + Recharts loaded from `esm.sh` CDN at runtime via import maps; `@modelcontextprotocol/ext-apps` is bundled (not CDN) to avoid Zod version mismatches
 - Tools declare `_meta.ui.resourceUri` to link a UI to a tool invocation
 - App ↔ Server communication: `app.callServerTool()` (app-initiated) and `app.ontoolresult` (server-pushed)
 - See: https://modelcontextprotocol.io/docs/extensions/apps
@@ -141,3 +141,37 @@ Key gotchas:
 - Workout DELETE returns 204 No Content (no JSON body)
 - Training effect (aerobic/anaerobic) is included in `get-activity-details` response under `summaryDTO.trainingEffect` and `summaryDTO.anaerobicTrainingEffect`
 - API paths match Python [garth](https://github.com/matin/garth) library — use it as reference for new endpoints
+
+## MCP App in Claude Desktop
+
+### Testing with Claude Desktop
+
+`npm run dev` works with Claude Desktop — it watch-builds both `dist/app.html` (Vite) and `dist/index.js` (esbuild). After changes, use **Developer > Reload MCP Configuration** in Claude Desktop to restart the server process. To trigger the MCP App UI, ask Claude to use any Garmin tool (e.g. "show my steps").
+
+### Debugging
+
+**Server logs:** `~/Library/Logs/Claude/mcp-server-garmin-mcp.log` — shows all JSON-RPC messages between Claude Desktop and the MCP server. Key things to look for:
+
+- `resources/read` response — verify `app.html` content has JS (64K+, not just 16K of CSS)
+- `_meta.ui.csp` — verify CSP domains are included in the response
+- `tools/call` from the app (e.g. `garmin-check-auth`) — confirms the React app connected via `useApp()`
+
+**Client-side errors:** Enable Developer Mode (Help > Troubleshooting), then open DevTools (Cmd+Option+I). Check Console for:
+
+- CSP violations (`connect-src`, `script-src`) — indicates missing CSP domains
+- `Failed to resolve module specifier` — missing import map entry
+- Runtime errors from esm.sh dependencies — may need to bundle instead of externalize
+
+### Build: Vite singlefile + esm.sh externals
+
+The app uses `vite-plugin-singlefile` to inline JS/CSS into `dist/app.html`. Heavy dependencies (React, Recharts) are externalized and loaded from `esm.sh` CDN at runtime via import maps in `src/app.html`. The `flattenAppHtml` Vite plugin moves `dist/src/app.html` → `dist/app.html` after each build (including watch mode).
+
+**Gotchas:**
+
+- `src/app.html` import map, `vite.config.ts` externals, and `vite.config.ts` output.paths must stay in sync
+- DO NOT externalize `@modelcontextprotocol/ext-apps/react` to esm.sh — it pulls in Zod which causes `z.custom is not a function` errors due to version mismatches. Bundle it instead.
+- Any CDN domain used in import maps must be declared in the resource `_meta.ui.csp` with both `resourceDomains` and `connectDomains` (see `src/server.ts`)
+
+### Reference implementation
+
+[excalidraw/excalidraw-mcp](https://github.com/excalidraw/excalidraw-mcp) — well-maintained MCP App with similar architecture (Vite singlefile + esm.sh externals). Useful to compare when debugging Claude Desktop rendering issues.

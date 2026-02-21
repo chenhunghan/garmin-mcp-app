@@ -40,7 +40,6 @@ export default defineConfig({
         "react-dom/client",
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
-        "@modelcontextprotocol/ext-apps/react",
         "react-is",
         "recharts",
       ],
@@ -51,8 +50,6 @@ export default defineConfig({
           "react-dom/client": "https://esm.sh/react-dom@19/client",
           "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime",
           "react/jsx-dev-runtime": "https://esm.sh/react@19/jsx-dev-runtime",
-          "@modelcontextprotocol/ext-apps/react":
-            "https://esm.sh/@modelcontextprotocol/ext-apps@1/react",
           "react-is": "https://esm.sh/react-is@19?external=react",
           recharts: "https://esm.sh/recharts@3.7.0?external=react,react-dom,react-is",
         },

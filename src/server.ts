@@ -28,6 +28,14 @@ export function createServer(version: string) {
           uri: resourceUri,
           mimeType: RESOURCE_MIME_TYPE,
           text: await readFile(resolve(__dirname, "app.html"), "utf-8"),
+          _meta: {
+            ui: {
+              csp: {
+                resourceDomains: ["https://esm.sh"],
+                connectDomains: ["https://esm.sh"],
+              },
+            },
+          },
         },
       ],
     }),

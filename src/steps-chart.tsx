@@ -1,14 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { ComposedChart, Bar, Line, XAxis, YAxis, ReferenceLine } from "recharts";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-} from "@/components/ui/chart.tsx";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart.tsx";
 import type { ChartConfig } from "@/components/ui/chart.tsx";
-import { Button } from "@/components/ui/button.tsx";
+import { Select } from "@/components/ui/select.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 
 type RangeKey = "7d" | "14d" | "30d";
@@ -17,13 +11,12 @@ interface StepDay {
   label: string;
   date: string;
   steps: number;
-  avg: number | null;
 }
 
 const RANGES: Record<RangeKey, { days: number; label: string }> = {
-  "7d": { days: 7, label: "7d" },
-  "14d": { days: 14, label: "14d" },
-  "30d": { days: 30, label: "30d" },
+  "7d": { days: 7, label: "Last 7 days" },
+  "14d": { days: 14, label: "Last 14 days" },
+  "30d": { days: 30, label: "Last 30 days" },
 };
 
 const chartConfig = {
@@ -31,20 +24,10 @@ const chartConfig = {
     label: "Steps",
     color: "var(--chart-1)",
   },
-  avg: {
-    label: "7-day avg",
-    color: "var(--chart-4)",
-  },
 } satisfies ChartConfig;
 
 function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
-}
-
-function labelInterval(range: RangeKey): number {
-  if (range === "7d") return 0;
-  if (range === "14d") return 1;
-  return 3;
 }
 
 function transformStepsData(raw: unknown): StepDay[] {
@@ -56,24 +39,14 @@ function transformStepsData(raw: unknown): StepDay[] {
     return da < db ? -1 : da > db ? 1 : 0;
   });
 
-  const days: StepDay[] = sorted.map((entry) => {
+  return sorted.map((entry) => {
     const dateStr: string = entry?.calendarDate ?? entry?.date ?? "";
     const steps = Number(entry?.totalSteps ?? entry?.steps ?? 0);
     const parts = dateStr.split("-");
     const label =
       parts.length === 3 ? `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}` : dateStr;
-    return { label, date: dateStr, steps, avg: null };
+    return { label, date: dateStr, steps };
   });
-
-  for (let i = 0; i < days.length; i++) {
-    const window = days.slice(Math.max(0, i - 6), i + 1);
-    if (window.length >= 3) {
-      const sum = window.reduce((s, d) => s + d.steps, 0);
-      days[i].avg = Math.round(sum / window.length);
-    }
-  }
-
-  return days;
 }
 
 export function StepsChart({
@@ -136,18 +109,13 @@ export function StepsChart({
     <Card>
       <CardHeader className="flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm">Daily Steps</CardTitle>
-        <div className="flex gap-1">
+        <Select value={range} onValueChange={(v) => setRange(v as RangeKey)}>
           {(Object.keys(RANGES) as RangeKey[]).map((key) => (
-            <Button
-              key={key}
-              variant={range === key ? "default" : "secondary"}
-              size="sm"
-              onClick={() => setRange(key)}
-            >
+            <option key={key} value={key}>
               {RANGES[key].label}
-            </Button>
+            </option>
           ))}
-        </div>
+        </Select>
       </CardHeader>
       <CardContent>
         {loading && (
@@ -170,20 +138,28 @@ export function StepsChart({
 
         {!loading && !error && data.length > 0 && (
           <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
-            <ComposedChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+            <AreaChart data={data} margin={{ top: 4, right: 16, bottom: 0, left: -12 }}>
+              <defs>
+                <linearGradient id="fillSteps" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-steps)" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="var(--color-steps)" stopOpacity={0.1} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="label"
                 tickLine={false}
                 axisLine={false}
-                interval={labelInterval(range)}
+                minTickGap={40}
+                tickMargin={4}
+                padding={{ left: 8, right: 8 }}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
               />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <ChartLegend content={<ChartLegendContent />} />
+              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
               <ReferenceLine
                 y={10000}
                 stroke="var(--color-chart-3)"
@@ -191,27 +167,20 @@ export function StepsChart({
                 strokeWidth={1.5}
                 label={{
                   value: "10k goal",
-                  position: "right",
+                  position: "insideTopRight",
                   fontSize: 10,
                   fill: "var(--color-muted-foreground)",
                 }}
               />
-              <Bar
+              <Area
                 dataKey="steps"
                 name="Steps"
-                fill="var(--color-steps)"
-                radius={[3, 3, 0, 0]}
-                barSize={range === "30d" ? 8 : 16}
-              />
-              <Line
-                dataKey="avg"
-                name="7-day avg"
-                stroke="var(--color-avg)"
+                type="basis"
+                fill="url(#fillSteps)"
+                stroke="var(--color-steps)"
                 strokeWidth={2}
-                dot={false}
-                connectNulls
               />
-            </ComposedChart>
+            </AreaChart>
           </ChartContainer>
         )}
       </CardContent>

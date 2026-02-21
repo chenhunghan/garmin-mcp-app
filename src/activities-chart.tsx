@@ -117,13 +117,13 @@ function CustomTooltip({
   const anTE = a.anaerobicTrainingEffect ?? 0;
 
   return (
-    <div className="min-w-[185px] rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
-      <div className="font-medium">{p.activityName}</div>
+    <div className="min-w-[165px] rounded-lg border border-border/50 bg-background px-2 py-1.5 text-[10px] leading-tight shadow-xl">
+      <div className="font-medium text-[11px]">{p.activityName}</div>
       <div className="text-muted-foreground">
         {p.typeLabel} &middot; {p.date}
       </div>
 
-      <div className="mt-1.5 grid gap-0.5">
+      <div className="mt-1 grid gap-px">
         <TooltipRow label="Duration" value={formatDuration(a.duration)} />
         {a.distance > 0 && (
           <TooltipRow label="Distance" value={`${(a.distance / 1000).toFixed(2)} km`} />
@@ -150,7 +150,7 @@ function CustomTooltip({
 
       {/* Training effect */}
       {(aeTE > 0 || anTE > 0) && (
-        <div className="mt-1.5 border-t border-border/50 pt-1.5 grid gap-0.5">
+        <div className="mt-1 border-t border-border/50 pt-1 grid gap-px">
           {a.trainingEffectLabel && (
             <div className="text-muted-foreground capitalize">
               {a.trainingEffectLabel.toLowerCase().replace(/_/g, " ")}

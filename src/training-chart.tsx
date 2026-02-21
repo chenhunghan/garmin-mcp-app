@@ -224,6 +224,7 @@ export function TrainingChart({
       let hrvStatus: string | null = null;
       if (hEntry) {
         const val =
+          (hEntry.lastNightAvg as number) ??
           (hEntry.hrvValue as number) ??
           (hEntry.nightlyAvg as number) ??
           (hEntry.weeklyAvg as number);

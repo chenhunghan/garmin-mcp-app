@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.3.0...garmin-mcp-app-v0.4.0) (2026-02-21)
+
+
+### Features
+
+* add HR zones, stress, and splits charts; update data fetching methods ([8901c1f](https://github.com/chenhunghan/garmin-mcp-app/commit/8901c1f05adbb449b7d1dbea4b2641734743e37c))
+
 ## [0.3.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.2.0...garmin-mcp-app-v0.3.0) (2026-02-21)
 
 

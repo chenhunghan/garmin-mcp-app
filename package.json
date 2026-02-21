@@ -18,7 +18,7 @@
     "pack:validate": "mcpb validate manifest.json",
     "test:lib": "npm test --workspace=packages/garmin-connect",
     "typecheck:lib": "tsc --noEmit --project packages/garmin-connect/tsconfig.json",
-    "prepare": "prek install"
+    "prepare": "prek install || true"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.0.1",

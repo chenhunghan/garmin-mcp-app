@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "garmin-mcp",
   "display_name": "Garmin MCP",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "MCP server for Garmin integration",
   "author": {
     "name": "chh"

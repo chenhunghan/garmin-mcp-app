@@ -74,7 +74,7 @@ export function registerAuthTools(server: McpServer, resourceUri: string) {
     {
       title: "Garmin Logout",
       description: "Log out of Garmin Connect and clear saved tokens",
-      _meta: { ui: { resourceUri, visibility: ["app"] } },
+      _meta: { ui: { resourceUri } },
     },
     async () => {
       const client = getClient();

@@ -2,7 +2,9 @@
 
 Connect your Garmin watch to Claude Desktop. Explore interactive charts.
 
-![demo](https://github.com/user-attachments/assets/62b5ec61-a772-4502-b717-c32c4ea89195)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/62b5ec61-a772-4502-b717-c32c4ea89195" alt="demo" width="600" />
+</p>
 
 ## Install
 

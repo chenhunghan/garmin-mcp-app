@@ -18,15 +18,16 @@ function LoginForm({
 
   return (
     <form
-      className="auth-form"
+      className="flex flex-col gap-3 w-full max-w-80 p-6"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit(email, password);
       }}
     >
-      <h2>Sign in to Garmin Connect</h2>
-      {error && <div className="form-error">{error}</div>}
+      <h2 className="text-lg font-semibold text-center mb-1">Sign in to Garmin Connect</h2>
+      {error && <div className="text-red-600 text-sm text-center">{error}</div>}
       <input
+        className="px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
         type="email"
         placeholder="Email"
         value={email}
@@ -35,13 +36,18 @@ function LoginForm({
         autoFocus
       />
       <input
+        className="px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
       />
-      <button type="submit" disabled={loading}>
+      <button
+        className="px-4 py-2.5 bg-blue-600 text-white rounded-md text-sm font-medium cursor-pointer transition-colors hover:not-disabled:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+        type="submit"
+        disabled={loading}
+      >
         {loading ? "Signing in..." : "Sign in"}
       </button>
     </form>
@@ -61,16 +67,17 @@ function MfaForm({
 
   return (
     <form
-      className="auth-form"
+      className="flex flex-col gap-3 w-full max-w-80 p-6"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit(code);
       }}
     >
-      <h2>Enter verification code</h2>
-      <p className="form-hint">Check your email or authenticator app</p>
-      {error && <div className="form-error">{error}</div>}
+      <h2 className="text-lg font-semibold text-center mb-1">Enter verification code</h2>
+      <p className="text-gray-500 text-sm text-center">Check your email or authenticator app</p>
+      {error && <div className="text-red-600 text-sm text-center">{error}</div>}
       <input
+        className="px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none transition-colors focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
         type="text"
         placeholder="Verification code"
         value={code}
@@ -80,7 +87,11 @@ function MfaForm({
         inputMode="numeric"
         autoComplete="one-time-code"
       />
-      <button type="submit" disabled={loading}>
+      <button
+        className="px-4 py-2.5 bg-blue-600 text-white rounded-md text-sm font-medium cursor-pointer transition-colors hover:not-disabled:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+        type="submit"
+        disabled={loading}
+      >
         {loading ? "Verifying..." : "Verify"}
       </button>
     </form>
@@ -178,29 +189,39 @@ export function GarminApp() {
     }
   }, [isConnected, checkAuth]);
 
-  if (connError) return <div className="center">Error: {connError.message}</div>;
-  if (!isConnected) return <div className="center">Connecting...</div>;
+  if (connError)
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Error: {connError.message}
+      </div>
+    );
+  if (!isConnected)
+    return <div className="flex items-center justify-center min-h-screen">Connecting...</div>;
 
   switch (authState) {
     case "checking":
-      return <div className="center">Checking authentication...</div>;
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          Checking authentication...
+        </div>
+      );
     case "login":
       return (
-        <div className="center">
+        <div className="flex items-center justify-center min-h-screen">
           <LoginForm onSubmit={handleLogin} loading={loading} error={error} />
         </div>
       );
     case "mfa":
       return (
-        <div className="center">
+        <div className="flex items-center justify-center min-h-screen">
           <MfaForm onSubmit={handleMfa} loading={loading} error={error} />
         </div>
       );
     case "authenticated":
       return (
-        <div className="center">
-          <div className="auth-status">
-            <span className="status-dot" />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="flex items-center gap-2 text-[15px] text-gray-700">
+            <span className="w-2 h-2 rounded-full bg-green-500" />
             Connected to Garmin
           </div>
         </div>

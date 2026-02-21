@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/chart.tsx";
 import type { ChartConfig } from "@/components/ui/chart.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 
 type RangeKey = "7d" | "14d" | "30d";
 
@@ -132,9 +133,9 @@ export function StepsChart({
   }, [range, fetchSteps]);
 
   return (
-    <div>
-      <div className="flex items-center justify-between pb-2">
-        <div className="text-sm font-semibold">Daily Steps</div>
+    <Card>
+      <CardHeader className="flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm">Daily Steps</CardTitle>
         <div className="flex gap-1">
           {(Object.keys(RANGES) as RangeKey[]).map((key) => (
             <Button
@@ -147,8 +148,8 @@ export function StepsChart({
             </Button>
           ))}
         </div>
-      </div>
-      <div>
+      </CardHeader>
+      <CardContent>
         {loading && (
           <div className="flex items-center justify-center h-48 text-sm text-muted-foreground">
             Loading steps...
@@ -213,7 +214,7 @@ export function StepsChart({
             </ComposedChart>
           </ChartContainer>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

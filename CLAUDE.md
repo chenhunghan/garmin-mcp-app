@@ -167,7 +167,7 @@ This way all shadcn components automatically use the host's palette when embedde
 
 Dark mode uses `[data-theme="dark"]` selector (not `.dark` class) to match what `applyDocumentTheme()` from ext-apps sets. The chart.tsx `THEMES` map is also updated to match.
 
-Host variables use `light-dark()` CSS function (resolved via `color-scheme` set by `useHostStyles`). The body uses `background-color: transparent` so the host's actual background shows through the iframe. Avoid wrapping content in `<Card>` or other opaque containers when embedded — use plain `<div>`s so the UI blends seamlessly with the host.
+Host variables use `light-dark()` CSS function (resolved via `color-scheme` set by `useHostStyles`). The body uses `background-color: transparent` so the host's actual background shows through the iframe. Card and popover backgrounds map to `--color-background-ghost` (transparent when embedded, solid in dev UI fallback) so `<Card>` wrappers blend seamlessly with the host. Card border uses `border-border/50` and no shadow for a subtle appearance when embedded.
 
 ### Recharts v3 + shadcn compatibility
 

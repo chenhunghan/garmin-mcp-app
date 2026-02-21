@@ -40,7 +40,8 @@
  * shadcn components automatically pick up the host's palette.
  *
  * Host variable            → shadcn variable(s)
- * --color-background-primary → --background, --card, --popover
+ * --color-background-ghost   → --card, --popover (transparent when embedded)
+ * --color-background-primary → --background
  * --color-background-secondary → --secondary, --muted, --accent
  * --color-background-inverse → --primary
  * --color-background-danger  → --destructive
@@ -58,9 +59,9 @@
   :root {
     --background: var(--color-background-primary, oklch(1 0 0));
     --foreground: var(--color-text-primary, oklch(0.145 0 0));
-    --card: var(--color-background-primary, oklch(1 0 0));
+    --card: var(--color-background-ghost, oklch(1 0 0));
     --card-foreground: var(--color-text-primary, oklch(0.145 0 0));
-    --popover: var(--color-background-primary, oklch(1 0 0));
+    --popover: var(--color-background-ghost, oklch(1 0 0));
     --popover-foreground: var(--color-text-primary, oklch(0.145 0 0));
     --primary: var(--color-background-inverse, oklch(0.205 0 0));
     --primary-foreground: var(--color-text-inverse, oklch(0.985 0 0));
@@ -85,9 +86,9 @@
   [data-theme="dark"] {
     --background: var(--color-background-primary, oklch(0.145 0 0));
     --foreground: var(--color-text-primary, oklch(0.985 0 0));
-    --card: var(--color-background-primary, oklch(0.205 0 0));
+    --card: var(--color-background-ghost, oklch(0.205 0 0));
     --card-foreground: var(--color-text-primary, oklch(0.985 0 0));
-    --popover: var(--color-background-primary, oklch(0.205 0 0));
+    --popover: var(--color-background-ghost, oklch(0.205 0 0));
     --popover-foreground: var(--color-text-primary, oklch(0.985 0 0));
     --primary: var(--color-background-inverse, oklch(0.985 0 0));
     --primary-foreground: var(--color-text-inverse, oklch(0.205 0 0));

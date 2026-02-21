@@ -45,13 +45,9 @@ const LIMITS: Record<LimitKey, string> = {
   "50": "Last 50",
 };
 
-// Aerobic = blue-violet, Anaerobic = warm coral
-const COLOR_AEROBIC = "oklch(0.58 0.20 265)";
-const COLOR_ANAEROBIC = "oklch(0.65 0.20 25)";
-
 const chartConfig = {
-  aerobic: { label: "Aerobic", color: COLOR_AEROBIC },
-  anaerobic: { label: "Anaerobic", color: COLOR_ANAEROBIC },
+  aerobic: { label: "Aerobic", color: "var(--aerobic)" },
+  anaerobic: { label: "Anaerobic", color: "var(--anaerobic)" },
 } satisfies ChartConfig;
 
 function typeLabelStr(typeKey: string): string {
@@ -165,7 +161,7 @@ function CustomTooltip({
               <span className="flex items-center gap-1.5 text-muted-foreground">
                 <span
                   className="inline-block h-2 w-2 shrink-0 rounded-[2px]"
-                  style={{ backgroundColor: COLOR_AEROBIC }}
+                  style={{ backgroundColor: "var(--color-aerobic, var(--aerobic))" }}
                 />
                 Aerobic
               </span>
@@ -179,7 +175,7 @@ function CustomTooltip({
               <span className="flex items-center gap-1.5 text-muted-foreground">
                 <span
                   className="inline-block h-2 w-2 shrink-0 rounded-[2px]"
-                  style={{ backgroundColor: COLOR_ANAEROBIC }}
+                  style={{ backgroundColor: "var(--color-anaerobic, var(--anaerobic))" }}
                 />
                 Anaerobic
               </span>
@@ -294,14 +290,14 @@ export function ActivitiesChart({
             <span className="flex items-center gap-1">
               <span
                 className="inline-block h-2 w-2 rounded-[2px]"
-                style={{ backgroundColor: COLOR_AEROBIC }}
+                style={{ backgroundColor: "var(--color-aerobic, var(--aerobic))" }}
               />
               Aerobic
             </span>
             <span className="flex items-center gap-1">
               <span
                 className="inline-block h-2 w-2 rounded-[2px]"
-                style={{ backgroundColor: COLOR_ANAEROBIC }}
+                style={{ backgroundColor: "var(--color-anaerobic, var(--anaerobic))" }}
               />
               Anaerobic
             </span>
@@ -343,12 +339,28 @@ export function ActivitiesChart({
             >
               <defs>
                 <linearGradient id="fill-aerobic" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={COLOR_AEROBIC} stopOpacity={0.8} />
-                  <stop offset="95%" stopColor={COLOR_AEROBIC} stopOpacity={0.3} />
+                  <stop
+                    offset="5%"
+                    stopColor="var(--color-aerobic, var(--aerobic))"
+                    stopOpacity={0.8}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--color-aerobic, var(--aerobic))"
+                    stopOpacity={0.3}
+                  />
                 </linearGradient>
                 <linearGradient id="fill-anaerobic" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={COLOR_ANAEROBIC} stopOpacity={0.8} />
-                  <stop offset="95%" stopColor={COLOR_ANAEROBIC} stopOpacity={0.3} />
+                  <stop
+                    offset="5%"
+                    stopColor="var(--color-anaerobic, var(--anaerobic))"
+                    stopOpacity={0.8}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--color-anaerobic, var(--anaerobic))"
+                    stopOpacity={0.3}
+                  />
                 </linearGradient>
               </defs>
               <CartesianGrid vertical={false} />
@@ -370,7 +382,7 @@ export function ActivitiesChart({
                 dataKey="aerobic"
                 stackId="te"
                 fill="url(#fill-aerobic)"
-                stroke={COLOR_AEROBIC}
+                stroke="var(--color-aerobic, var(--aerobic))"
                 strokeOpacity={0.3}
                 strokeWidth={1}
                 radius={[0, 0, 0, 0]}
@@ -380,7 +392,7 @@ export function ActivitiesChart({
                 dataKey="anaerobic"
                 stackId="te"
                 fill="url(#fill-anaerobic)"
-                stroke={COLOR_ANAEROBIC}
+                stroke="var(--color-anaerobic, var(--anaerobic))"
                 strokeOpacity={0.3}
                 strokeWidth={1}
                 radius={[4, 4, 0, 0]}

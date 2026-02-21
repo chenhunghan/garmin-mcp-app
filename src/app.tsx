@@ -290,10 +290,13 @@ export function GarminApp() {
         <div className="flex flex-col p-4 gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-green-500" />
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: "var(--success)" }}
+              />
               Connected to Garmin
             </div>
-            <Button variant="ghost" size="sm" onClick={handleLogout} disabled={loading}>
+            <Button variant="outline" size="sm" onClick={handleLogout} disabled={loading}>
               {loading ? "Logging out..." : "Log out"}
             </Button>
           </div>

@@ -169,6 +169,100 @@ Dark mode uses `[data-theme="dark"]` selector (not `.dark` class) to match what 
 
 Host variables use `light-dark()` CSS function (resolved via `color-scheme` set by `useHostStyles`). The body uses `background-color: transparent` so the host's actual background shows through the iframe. Card and popover backgrounds map to `--color-background-ghost` (transparent when embedded, solid in dev UI fallback) so `<Card>` wrappers blend seamlessly with the host. Card border uses `border-border/50` and no shadow for a subtle appearance when embedded.
 
+### Dark mode guidelines
+
+The host sets `data-theme="dark"` on `<html>` at runtime. All UI must adapt correctly.
+
+**1. Use shadcn Tailwind classes wherever possible**
+
+These automatically resolve to the correct light/dark values via CSS variables:
+
+```tsx
+// Good — adapts to dark mode automatically
+<div className="bg-background text-foreground border-border/50" />
+<span className="text-muted-foreground" />
+
+// Bad — hardcoded color, invisible in dark mode
+<div className="bg-white text-gray-900" />
+<span style={{ color: "oklch(0.5 0 0)" }} />
+```
+
+**2. Custom colors: define in `app.css` under both `:root` and `[data-theme="dark"]`**
+
+```css
+:root {
+  --aerobic: oklch(0.58 0.2 265); /* darker for light bg */
+}
+[data-theme="dark"] {
+  --aerobic: oklch(0.65 0.18 265); /* lighter for dark bg */
+}
+```
+
+Reference in components as `var(--aerobic)`. Use lighter/higher-lightness OKLCH values for dark mode so colors remain visible against dark backgrounds.
+
+**3. ChartConfig + ChartStyle: avoid `--color-` prefix in CSS variable names**
+
+shadcn's `ChartStyle` component auto-generates `--color-{key}: {config.color}` on the chart container. If your CSS variable is also named `--color-{key}`, this creates a circular reference:
+
+```ts
+// BAD — ChartStyle generates: --color-aerobic: var(--color-aerobic) → circular → black
+const chartConfig = {
+  aerobic: { color: "var(--color-aerobic)" },
+};
+
+// GOOD — ChartStyle generates: --color-aerobic: var(--aerobic) → resolves correctly
+const chartConfig = {
+  aerobic: { color: "var(--aerobic)" },
+};
+```
+
+Name custom CSS variables without the `--color-` prefix (e.g. `--aerobic`, `--anaerobic`, `--success`) so ChartStyle can map them to `--color-aerobic` etc. without collision.
+
+**4. SVG gradients and inline styles: use fallbacks**
+
+SVG `<linearGradient>` elements inside `<ChartContainer>` can reference the ChartStyle-generated `--color-` variable, but add a fallback to the base variable for safety:
+
+```tsx
+<stop stopColor="var(--color-aerobic, var(--aerobic))" />
+<Bar stroke="var(--color-aerobic, var(--aerobic))" />
+```
+
+For HTML elements outside `<ChartContainer>` (legend dots, status indicators), reference the base variable directly:
+
+```tsx
+<span style={{ backgroundColor: "var(--aerobic)" }} />
+```
+
+**5. Native form elements (`<select>`, `<input>`)**
+
+Native elements like `<select>` have browser-default arrow/dropdown styling. Ensure:
+
+- `text-foreground` is set so text adapts
+- `[&>option]:bg-background [&>option]:text-foreground` forces dropdown items to use theme colors
+- Do NOT use `appearance-none` unless you provide a custom arrow icon — it removes the native dropdown arrow which becomes invisible in dark mode
+
+**6. Avoid Tailwind color utilities that don't map to CSS variables**
+
+Tailwind utilities like `bg-green-500`, `text-gray-400` are static — they don't adapt to dark mode. Use CSS variables instead:
+
+```tsx
+// Bad — green-500 stays the same in dark mode
+<span className="bg-green-500" />
+
+// Good — adapts via CSS variable
+<span style={{ backgroundColor: "var(--success)" }} />
+```
+
+**Quick reference: variable layers**
+
+| Layer                | Example                    | Set by                                    | Scope              |
+| -------------------- | -------------------------- | ----------------------------------------- | ------------------ |
+| Host variables       | `--color-text-primary`     | `useHostStyles` at runtime                | `<html>`           |
+| shadcn variables     | `--foreground`, `--border` | `app.css` `:root` / `[data-theme="dark"]` | `<html>`           |
+| Tailwind theme       | `--color-foreground`       | `@theme inline` block                     | Tailwind utilities |
+| Custom app variables | `--aerobic`, `--success`   | `app.css` `:root` / `[data-theme="dark"]` | Global             |
+| ChartStyle variables | `--color-aerobic`          | `chart.tsx` `<ChartStyle>`                | `[data-chart=...]` |
+
 ### Recharts v3 + shadcn compatibility
 
 shadcn's official chart component targets Recharts v2. Since we use Recharts v3, `chart.tsx` is a community-adapted version. Tracking issue and community patches:

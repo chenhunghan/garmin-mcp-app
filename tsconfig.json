@@ -19,5 +19,5 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src"],
-  "exclude": ["src/app.tsx", "src/app-entry.tsx", "src/dev.tsx"]
+  "exclude": ["src/app.tsx", "src/app-entry.tsx", "src/dev.tsx", "src/steps-chart.tsx"]
 }

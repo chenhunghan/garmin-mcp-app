@@ -17,6 +17,8 @@ export default defineConfig({
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
         "@modelcontextprotocol/ext-apps/react",
+        "react-is",
+        "recharts",
       ],
       output: {
         paths: {
@@ -27,6 +29,8 @@ export default defineConfig({
           "react/jsx-dev-runtime": "https://esm.sh/react@19/jsx-dev-runtime",
           "@modelcontextprotocol/ext-apps/react":
             "https://esm.sh/@modelcontextprotocol/ext-apps@1/react",
+          "react-is": "https://esm.sh/react-is@19?external=react",
+          recharts: "https://esm.sh/recharts@3.7.0?external=react,react-dom,react-is",
         },
       },
     },

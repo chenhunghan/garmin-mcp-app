@@ -31,7 +31,7 @@
     },
     {
       "name": "get-steps",
-      "description": "Get step count data for a given date from Garmin Connect"
+      "description": "Get step count data from Garmin Connect. Supports a single date or a date range."
     },
     {
       "name": "get-heart-rates",

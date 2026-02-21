@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type App, useApp } from "@modelcontextprotocol/ext-apps/react";
+import { StepsChart } from "./steps-chart.tsx";
 import "./app.css";
 
 type AuthState = "checking" | "login" | "mfa" | "authenticated";
@@ -231,18 +232,21 @@ export function GarminApp() {
       );
     case "authenticated":
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-          <div className="flex items-center gap-2 text-[15px] text-gray-700">
-            <span className="w-2 h-2 rounded-full bg-green-500" />
-            Connected to Garmin
+        <div className="flex flex-col min-h-screen p-4 gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-[15px] text-gray-700">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              Connected to Garmin
+            </div>
+            <button
+              className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors"
+              onClick={handleLogout}
+              disabled={loading}
+            >
+              {loading ? "Logging out..." : "Log out"}
+            </button>
           </div>
-          <button
-            className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors"
-            onClick={handleLogout}
-            disabled={loading}
-          >
-            {loading ? "Logging out..." : "Log out"}
-          </button>
+          <StepsChart callTool={callTool} />
         </div>
       );
   }

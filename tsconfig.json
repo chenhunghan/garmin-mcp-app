@@ -25,6 +25,10 @@
     "src/dev.tsx",
     "src/steps-chart.tsx",
     "src/activities-chart.tsx",
+    "src/sleep-chart.tsx",
+    "src/heart-rate-chart.tsx",
+    "src/training-chart.tsx",
+    "src/race-predictions-chart.tsx",
     "src/lib",
     "src/components"
   ]

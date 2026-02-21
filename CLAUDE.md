@@ -187,81 +187,65 @@ These automatically resolve to the correct light/dark values via CSS variables:
 <span style={{ color: "oklch(0.5 0 0)" }} />
 ```
 
-**2. Custom colors: define in `app.css` under both `:root` and `[data-theme="dark"]`**
+**2. Chart colors: use the `--chart-1` through `--chart-5` palette**
 
-```css
-:root {
-  --aerobic: oklch(0.58 0.2 265); /* darker for light bg */
-}
-[data-theme="dark"] {
-  --aerobic: oklch(0.65 0.18 265); /* lighter for dark bg */
-}
-```
+All charts reference `var(--chart-N)` in their `chartConfig`. Do NOT create one-off CSS variables for individual chart series. The palette is defined in `app.css` with harmonized OKLCH values for both light and dark:
 
-Reference in components as `var(--aerobic)`. Use lighter/higher-lightness OKLCH values for dark mode so colors remain visible against dark backgrounds.
+| Slot        | Light (hue)     | Dark (hue)        | Semantic use                         |
+| ----------- | --------------- | ----------------- | ------------------------------------ |
+| `--chart-1` | Orange (41)     | Blue-purple (264) | Steps, REM sleep, Training readiness |
+| `--chart-2` | Teal (185)      | Green-cyan (162)  | Body battery, Light sleep, HRV, VO2  |
+| `--chart-3` | Blue (265)      | Blue (265)        | Resting HR, Aerobic TE, REM sleep    |
+| `--chart-4` | Purple (310)    | Purple (310)      | Deep sleep                           |
+| `--chart-5` | Red-orange (25) | Red-orange (25)   | Anaerobic TE, Awake                  |
 
-**3. ChartConfig + ChartStyle: avoid `--color-` prefix in CSS variable names**
+All values share the same lightness/chroma range (L 0.55-0.65 light, 0.65-0.72 dark; C 0.16-0.22) for visual harmony. Only `--success` exists as a utility variable for the "Connected" indicator dot.
 
-shadcn's `ChartStyle` component auto-generates `--color-{key}: {config.color}` on the chart container. If your CSS variable is also named `--color-{key}`, this creates a circular reference:
+**3. ChartConfig: reference `var(--chart-N)` directly**
+
+shadcn's `ChartStyle` generates `--color-{key}: {config.color}` scoped to the chart container. Using `var(--chart-N)` avoids circular references:
 
 ```ts
-// BAD — ChartStyle generates: --color-aerobic: var(--color-aerobic) → circular → black
+// GOOD — ChartStyle generates: --color-restingHR: var(--chart-3)
 const chartConfig = {
-  aerobic: { color: "var(--color-aerobic)" },
+  restingHR: { color: "var(--chart-3)" },
 };
 
-// GOOD — ChartStyle generates: --color-aerobic: var(--aerobic) → resolves correctly
+// BAD — creates circular --color-foo: var(--color-foo) → black
 const chartConfig = {
-  aerobic: { color: "var(--aerobic)" },
+  foo: { color: "var(--color-foo)" },
 };
 ```
 
-Name custom CSS variables without the `--color-` prefix (e.g. `--aerobic`, `--anaerobic`, `--success`) so ChartStyle can map them to `--color-aerobic` etc. without collision.
+**4. Inline styles and SVG gradients: add fallbacks**
 
-**4. SVG gradients and inline styles: use fallbacks**
-
-SVG `<linearGradient>` elements inside `<ChartContainer>` can reference the ChartStyle-generated `--color-` variable, but add a fallback to the base variable for safety:
+Inside `<ChartContainer>`, ChartStyle provides `--color-{key}`. Add the base variable as fallback:
 
 ```tsx
-<stop stopColor="var(--color-aerobic, var(--aerobic))" />
-<Bar stroke="var(--color-aerobic, var(--aerobic))" />
+<stop stopColor="var(--color-aerobic, var(--chart-3))" />
+<span style={{ backgroundColor: "var(--color-restingHR, var(--chart-3))" }} />
 ```
 
-For HTML elements outside `<ChartContainer>` (legend dots, status indicators), reference the base variable directly:
+**5. Avoid Tailwind color utilities that don't map to CSS variables**
+
+Tailwind utilities like `bg-green-500` don't adapt to dark mode. Use CSS variables:
 
 ```tsx
-<span style={{ backgroundColor: "var(--aerobic)" }} />
-```
-
-**5. Native form elements (`<select>`, `<input>`)**
-
-Native elements like `<select>` have browser-default arrow/dropdown styling. Ensure:
-
-- `text-foreground` is set so text adapts
-- `[&>option]:bg-background [&>option]:text-foreground` forces dropdown items to use theme colors
-- Do NOT use `appearance-none` unless you provide a custom arrow icon — it removes the native dropdown arrow which becomes invisible in dark mode
-
-**6. Avoid Tailwind color utilities that don't map to CSS variables**
-
-Tailwind utilities like `bg-green-500`, `text-gray-400` are static — they don't adapt to dark mode. Use CSS variables instead:
-
-```tsx
-// Bad — green-500 stays the same in dark mode
+// Bad
 <span className="bg-green-500" />
-
-// Good — adapts via CSS variable
+// Good
 <span style={{ backgroundColor: "var(--success)" }} />
 ```
 
 **Quick reference: variable layers**
 
-| Layer                | Example                    | Set by                                    | Scope              |
-| -------------------- | -------------------------- | ----------------------------------------- | ------------------ |
-| Host variables       | `--color-text-primary`     | `useHostStyles` at runtime                | `<html>`           |
-| shadcn variables     | `--foreground`, `--border` | `app.css` `:root` / `[data-theme="dark"]` | `<html>`           |
-| Tailwind theme       | `--color-foreground`       | `@theme inline` block                     | Tailwind utilities |
-| Custom app variables | `--aerobic`, `--success`   | `app.css` `:root` / `[data-theme="dark"]` | Global             |
-| ChartStyle variables | `--color-aerobic`          | `chart.tsx` `<ChartStyle>`                | `[data-chart=...]` |
+| Layer             | Example                         | Set by                                    | Scope              |
+| ----------------- | ------------------------------- | ----------------------------------------- | ------------------ |
+| Host variables    | `--color-text-primary`          | `useHostStyles` at runtime                | `<html>`           |
+| shadcn variables  | `--foreground`, `--border`      | `app.css` `:root` / `[data-theme="dark"]` | `<html>`           |
+| Tailwind theme    | `--color-foreground`            | `@theme inline` block                     | Tailwind utilities |
+| Chart palette     | `--chart-1` through `--chart-5` | `app.css` `:root` / `[data-theme="dark"]` | Global             |
+| ChartStyle scoped | `--color-restingHR`             | `chart.tsx` `<ChartStyle>`                | `[data-chart=...]` |
 
 ### Recharts v3 + shadcn compatibility
 

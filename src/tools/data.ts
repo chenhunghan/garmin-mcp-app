@@ -77,7 +77,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: dateSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getHeartRates(date)),
+    async ({ date }) => withAuth(() => getClient().getHeartRates(date), "heart-rate"),
   );
 
   registerAppTool(
@@ -89,7 +89,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: dateSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getSleepData(date)),
+    async ({ date }) => withAuth(() => getClient().getSleepData(date), "sleep"),
   );
 
   registerAppTool(
@@ -132,7 +132,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: dateSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getTrainingReadiness(date)),
+    async ({ date }) => withAuth(() => getClient().getTrainingReadiness(date), "training"),
   );
 
   registerAppTool(
@@ -235,7 +235,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: {},
       _meta: { ui: { resourceUri } },
     },
-    async () => withAuth(() => getClient().getRacePredictions()),
+    async () => withAuth(() => getClient().getRacePredictions(), "race-predictions"),
   );
 
   registerAppTool(

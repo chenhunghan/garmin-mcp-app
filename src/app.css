@@ -79,11 +79,9 @@
     --radius: 0.625rem;
     --chart-1: oklch(0.646 0.222 41.116);
     --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --aerobic: oklch(0.58 0.2 265);
-    --anaerobic: oklch(0.65 0.2 25);
+    --chart-3: oklch(0.58 0.2 265);
+    --chart-4: oklch(0.55 0.18 310);
+    --chart-5: oklch(0.65 0.2 25);
     --success: oklch(0.55 0.15 155);
   }
   [data-theme="dark"] {
@@ -108,20 +106,24 @@
     --ring: var(--color-ring-primary, oklch(0.439 0 0));
     --chart-1: oklch(0.488 0.243 264.376);
     --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.985 0 0);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --color-aerobic: oklch(0.65 0.18 265);
-    --color-anaerobic: oklch(0.72 0.16 25);
-    --color-success: oklch(0.65 0.15 155);
+    --chart-3: oklch(0.65 0.18 265);
+    --chart-4: oklch(0.65 0.16 310);
+    --chart-5: oklch(0.72 0.16 25);
+    --success: oklch(0.65 0.15 155);
   }
 
   * {
     border-color: var(--border);
   }
+  .recharts-surface *:focus,
+  .recharts-surface *:active {
+    outline: none;
+  }
   body {
     background-color: transparent;
     color: var(--foreground);
+  }
+  [data-chart] {
     overflow: clip;
   }
 }

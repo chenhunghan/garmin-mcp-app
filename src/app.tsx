@@ -2,6 +2,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { type App, useApp, useHostStyles } from "@modelcontextprotocol/ext-apps/react";
 import { StepsChart } from "./steps-chart.tsx";
 import { ActivitiesChart } from "./activities-chart.tsx";
+import { SleepChart } from "./sleep-chart.tsx";
+import { HeartRateChart } from "./heart-rate-chart.tsx";
+import { TrainingChart } from "./training-chart.tsx";
+import { RacePredictionsChart } from "./race-predictions-chart.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Card,
@@ -125,7 +129,14 @@ function MfaForm({
 }
 
 // Views that can be shown — tools declare their view via structuredContent.view
-const VALID_VIEWS = new Set(["steps", "activities"]);
+const VALID_VIEWS = new Set([
+  "steps",
+  "activities",
+  "sleep",
+  "heart-rate",
+  "training",
+  "race-predictions",
+]);
 
 export function GarminApp() {
   const [authState, setAuthState] = useState<AuthState>("checking");
@@ -216,7 +227,9 @@ export function GarminApp() {
       // Dev UI: show all charts (no host tool calls to route).
       // Claude Desktop: stay null until ontoolresult sets the view.
       if (typeof __DEV_UI__ !== "undefined" && __DEV_UI__) {
-        setVisibleCharts(new Set(["steps", "activities"]));
+        setVisibleCharts(
+          new Set(["steps", "activities", "sleep", "heart-rate", "training", "race-predictions"]),
+        );
       }
 
       app.ontoolresult = (params: Record<string, unknown>) => {
@@ -302,6 +315,10 @@ export function GarminApp() {
           </div>
           {visibleCharts?.has("steps") && <StepsChart callTool={callTool} />}
           {visibleCharts?.has("activities") && <ActivitiesChart callTool={callTool} />}
+          {visibleCharts?.has("heart-rate") && <HeartRateChart callTool={callTool} />}
+          {visibleCharts?.has("sleep") && <SleepChart callTool={callTool} />}
+          {visibleCharts?.has("training") && <TrainingChart callTool={callTool} />}
+          {visibleCharts?.has("race-predictions") && <RacePredictionsChart callTool={callTool} />}
         </div>
       );
   }

@@ -7,10 +7,11 @@ import { waitForAuth } from "../auth-gate.js";
 
 type ToolResult = {
   content: Array<{ type: "text"; text: string }>;
+  structuredContent?: Record<string, unknown>;
   isError?: boolean;
 };
 
-async function withAuth(fn: () => Promise<unknown>): Promise<ToolResult> {
+async function withAuth(fn: () => Promise<unknown>, view?: string): Promise<ToolResult> {
   const client = getClient();
   if (!client.isAuthenticated) {
     try {
@@ -25,6 +26,7 @@ async function withAuth(fn: () => Promise<unknown>): Promise<ToolResult> {
     const data = await fn();
     return {
       content: [{ type: "text", text: JSON.stringify(data) }],
+      ...(view && { structuredContent: { view } }),
     };
   } catch (err) {
     if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
@@ -33,6 +35,7 @@ async function withAuth(fn: () => Promise<unknown>): Promise<ToolResult> {
       const data = await fn();
       return {
         content: [{ type: "text", text: JSON.stringify(data) }],
+        ...(view && { structuredContent: { view } }),
       };
     }
     throw err;
@@ -62,7 +65,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       },
       _meta: { ui: { resourceUri } },
     },
-    async ({ date, endDate }) => withAuth(() => getClient().getSteps(date, endDate)),
+    async ({ date, endDate }) => withAuth(() => getClient().getSteps(date, endDate), "steps"),
   );
 
   registerAppTool(
@@ -113,7 +116,8 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       },
       _meta: { ui: { resourceUri } },
     },
-    async ({ start, limit }) => withAuth(() => getClient().getActivities(start ?? 0, limit ?? 20)),
+    async ({ start, limit }) =>
+      withAuth(() => getClient().getActivities(start ?? 0, limit ?? 20), "activities"),
   );
 
   // ── Recovery & Readiness ─────────────────────────────

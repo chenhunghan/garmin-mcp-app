@@ -124,10 +124,15 @@ function MfaForm({
   );
 }
 
+// Views that can be shown — tools declare their view via structuredContent.view
+const VALID_VIEWS = new Set(["steps", "activities"]);
+
 export function GarminApp() {
   const [authState, setAuthState] = useState<AuthState>("checking");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // null = unknown (waiting for ontoolresult to tell us which view)
+  const [visibleCharts, setVisibleCharts] = useState<Set<string> | null>(null);
   const appRef = useRef<App | null>(null);
 
   const callTool = useCallback(async (name: string, args?: Record<string, unknown>) => {
@@ -208,17 +213,32 @@ export function GarminApp() {
     onAppCreated: (app) => {
       appRef.current = app;
 
-      app.ontoolresult = (params) => {
-        if (!params.isError) return;
-        const text = params.content?.[0];
-        if (text && "text" in text) {
-          try {
-            const data = JSON.parse(text.text);
-            if (data.code === "not_authenticated") {
-              setAuthState("login");
+      // Dev UI: show all charts (no host tool calls to route).
+      // Claude Desktop: stay null until ontoolresult sets the view.
+      if (typeof __DEV_UI__ !== "undefined" && __DEV_UI__) {
+        setVisibleCharts(new Set(["steps", "activities"]));
+      }
+
+      app.ontoolresult = (params: Record<string, unknown>) => {
+        // Route to the correct chart based on structuredContent.view
+        const sc = params.structuredContent as Record<string, unknown> | undefined;
+        const view = sc?.view;
+        if (typeof view === "string" && VALID_VIEWS.has(view)) {
+          setVisibleCharts(new Set([view]));
+        }
+
+        // Handle auth errors
+        if (params.isError) {
+          const text = (params.content as Array<Record<string, unknown>>)?.[0];
+          if (text && "text" in text) {
+            try {
+              const data = JSON.parse(text.text as string);
+              if (data.code === "not_authenticated") {
+                setAuthState("login");
+              }
+            } catch {
+              // ignore parse errors
             }
-          } catch {
-            // ignore parse errors
           }
         }
       };
@@ -267,7 +287,7 @@ export function GarminApp() {
       );
     case "authenticated":
       return (
-        <div className="flex flex-col min-h-screen p-4 gap-4">
+        <div className="flex flex-col p-4 gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="w-2 h-2 rounded-full bg-green-500" />
@@ -277,8 +297,8 @@ export function GarminApp() {
               {loading ? "Logging out..." : "Log out"}
             </Button>
           </div>
-          <StepsChart callTool={callTool} />
-          <ActivitiesChart callTool={callTool} />
+          {visibleCharts?.has("steps") && <StepsChart callTool={callTool} />}
+          {visibleCharts?.has("activities") && <ActivitiesChart callTool={callTool} />}
         </div>
       );
   }

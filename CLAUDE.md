@@ -179,6 +179,58 @@ shadcn's official chart component targets Recharts v2. Since we use Recharts v3,
 
 When shadcn officially ships Recharts v3 support, replace `chart.tsx` with the official version.
 
+## View routing (tool → chart)
+
+All tools share a single `ui://garmin-mcp/app.html` resource. The app uses `structuredContent.view` in tool responses to decide which chart to render.
+
+### How it works
+
+1. **Server** (`src/tools/data.ts`) — pass a `view` string to `withAuth()`:
+
+   ```ts
+   async ({ date, endDate }) => withAuth(() => getClient().getSteps(date, endDate), "steps"),
+   ```
+
+   This adds `structuredContent: { view: "steps" }` to the tool response.
+
+2. **App** (`src/app.tsx`) — `ontoolresult` reads `structuredContent.view` and sets `visibleCharts`:
+
+   ```ts
+   app.ontoolresult = (params) => {
+     const view = params.structuredContent?.view;
+     if (typeof view === "string" && VALID_VIEWS.has(view)) {
+       setVisibleCharts(new Set([view]));
+     }
+   };
+   ```
+
+3. **Render** — charts conditionally render based on `visibleCharts`:
+   ```tsx
+   {
+     visibleCharts?.has("steps") && <StepsChart />;
+   }
+   {
+     visibleCharts?.has("activities") && <ActivitiesChart />;
+   }
+   ```
+
+### Adding a new chart
+
+1. Create `src/my-chart.tsx` with `export function MyChart({ callTool })` (same prop pattern as `StepsChart`)
+2. Add `"my-view"` to `VALID_VIEWS` in `src/app.tsx`
+3. Add the conditional render: `{visibleCharts?.has("my-view") && <MyChart callTool={callTool} />}`
+4. In `src/tools/data.ts`, pass `"my-view"` to `withAuth()` for the relevant tool
+5. Add `src/my-chart.tsx` to `tsconfig.json` exclude list and `tsconfig.app.json` include list
+
+### Dev UI vs Claude Desktop
+
+The `__DEV_UI__` compile-time flag (set in `vite.config.dev.ts`) controls the default:
+
+- **`npm run dev:ui`** → `__DEV_UI__ = true` → all charts shown immediately (no host tool calls)
+- **Production build** → `__DEV_UI__ = false` → `visibleCharts` starts as `null`, waits for `ontoolresult`
+
+Tools without a `view` tag don't change which charts are visible. If no `ontoolresult` with a view ever fires (e.g. tool has no view), no charts are shown in Claude Desktop.
+
 ## MCP App in Claude Desktop
 
 ### Testing with Claude Desktop

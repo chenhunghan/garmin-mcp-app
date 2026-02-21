@@ -28,6 +28,9 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "src"),
     },
   },
+  define: {
+    __DEV_UI__: "false",
+  },
   plugins: [tailwindcss(), react(), viteSingleFile(), flattenAppHtml()],
   build: {
     outDir: "dist",

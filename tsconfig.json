@@ -24,6 +24,7 @@
     "src/app-entry.tsx",
     "src/dev.tsx",
     "src/steps-chart.tsx",
+    "src/activities-chart.tsx",
     "src/lib",
     "src/components"
   ]

@@ -10,6 +10,9 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "src"),
     },
   },
+  define: {
+    __DEV_UI__: "true",
+  },
   plugins: [tailwindcss(), react(), devPlugin()],
   server: {
     port: 5173,

@@ -208,7 +208,7 @@ export class GarminClient {
     body: unknown,
     accessToken: string,
   ): Promise<Response> {
-    const url = `https://connect.${this.domain}/${path.replace(/^\//, "")}`;
+    const url = `https://connect.${this.domain}/proxy/${path.replace(/^\//, "")}`;
     return fetch(url, {
       method,
       headers: {

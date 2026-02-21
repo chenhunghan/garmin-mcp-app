@@ -52,6 +52,16 @@ npm run pack       # build + package .mcpb bundle
 
 `npm run dev:ui` opens `http://localhost:5173` with the React UI wired to the real MCP server in-process. You can test login, MFA, and logout against the actual Garmin API without deploying to Claude Desktop.
 
+## Supported Data
+
+After authenticating, Claude can access the following from your Garmin Connect account:
+
+- Steps
+- Heart rate
+- Sleep
+- Stress
+- Activities
+
 ## Commit Convention
 
 Commits must follow the Conventional Commits format:

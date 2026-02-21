@@ -50,5 +50,43 @@ This is the preferred way to debug the MCP app UI during development — it can 
 
 - OAuth 1.0a → OAuth 2.0 token exchange flow with Garmin SSO
 - `GarminClient` — main entry point
-- `FileTokenStorage` — persists tokens to disk
+- `FileTokenStorage` — persists tokens to `~/.garminconnect/`
 - Tests: `vitest` (`npm run test:lib`)
+
+### Garmin Connect API
+
+Base URL: `https://connectapi.garmin.com/`
+
+In development, by default, tokens are saved at `~/.garminconnect/oauth2_token.json`. To test API endpoints directly with curl:
+
+```bash
+TOKEN=$(python3 -c "import json; print(json.load(open('$HOME/.garminconnect/oauth2_token.json'))['access_token'])")
+
+# Profile
+curl -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/userprofile-service/socialProfile"
+
+# Daily summary (query param, not path param)
+curl -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/usersummary-service/usersummary/daily?calendarDate=2026-02-20"
+
+# Steps (start/end date range)
+curl -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/usersummary-service/stats/steps/daily/2026-02-14/2026-02-21"
+
+# Heart rate (query param)
+curl -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/wellness-service/wellness/dailyHeartRate?date=2026-02-20"
+
+# Sleep (query param)
+curl -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/wellness-service/wellness/dailySleepData?date=2026-02-20"
+
+# Stress (path param works)
+curl -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/wellness-service/wellness/dailyStress/2026-02-20"
+
+# Activities
+curl -H "Authorization: Bearer $TOKEN" "https://connectapi.garmin.com/activitylist-service/activities/search/activities?start=0&limit=5"
+```
+
+Key gotchas:
+
+- Some endpoints use `?date=` query params (heart rate, sleep, summary); path params return 403
+- Steps endpoint uses `/{start}/{end}` date range format
+- Stress endpoint uses `/{date}` path param (works fine)
+- API paths match Python [garth](https://github.com/matin/garth) library — use it as reference for new endpoints

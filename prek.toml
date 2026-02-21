@@ -1,0 +1,24 @@
+default_install_hook_types = ["commit-msg", "pre-push"]
+
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "commitlint", name = "commitlint", language = "system", entry = "npx commitlint --edit", stages = [
+    "commit-msg",
+  ], always_run = true, pass_filenames = false },
+  { id = "lint", name = "lint", language = "system", entry = "npm run lint", stages = [
+    "pre-push",
+  ], always_run = true, pass_filenames = false },
+  { id = "fmt-check", name = "fmt check", language = "system", entry = "npm run fmt:check", stages = [
+    "pre-push",
+  ], always_run = true, pass_filenames = false },
+  { id = "typecheck", name = "typecheck server + UI", language = "system", entry = "npm run build:check", stages = [
+    "pre-push",
+  ], always_run = true, pass_filenames = false },
+  { id = "typecheck-lib", name = "typecheck garmin-connect", language = "system", entry = "npm run typecheck:lib", stages = [
+    "pre-push",
+  ], always_run = true, pass_filenames = false },
+  { id = "test-lib", name = "test garmin-connect", language = "system", entry = "npm run test:lib", stages = [
+    "pre-push",
+  ], always_run = true, pass_filenames = false },
+]

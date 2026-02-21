@@ -172,6 +172,55 @@ export class GarminClient {
     return this.connectapi(`/activity-service/activity/${activityId}`);
   }
 
+  // ── Recovery & Readiness ─────────────────────────────
+
+  async getTrainingReadiness(date: string): Promise<unknown> {
+    return this.connectapi(`/metrics-service/metrics/trainingreadiness/${date}`);
+  }
+
+  async getTrainingStatus(date: string): Promise<unknown> {
+    return this.connectapi(`/mobile-gateway/usersummary/trainingstatus/latest/${date}`);
+  }
+
+  async getHrvData(startDate: string, endDate: string): Promise<unknown> {
+    return this.connectapi(`/hrv-service/hrv/daily/${startDate}/${endDate}`);
+  }
+
+  async getBodyBattery(startDate: string, endDate: string): Promise<unknown> {
+    return this.connectapi(
+      `/wellness-service/wellness/bodyBattery/reports/daily?startDate=${startDate}&endDate=${endDate}`,
+    );
+  }
+
+  // ── Activity Deep Dive ──────────────────────────────
+
+  async getActivitySplits(activityId: string): Promise<unknown> {
+    return this.connectapi(`/activity-service/activity/${activityId}/splits`);
+  }
+
+  async getActivityHrZones(activityId: string): Promise<unknown> {
+    return this.connectapi(`/activity-service/activity/${activityId}/hrTimeInZones`);
+  }
+
+  // ── Fitness Benchmarks ──────────────────────────────
+
+  async getVo2Max(startDate: string, endDate: string): Promise<unknown> {
+    return this.connectapi(`/metrics-service/metrics/maxmet/daily/${startDate}/${endDate}`);
+  }
+
+  async getRacePredictions(): Promise<unknown> {
+    const profile = (await this.connectapi("/userprofile-service/socialProfile")) as Record<
+      string,
+      unknown
+    >;
+    const displayName = profile.displayName as string;
+    return this.connectapi(`/metrics-service/metrics/racepredictions/latest/${displayName}`);
+  }
+
+  async getUserSettings(): Promise<unknown> {
+    return this.connectapi("/userprofile-service/userprofile/user-settings");
+  }
+
   async getHydrationData(date: string): Promise<unknown> {
     return this.connectapi(`/usersummary-service/usersummary/hydration/daily/${date}`);
   }

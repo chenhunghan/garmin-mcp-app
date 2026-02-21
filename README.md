@@ -61,6 +61,14 @@ After authenticating, Claude can access the following from your Garmin Connect a
 - Sleep
 - Stress
 - Activities
+- Training readiness
+- Training status & load
+- HRV
+- Body battery
+- Activity details, splits & HR zones
+- VO2 Max
+- Race predictions
+- User settings (age, weight, zones)
 
 ## Commit Convention
 

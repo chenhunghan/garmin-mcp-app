@@ -51,6 +51,13 @@ async function withAuth(fn: () => Promise<unknown>): Promise<ToolResult> {
 }
 
 const dateSchema = { date: z.string().describe("Date in YYYY-MM-DD format") };
+const dateRangeSchema = {
+  startDate: z.string().describe("Start date in YYYY-MM-DD format"),
+  endDate: z.string().describe("End date in YYYY-MM-DD format"),
+};
+const activityIdSchema = {
+  activityId: z.string().describe("Garmin activity ID"),
+};
 
 export function registerDataTools(server: McpServer, resourceUri: string) {
   registerAppTool(
@@ -114,5 +121,136 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       _meta: { ui: { resourceUri } },
     },
     async ({ start, limit }) => withAuth(() => getClient().getActivities(start ?? 0, limit ?? 20)),
+  );
+
+  // ── Recovery & Readiness ─────────────────────────────
+
+  registerAppTool(
+    server,
+    "get-training-readiness",
+    {
+      title: "Get Training Readiness",
+      description:
+        "Get training readiness score (0-100) and breakdown (sleep, HRV, recovery, stress) for a given date",
+      inputSchema: dateSchema,
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ date }) => withAuth(() => getClient().getTrainingReadiness(date)),
+  );
+
+  registerAppTool(
+    server,
+    "get-training-status",
+    {
+      title: "Get Training Status",
+      description:
+        "Get training status including acute/chronic load, ACWR, and load status for a given date",
+      inputSchema: dateSchema,
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ date }) => withAuth(() => getClient().getTrainingStatus(date)),
+  );
+
+  registerAppTool(
+    server,
+    "get-hrv",
+    {
+      title: "Get HRV",
+      description:
+        "Get heart rate variability data (nightly avg, weekly avg, baseline, status) for a date range",
+      inputSchema: dateRangeSchema,
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ startDate, endDate }) => withAuth(() => getClient().getHrvData(startDate, endDate)),
+  );
+
+  registerAppTool(
+    server,
+    "get-body-battery",
+    {
+      title: "Get Body Battery",
+      description: "Get daily body battery charged/drained values for a date range",
+      inputSchema: dateRangeSchema,
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ startDate, endDate }) =>
+      withAuth(() => getClient().getBodyBattery(startDate, endDate)),
+  );
+
+  // ── Activity Deep Dive ──────────────────────────────
+
+  registerAppTool(
+    server,
+    "get-activity-details",
+    {
+      title: "Get Activity Details",
+      description: "Get full details for a specific Garmin activity by ID",
+      inputSchema: activityIdSchema,
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ activityId }) => withAuth(() => getClient().getActivityDetails(activityId)),
+  );
+
+  registerAppTool(
+    server,
+    "get-activity-splits",
+    {
+      title: "Get Activity Splits",
+      description: "Get per-km/mile splits (pace, HR, cadence) for a specific activity",
+      inputSchema: activityIdSchema,
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ activityId }) => withAuth(() => getClient().getActivitySplits(activityId)),
+  );
+
+  registerAppTool(
+    server,
+    "get-activity-hr-zones",
+    {
+      title: "Get Activity HR Zones",
+      description: "Get heart rate time-in-zones breakdown for a specific activity",
+      inputSchema: activityIdSchema,
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ activityId }) => withAuth(() => getClient().getActivityHrZones(activityId)),
+  );
+
+  // ── Fitness Benchmarks ──────────────────────────────
+
+  registerAppTool(
+    server,
+    "get-vo2-max",
+    {
+      title: "Get VO2 Max",
+      description: "Get VO2 Max trend data for a date range",
+      inputSchema: dateRangeSchema,
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ startDate, endDate }) => withAuth(() => getClient().getVo2Max(startDate, endDate)),
+  );
+
+  registerAppTool(
+    server,
+    "get-race-predictions",
+    {
+      title: "Get Race Predictions",
+      description: "Get predicted race times for 5K, 10K, half marathon, and marathon",
+      inputSchema: {},
+      _meta: { ui: { resourceUri } },
+    },
+    async () => withAuth(() => getClient().getRacePredictions()),
+  );
+
+  registerAppTool(
+    server,
+    "get-user-settings",
+    {
+      title: "Get User Settings",
+      description:
+        "Get user profile settings including age, weight, height, and lactate threshold HR",
+      inputSchema: {},
+      _meta: { ui: { resourceUri } },
+    },
+    async () => withAuth(() => getClient().getUserSettings()),
   );
 }

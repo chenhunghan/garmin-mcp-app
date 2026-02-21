@@ -10,7 +10,7 @@ export function registerAuthTools(server: McpServer, resourceUri: string) {
     {
       title: "Check Garmin Auth",
       description: "Check if the user is authenticated with Garmin Connect",
-      _meta: { ui: { resourceUri, visibility: ["app"] } },
+      _meta: { ui: { resourceUri } },
     },
     async () => {
       const client = getClient();

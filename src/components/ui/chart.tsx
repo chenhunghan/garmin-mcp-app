@@ -4,7 +4,7 @@ import type { NameType, ValueType } from "recharts/types/component/DefaultToolti
 import { cn } from "@/lib/utils.ts";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
-const THEMES = { light: "", dark: ".dark" } as const;
+const THEMES = { light: "", dark: '[data-theme="dark"]' } as const;
 
 export type ChartConfig = Record<
   string,

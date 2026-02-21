@@ -149,6 +149,26 @@ Key gotchas:
 - **[Recharts v3](https://recharts.org)** — charting library, externalized to esm.sh CDN
 - **[shadcn Chart component](https://ui.shadcn.com/docs/components/base/chart)** — `src/components/ui/chart.tsx`, adapted for Recharts v3 (official shadcn doesn't support v3 yet)
 
+### Host theme integration
+
+The app uses `useHostStyles` from `@modelcontextprotocol/ext-apps/react` to receive the host's theme and CSS variables at runtime. The host (e.g. Claude Desktop) sends `hostContext` during `ui/initialize` with:
+
+- `theme` — `"light"` or `"dark"`, applied via `data-theme` attribute on `<html>`
+- `styles.variables` — CSS variables like `--color-background-primary`, set on `<html>` via `style.setProperty()`
+
+In `src/app.css`, shadcn variables are mapped to host variables with OKLCH fallbacks:
+
+```css
+--background: var(--color-background-primary, oklch(1 0 0));
+--foreground: var(--color-text-primary, oklch(0.145 0 0));
+```
+
+This way all shadcn components automatically use the host's palette when embedded, and fall back to hardcoded values in standalone dev UI. The mapping table is documented in the CSS comment block in `src/app.css`.
+
+Dark mode uses `[data-theme="dark"]` selector (not `.dark` class) to match what `applyDocumentTheme()` from ext-apps sets. The chart.tsx `THEMES` map is also updated to match.
+
+Host variables use `light-dark()` CSS function (resolved via `color-scheme` set by `useHostStyles`). The body uses `background-color: transparent` so the host's actual background shows through the iframe. Avoid wrapping content in `<Card>` or other opaque containers when embedded — use plain `<div>`s so the UI blends seamlessly with the host.
+
 ### Recharts v3 + shadcn compatibility
 
 shadcn's official chart component targets Recharts v2. Since we use Recharts v3, `chart.tsx` is a community-adapted version. Tracking issue and community patches:

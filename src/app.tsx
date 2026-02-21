@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { type App, useApp } from "@modelcontextprotocol/ext-apps/react";
+import { type App, useApp, useHostStyles } from "@modelcontextprotocol/ext-apps/react";
 import { StepsChart } from "./steps-chart.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -197,7 +197,11 @@ export function GarminApp() {
     }
   }, [callTool]);
 
-  const { isConnected, error: connError } = useApp({
+  const {
+    app,
+    isConnected,
+    error: connError,
+  } = useApp({
     appInfo: { name: "garmin-mcp", version: "1.0.0" },
     capabilities: {},
     onAppCreated: (app) => {
@@ -219,6 +223,8 @@ export function GarminApp() {
       };
     },
   });
+
+  useHostStyles(app, app?.getHostContext());
 
   useEffect(() => {
     if (isConnected) {

@@ -31,27 +31,50 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/*
+ * Host style variable mapping
+ *
+ * When embedded in a host (e.g. Claude Desktop), `useHostStyles` injects CSS
+ * variables like `--color-background-primary` onto <html> at runtime. We map
+ * these into shadcn's variables via `var(--host-var, <fallback>)` so all
+ * shadcn components automatically pick up the host's palette.
+ *
+ * Host variable            → shadcn variable(s)
+ * --color-background-primary → --background, --card, --popover
+ * --color-background-secondary → --secondary, --muted, --accent
+ * --color-background-inverse → --primary
+ * --color-background-danger  → --destructive
+ * --color-text-primary       → --foreground, --card-foreground, --popover-foreground,
+ *                              --secondary-foreground, --accent-foreground
+ * --color-text-secondary     → --muted-foreground
+ * --color-text-inverse       → --primary-foreground, --destructive-foreground
+ * --color-border-primary     → --border, --input
+ * --color-ring-primary       → --ring
+ *
+ * Variables without a host equivalent (--chart-*, --radius) keep hardcoded values.
+ * In standalone dev UI (no host), all host vars are unset so fallbacks apply.
+ */
 @layer base {
   :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.965 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.965 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.965 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.985 0 0);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --background: var(--color-background-primary, oklch(1 0 0));
+    --foreground: var(--color-text-primary, oklch(0.145 0 0));
+    --card: var(--color-background-primary, oklch(1 0 0));
+    --card-foreground: var(--color-text-primary, oklch(0.145 0 0));
+    --popover: var(--color-background-primary, oklch(1 0 0));
+    --popover-foreground: var(--color-text-primary, oklch(0.145 0 0));
+    --primary: var(--color-background-inverse, oklch(0.205 0 0));
+    --primary-foreground: var(--color-text-inverse, oklch(0.985 0 0));
+    --secondary: var(--color-background-secondary, oklch(0.965 0 0));
+    --secondary-foreground: var(--color-text-primary, oklch(0.205 0 0));
+    --muted: var(--color-background-secondary, oklch(0.965 0 0));
+    --muted-foreground: var(--color-text-secondary, oklch(0.556 0 0));
+    --accent: var(--color-background-secondary, oklch(0.965 0 0));
+    --accent-foreground: var(--color-text-primary, oklch(0.205 0 0));
+    --destructive: var(--color-background-danger, oklch(0.577 0.245 27.325));
+    --destructive-foreground: var(--color-text-inverse, oklch(0.985 0 0));
+    --border: var(--color-border-primary, oklch(0.922 0 0));
+    --input: var(--color-border-primary, oklch(0.922 0 0));
+    --ring: var(--color-ring-primary, oklch(0.708 0 0));
     --radius: 0.625rem;
     --chart-1: oklch(0.646 0.222 41.116);
     --chart-2: oklch(0.6 0.118 184.704);
@@ -59,26 +82,26 @@
     --chart-4: oklch(0.828 0.189 84.429);
     --chart-5: oklch(0.769 0.188 70.08);
   }
-  .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.985 0 0);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
+  [data-theme="dark"] {
+    --background: var(--color-background-primary, oklch(0.145 0 0));
+    --foreground: var(--color-text-primary, oklch(0.985 0 0));
+    --card: var(--color-background-primary, oklch(0.205 0 0));
+    --card-foreground: var(--color-text-primary, oklch(0.985 0 0));
+    --popover: var(--color-background-primary, oklch(0.205 0 0));
+    --popover-foreground: var(--color-text-primary, oklch(0.985 0 0));
+    --primary: var(--color-background-inverse, oklch(0.985 0 0));
+    --primary-foreground: var(--color-text-inverse, oklch(0.205 0 0));
+    --secondary: var(--color-background-secondary, oklch(0.269 0 0));
+    --secondary-foreground: var(--color-text-primary, oklch(0.985 0 0));
+    --muted: var(--color-background-secondary, oklch(0.269 0 0));
+    --muted-foreground: var(--color-text-secondary, oklch(0.708 0 0));
+    --accent: var(--color-background-secondary, oklch(0.269 0 0));
+    --accent-foreground: var(--color-text-primary, oklch(0.985 0 0));
+    --destructive: var(--color-background-danger, oklch(0.577 0.245 27.325));
+    --destructive-foreground: var(--color-text-inverse, oklch(0.985 0 0));
+    --border: var(--color-border-primary, oklch(0.269 0 0));
+    --input: var(--color-border-primary, oklch(0.269 0 0));
+    --ring: var(--color-ring-primary, oklch(0.439 0 0));
     --chart-1: oklch(0.488 0.243 264.376);
     --chart-2: oklch(0.696 0.17 162.48);
     --chart-3: oklch(0.985 0 0);
@@ -90,7 +113,7 @@
     border-color: var(--border);
   }
   body {
-    background-color: var(--background);
+    background-color: transparent;
     color: var(--foreground);
   }
 }

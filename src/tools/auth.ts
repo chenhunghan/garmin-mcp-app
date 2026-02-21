@@ -67,4 +67,21 @@ export function registerAuthTools(server: McpServer, resourceUri: string) {
       };
     },
   );
+
+  registerAppTool(
+    server,
+    "garmin-logout",
+    {
+      title: "Garmin Logout",
+      description: "Log out of Garmin Connect and clear saved tokens",
+      _meta: { ui: { resourceUri, visibility: ["app"] } },
+    },
+    async () => {
+      const client = getClient();
+      await client.logout();
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify({ status: "logged_out" }) }],
+      };
+    },
+  );
 }

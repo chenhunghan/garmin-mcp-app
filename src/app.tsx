@@ -160,6 +160,18 @@ export function GarminApp() {
     [callTool],
   );
 
+  const handleLogout = useCallback(async () => {
+    setLoading(true);
+    try {
+      await callTool("garmin-logout");
+      setAuthState("login");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Logout failed");
+    } finally {
+      setLoading(false);
+    }
+  }, [callTool]);
+
   const { isConnected, error: connError } = useApp({
     appInfo: { name: "garmin-mcp", version: "1.0.0" },
     capabilities: {},
@@ -219,11 +231,18 @@ export function GarminApp() {
       );
     case "authenticated":
       return (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center justify-center min-h-screen gap-4">
           <div className="flex items-center gap-2 text-[15px] text-gray-700">
             <span className="w-2 h-2 rounded-full bg-green-500" />
             Connected to Garmin
           </div>
+          <button
+            className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors"
+            onClick={handleLogout}
+            disabled={loading}
+          >
+            {loading ? "Logging out..." : "Log out"}
+          </button>
         </div>
       );
   }

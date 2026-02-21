@@ -93,6 +93,12 @@ export class GarminClient {
     return { oauth1: this.oauth1Token, oauth2: this.oauth2Token };
   }
 
+  async logout(): Promise<void> {
+    this.oauth1Token = null;
+    this.oauth2Token = null;
+    await this.storage.clear();
+  }
+
   // ── Garmin Connect API ────────────────────────────────
 
   async connectapi<T = unknown>(

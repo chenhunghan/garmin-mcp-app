@@ -22,6 +22,37 @@ window.addEventListener("message", (e) => {
     );
   } else if (e.data.method === "ping") {
     window.postMessage({ jsonrpc: "2.0", id: e.data.id, result: {} }, "*");
+  } else if (e.data.method === "tools/call") {
+    const { name, arguments: args } = e.data.params ?? {};
+    let result: unknown;
+
+    if (name === "garmin-check-auth") {
+      result = {
+        content: [{ type: "text", text: JSON.stringify({ authenticated: false }) }],
+      };
+    } else if (name === "garmin-login") {
+      console.log("[dev-mock] garmin-login called with", args);
+      result = {
+        content: [{ type: "text", text: JSON.stringify({ status: "needs_mfa" }) }],
+      };
+    } else if (name === "garmin-submit-mfa") {
+      console.log("[dev-mock] garmin-submit-mfa called with", args);
+      result = {
+        content: [{ type: "text", text: JSON.stringify({ status: "success" }) }],
+      };
+    } else {
+      result = {
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ code: "not_authenticated", message: "Not authenticated" }),
+          },
+        ],
+      };
+    }
+
+    window.postMessage({ jsonrpc: "2.0", id: e.data.id, result }, "*");
   }
   // Silently ignore notifications (ui/notifications/*)
 });

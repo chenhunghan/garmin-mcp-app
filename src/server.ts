@@ -1,12 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  registerAppResource,
-  registerAppTool,
-  RESOURCE_MIME_TYPE,
-} from "@modelcontextprotocol/ext-apps/server";
+import { registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import { readFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { registerAuthTools } from "./tools/auth.js";
+import { registerDataTools } from "./tools/data.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -34,18 +32,8 @@ export function createServer(version: string) {
     }),
   );
 
-  registerAppTool(
-    server,
-    "hello",
-    {
-      title: "Hello",
-      description: "Say hello with an interactive UI",
-      _meta: { ui: { resourceUri } },
-    },
-    async () => ({
-      content: [{ type: "text" as const, text: "Hello from Garmin MCP!" }],
-    }),
-  );
+  registerAuthTools(server, resourceUri);
+  registerDataTools(server, resourceUri);
 
   return server;
 }

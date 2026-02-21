@@ -18,8 +18,36 @@
   },
   "tools": [
     {
-      "name": "hello",
-      "description": "Say hello with an interactive UI"
+      "name": "garmin-check-auth",
+      "description": "Check if the user is authenticated with Garmin Connect"
+    },
+    {
+      "name": "garmin-login",
+      "description": "Log in to Garmin Connect with email and password"
+    },
+    {
+      "name": "garmin-submit-mfa",
+      "description": "Submit MFA verification code for Garmin Connect login"
+    },
+    {
+      "name": "get-steps",
+      "description": "Get step count data for a given date from Garmin Connect"
+    },
+    {
+      "name": "get-heart-rates",
+      "description": "Get heart rate data for a given date from Garmin Connect"
+    },
+    {
+      "name": "get-sleep",
+      "description": "Get sleep data for a given date from Garmin Connect"
+    },
+    {
+      "name": "get-stress",
+      "description": "Get stress data for a given date from Garmin Connect"
+    },
+    {
+      "name": "get-activities",
+      "description": "Get recent activities from Garmin Connect"
     }
   ],
   "compatibility": {

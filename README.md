@@ -21,6 +21,17 @@ Ask Claude about your health, training, and fitness — it reads your Garmin dat
 - **Track your fitness** — training readiness, training load, VO2 Max trends, and race predictions
 - **Plan your training** — create structured workouts, schedule them on your Garmin calendar, or edit existing ones
 
+What you can visualize
+
+Plot your activities
+<p align="center">
+  <img width="600" alt="activities" src="https://github.com/user-attachments/assets/c180a8c5-6b8a-4102-aad2-d64fd98e3a85" />
+</p>
+
+Visualize training readiness
+<p align="center">
+  <img width="600" alt="training readiness" src="https://github.com/user-attachments/assets/42b27fad-f425-4fe7-bd6f-e2816fbe4c12" />
+</p>
 <details>
 <summary>Full list of supported Garmin Connect data</summary>
 

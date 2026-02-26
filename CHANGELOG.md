@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.4.0...garmin-mcp-app-v0.5.0) (2026-02-26)
+
+
+### Features
+
+* add run planner with training context analysis and workout creation ([e2d7dbe](https://github.com/chenhunghan/garmin-mcp-app/commit/e2d7dbe11889768810c3becfc0bcf66ebddaff20))
+
 ## [0.4.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.3.0...garmin-mcp-app-v0.4.0) (2026-02-21)
 
 

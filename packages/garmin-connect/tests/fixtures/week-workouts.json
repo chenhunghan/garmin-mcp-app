@@ -1,0 +1,67 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/workout-service/workout/2000000101",
+    "status": 200,
+    "body": {
+      "workoutId": 2000000101,
+      "workoutName": "Easy 45 min",
+      "sportType": { "sportTypeId": 1, "sportTypeKey": "running", "displayOrder": 1 },
+      "estimatedDurationInSecs": 2700,
+      "estimatedDistanceInMeters": null,
+      "workoutSegments": [
+        {
+          "segmentOrder": 1,
+          "sportType": { "sportTypeId": 1, "sportTypeKey": "running", "displayOrder": 1 },
+          "workoutSteps": [
+            {
+              "type": "ExecutableStepDTO",
+              "stepId": 5000000001,
+              "stepOrder": 1,
+              "stepType": { "stepTypeId": 3, "stepTypeKey": "interval", "displayOrder": 3 },
+              "childStepId": null,
+              "endCondition": {
+                "conditionTypeId": 2,
+                "conditionTypeKey": "time",
+                "displayOrder": 2,
+                "displayable": true
+              },
+              "endConditionValue": 2700,
+              "targetType": {
+                "workoutTargetTypeId": 4,
+                "workoutTargetTypeKey": "heart.rate.zone",
+                "displayOrder": 4
+              },
+              "targetValueOne": null,
+              "targetValueTwo": null,
+              "zoneNumber": 2
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "method": "POST",
+    "url": "https://connectapi.garmin.com/workout-service/workout",
+    "status": 200,
+    "body": {
+      "workoutId": 2000000201,
+      "workoutName": "Test intervals",
+      "sportType": { "sportTypeId": 1, "sportTypeKey": "running", "displayOrder": 1 },
+      "estimatedDurationInSecs": 2400,
+      "estimatedDistanceInMeters": null,
+      "workoutSegments": []
+    }
+  },
+  {
+    "method": "POST",
+    "url": "https://connectapi.garmin.com/workout-service/schedule/2000000201",
+    "status": 200,
+    "body": {
+      "workoutScheduleId": 3000000201,
+      "calendarDate": "2026-10-05",
+      "workout": { "workoutId": 2000000201, "workoutName": "Test intervals" }
+    }
+  }
+]

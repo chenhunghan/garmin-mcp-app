@@ -140,6 +140,8 @@ Key gotchas:
 - Steps endpoint uses `/{start}/{end}` date range format
 - Stress endpoint uses `/{date}` path param (works fine)
 - Workout DELETE returns 204 No Content (no JSON body)
+- Workout JSON: build it with `buildWorkout()` (`packages/garmin-connect/src/workout-builder.ts`, used by `create-structured-workout`) rather than by hand — it handles step/condition/target IDs, depth-first `stepOrder`, `childStepId`, and pace targets in m/s (`targetValueOne` = slower pace)
+- Calendar (`getCalendar`) activity items: `duration` is in milliseconds, `distance` in centimeters; a month's response also includes the neighbouring days of its grid, so de-duplicate by item id when fetching two months
 - Training effect (aerobic/anaerobic) is included in `get-activity-details` response under `summaryDTO.trainingEffect` and `summaryDTO.anaerobicTrainingEffect`
 - API paths match Python [garth](https://github.com/matin/garth) library — use it as reference for new endpoints; [python-garminconnect](https://github.com/cyberjunky/python-garminconnect) has the broadest endpoint list
 - Garmin **omits keys that don't apply** instead of sending null (e.g. no elevation/GPS keys on treadmill runs) — don't assume every activity has the same fields
@@ -331,7 +333,7 @@ All tools share a single `ui://garmin-mcp/app.html` resource. The app uses `stru
    async ({ date }) => withAuth(() => getClient().getSleepData(date), "sleep", { date }),
    ```
 
-   This adds `structuredContent: { view: "sleep", args: { date } }` to the tool response. Several tools can share a view (e.g. `get-hrv` and `get-training-status` → `training`; `get-body-battery` → `heart-rate`; `get-vo2-max` → `race-predictions`; all workout tools → `workouts`).
+   This adds `structuredContent: { view: "sleep", args: { date } }` to the tool response. Several tools can share a view (e.g. `get-hrv` and `get-training-status` → `training`; `get-body-battery` → `heart-rate`; `get-vo2-max` → `race-predictions`; all workout tools → `workouts`; `show-training-week` → `week`). Workout step rendering/formatting is shared in `src/components/workout-steps.tsx`.
 
 2. **App** (`src/app.tsx`) — a `toolresult` listener (registered in `onAppCreated`, before connect) sets `visibleCharts` and `toolArgs`:
 

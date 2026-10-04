@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/card.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/input.tsx";
+import { encryptPassword } from "@/lib/encrypt-password.ts";
 import "./app.css";
 
 type AuthState = "checking" | "login" | "mfa" | "authenticated";
@@ -181,7 +182,10 @@ export function GarminApp() {
       setLoading(true);
       setError(null);
       try {
-        const data = await callTool("garmin-login", { email, password });
+        // Never send the plaintext password: the host may log tool arguments
+        const keyData = await callTool("garmin-get-login-key");
+        const encryptedPassword = await encryptPassword(password, String(keyData?.publicKey));
+        const data = await callTool("garmin-login", { email, encryptedPassword });
         if (data?.status === "needs_mfa") {
           setAuthState("mfa");
         } else {

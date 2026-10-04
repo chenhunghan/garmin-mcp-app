@@ -89,12 +89,21 @@ const toolArgs: Record<string, Record<string, unknown>> = {
       {
         repeat: 4,
         steps: [
-          { type: "run", duration: { meters: 1000 }, target: { pace: { fast: "4:30", slow: "4:40" } } },
+          {
+            type: "run",
+            duration: { meters: 1000 },
+            target: { pace: { fast: "4:30", slow: "4:40" } },
+          },
           { type: "recovery", duration: { seconds: 90 } },
         ],
       },
       { type: "cooldown", duration: "lap.button" },
     ],
+  },
+  "show-performance-dashboard": {
+    metrics: ["restingHR", "hrv"],
+    range: "4w",
+    endDate: ctx.date,
   },
 };
 
@@ -229,6 +238,29 @@ describe("MCP tools", () => {
       view: "workouts",
       args: { workoutId: ctx.workoutId },
     });
+  });
+
+  it("show-performance-dashboard returns series and summaries per metric", async () => {
+    const result = (await client.callTool({
+      name: "show-performance-dashboard",
+      arguments: toolArgs["show-performance-dashboard"],
+    })) as {
+      content: { text: string }[];
+      structuredContent?: { view?: string; args?: Record<string, unknown> };
+    };
+    expect(result.structuredContent).toEqual({
+      view: "dashboard",
+      args: { metrics: ["restingHR", "hrv"], range: "4w", endDate: ctx.date },
+    });
+    const data = JSON.parse(result.content[0]!.text);
+    expect(data).toMatchObject({ range: "4w", granularity: "daily", endDate: ctx.date });
+    const [rhr, hrv] = data.metrics;
+    expect(rhr).toMatchObject({ metric: "restingHR", unit: "bpm" });
+    expect(rhr.error).toBeUndefined();
+    expect(rhr.points).toHaveLength(28);
+    expect(rhr.summary.trend).toBe("down");
+    expect(hrv.points[0]).toHaveProperty("low");
+    expect(hrv.summary.trend).toBe("up");
   });
 
   it("list-workouts finds a workout by name", async () => {

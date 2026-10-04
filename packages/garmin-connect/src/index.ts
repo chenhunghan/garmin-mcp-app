@@ -18,6 +18,28 @@ export {
   type GarminWorkout,
   type GarminStep,
 } from "./workout-builder.ts";
+export {
+  METRICS,
+  METRIC_KEYS,
+  SeriesFetcher,
+  addDays,
+  clean,
+  fetchMetricSeries,
+  isMetricKey,
+  normalize,
+  pagesBackwards,
+  seriesRange,
+  summarizeSeries,
+  toWeekly,
+  type Granularity,
+  type MetricInfo,
+  type MetricKey,
+  type MetricSeries,
+  type SeriesPoint,
+  type SeriesRange,
+  type SeriesSummary,
+  type TrendDirection,
+} from "./series.ts";
 export type { TokenStorage } from "./storage.ts";
 
 export type {

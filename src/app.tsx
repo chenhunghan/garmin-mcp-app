@@ -26,6 +26,7 @@ import { AppActionsContext, type AppActions } from "@/lib/app-actions.tsx";
 import { WorkoutsView } from "./workouts-view.tsx";
 import { BriefingView } from "./briefing-view.tsx";
 import { TrainingWeekView } from "./training-week-view.tsx";
+import { DashboardView } from "./dashboard-view.tsx";
 import "./app.css";
 
 type AuthState = "checking" | "login" | "mfa" | "authenticated";
@@ -153,6 +154,7 @@ const VALID_VIEWS = new Set([
   "workouts",
   "briefing",
   "week",
+  "dashboard",
 ]);
 
 export function GarminApp() {
@@ -163,6 +165,8 @@ export function GarminApp() {
   const [visibleCharts, setVisibleCharts] = useState<Set<string> | null>(null);
   // Arguments of the tool call that opened the app (date, activityId, ...)
   const [toolArgs, setToolArgs] = useState<ToolArgs | undefined>(undefined);
+  // Parsed result of that call, for views that render it directly (dashboard)
+  const [toolData, setToolData] = useState<unknown>(undefined);
   const appRef = useRef<App | null>(null);
 
   const callTool = useCallback(async (name: string, args?: Record<string, unknown>) => {
@@ -271,6 +275,7 @@ export function GarminApp() {
             "workouts",
             "briefing",
             "week",
+            "dashboard",
           ]),
         );
       }
@@ -283,6 +288,14 @@ export function GarminApp() {
         const view = sc?.view;
         if (typeof view === "string" && VALID_VIEWS.has(view)) {
           setToolArgs((sc?.args as ToolArgs | undefined) ?? undefined);
+          const first = (params.content as Array<{ type: string; text?: string }> | undefined)?.[0];
+          let parsed: unknown;
+          try {
+            parsed = !params.isError && first?.text ? JSON.parse(first.text) : undefined;
+          } catch {
+            parsed = undefined;
+          }
+          setToolData(parsed);
           setVisibleCharts(new Set([view]));
         }
 
@@ -401,6 +414,14 @@ export function GarminApp() {
             {visibleCharts?.has("workouts") && <WorkoutsView callTool={callTool} args={toolArgs} />}
             {visibleCharts?.has("briefing") && <BriefingView callTool={callTool} args={toolArgs} />}
             {visibleCharts?.has("week") && <TrainingWeekView callTool={callTool} args={toolArgs} />}
+            {visibleCharts?.has("dashboard") && (
+              <DashboardView
+                key={JSON.stringify(toolArgs ?? null)}
+                callTool={callTool}
+                args={toolArgs}
+                data={toolData}
+              />
+            )}
           </div>
         </AppActionsContext.Provider>
       );

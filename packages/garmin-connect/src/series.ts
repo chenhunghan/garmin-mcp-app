@@ -417,16 +417,22 @@ export type TrendDirection = "up" | "down" | "flat" | "not enough data";
 export interface SeriesSummary {
   points: number;
   latest?: SeriesPoint;
-  /** Mean of the first / last 7 days of data (daily), or first / last week (weekly) */
+  /** Mean of the first 7 days of data (daily), or the first week (weekly) */
   start?: number;
+  /** Current level: mean of the last 7 days of data (daily), or the latest week (weekly) */
   end?: number;
   min?: { date: string; value: number };
   max?: { date: string; value: number };
+  /** Mean of every point in the range */
   mean?: number;
-  /** end − start */
-  change?: number;
-  /** (end − start) / start × 100, null when start is 0 */
-  changePct?: number | null;
+  /**
+   * end − mean: the current level against the period's average. The headline
+   * comparison — not end − start, because the first days/weeks of a range are
+   * often unrepresentative (a new watch still learning, load ramping from 0).
+   */
+  vsMean?: number;
+  /** vsMean / mean × 100; null when the mean is near zero relative to the values */
+  vsMeanPct?: number | null;
   /**
    * Direction of the least-squares fit over the whole range; "flat" when the
    * fitted change is under 3% of the mean
@@ -491,8 +497,11 @@ export function summarizeSeries(
     min: { date: minP.date, value: minP.value },
     max: { date: maxP.date, value: maxP.value },
     mean: r(avg),
-    change: r(end - start),
-    changePct: start === 0 ? null : Math.round(((end - start) / start) * 1000) / 10,
+    vsMean: r(end - avg),
+    vsMeanPct:
+      Math.abs(avg) < 0.1 * Math.max(Math.abs(minP.value), Math.abs(maxP.value)) || avg === 0
+        ? null
+        : Math.round(((end - avg) / Math.abs(avg)) * 1000) / 10,
     trend,
   };
 }

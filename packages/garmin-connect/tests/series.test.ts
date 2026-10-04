@@ -231,7 +231,7 @@ describe("shaping", () => {
 });
 
 describe("summarizeSeries", () => {
-  it("compares the first and last 7 days of daily data", () => {
+  it("compares the last 7 days of daily data with the period's average", () => {
     // 28 days: first week all 50, last week all 45, decreasing in between
     const pts = daily(28, (i) => (i < 7 ? 50 : i >= 21 ? 45 : 48));
     const s = summarizeSeries(pts, "daily", 0);
@@ -239,9 +239,9 @@ describe("summarizeSeries", () => {
       points: 28,
       start: 50,
       end: 45,
-      change: -5,
-      changePct: -10,
       mean: 47.8,
+      vsMean: -2.7, // 45 − 47.75
+      vsMeanPct: -5.8,
       min: { value: 45, date: addDays(END, -6) },
       max: { value: 50, date: addDays(END, -27) },
       trend: "down",
@@ -249,7 +249,7 @@ describe("summarizeSeries", () => {
     expect(s.latest).toEqual({ date: END, value: 45 });
   });
 
-  it("uses first and last points for weekly data", () => {
+  it("uses the first and latest week for weekly data", () => {
     const pts = [
       { date: "2026-01-05", value: 40 },
       { date: "2026-01-12", value: 42 },
@@ -259,8 +259,9 @@ describe("summarizeSeries", () => {
     expect(summarizeSeries(pts, "weekly")).toMatchObject({
       start: 40,
       end: 50,
-      change: 10,
-      changePct: 25,
+      mean: 44,
+      vsMean: 6,
+      vsMeanPct: 13.6,
       trend: "up",
     });
   });
@@ -281,13 +282,27 @@ describe("summarizeSeries", () => {
     expect(summarizeSeries([], "daily")).toEqual({ points: 0, trend: "not enough data" });
   });
 
-  it("reports a null percentage when the start is zero", () => {
+  it("reports no percentage when the average is near zero", () => {
+    const s = summarizeSeries(
+      daily(14, (i) => (i < 7 ? -10 : 10)),
+      "daily",
+    );
+    expect(s).toMatchObject({ mean: 0, vsMean: 10, vsMeanPct: null });
     expect(
       summarizeSeries(
         daily(14, (i) => (i < 7 ? 0 : 10)),
         "daily",
-      ).changePct,
-    ).toBeNull();
+      ).vsMeanPct,
+    ).toBe(100);
+  });
+
+  it("isn't thrown by an unrepresentative first week", () => {
+    // Load ramping up from ~0 in the first week, then steady around 400
+    const pts = daily(28, (i) => (i < 7 ? 10 * i : 400));
+    const s = summarizeSeries(pts, "daily", 0);
+    expect(s.start).toBe(30);
+    expect(s.end).toBe(400);
+    expect(s.vsMeanPct).toBeLessThan(40); // vs average, not +1,233% vs the first week
   });
 });
 

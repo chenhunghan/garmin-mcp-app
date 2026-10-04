@@ -27,8 +27,8 @@ interface Summary {
   min?: { date: string; value: number };
   max?: { date: string; value: number };
   mean?: number;
-  change?: number;
-  changePct?: number | null;
+  vsMean?: number;
+  vsMeanPct?: number | null;
   trend: "up" | "down" | "flat" | "not enough data";
 }
 
@@ -54,12 +54,13 @@ interface DashboardData {
 
 type DashboardArgs = ToolArgs & { metrics?: string[]; range?: RangeKey };
 
-const RANGES: { key: RangeKey; label: string; weeks: number; long: string }[] = [
-  { key: "4w", label: "4w", weeks: 4, long: "4 weeks" },
-  { key: "12w", label: "12w", weeks: 12, long: "12 weeks" },
-  { key: "26w", label: "6m", weeks: 26, long: "6 months" },
-  { key: "52w", label: "1y", weeks: 52, long: "year" },
+const RANGES: { key: RangeKey; label: string; weeks: number; long: string; adj: string }[] = [
+  { key: "4w", label: "4w", weeks: 4, long: "4 weeks", adj: "4-week" },
+  { key: "12w", label: "12w", weeks: 12, long: "12 weeks", adj: "12-week" },
+  { key: "26w", label: "6m", weeks: 26, long: "6 months", adj: "6-month" },
+  { key: "52w", label: "1y", weeks: 52, long: "year", adj: "1-year" },
 ];
+const rangeAdj = (range: RangeKey) => RANGES.find((r) => r.key === range)!.adj;
 const DEFAULT_METRICS = ["restingHR", "hrv", "vo2max", "sleepScore"];
 const MAX_METRICS = 4;
 
@@ -263,8 +264,6 @@ function Panel({
     8 + 6.5 * Math.max(...yTicks.map((t) => fmt(t, tickDecimals).length)),
   );
   const title = series.unit ? `${series.label} · ${series.unit}` : series.label;
-  const deltaBaseline =
-    series.granularity === "weekly" ? "first vs last week" : "first vs last 7 days";
 
   return (
     <section className="flex min-w-0 flex-col gap-1 rounded-lg border border-border/50 p-3">
@@ -282,7 +281,7 @@ function Panel({
         <>
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className="text-2xl font-semibold leading-none">
-              {fmt(s.latest!.value, d)}
+              {fmt(s.end!, d)}
               {series.unit && (
                 <span className="ml-1 text-sm font-normal text-muted-foreground">
                   {series.unit}
@@ -290,17 +289,18 @@ function Panel({
               )}
             </span>
             <span className="text-xs text-muted-foreground">
-              {series.granularity === "weekly" ? "week of " : ""}
-              {shortDate(s.latest!.date)}
+              {series.granularity === "weekly"
+                ? `week of ${shortDate(s.latest!.date)}`
+                : `last 7 days to ${shortDate(s.latest!.date)}`}
             </span>
           </div>
-          {s.change !== undefined && s.points > 1 && (
+          {s.vsMean !== undefined && s.mean !== undefined && s.points > 1 && (
             <div className="text-xs text-muted-foreground">
               <span className="font-medium text-foreground">
-                {withUnit(signed(s.change, d), series.unit)}
-                {s.changePct != null && ` (${signed(s.changePct)}%)`}
+                {withUnit(signed(s.vsMean, d), series.unit)}
+                {s.vsMeanPct != null && ` (${signed(s.vsMeanPct)}%)`}
               </span>{" "}
-              {deltaBaseline}
+              vs {rangeAdj(range)} avg {fmt(s.mean, d)}
             </div>
           )}
           <ChartContainer
@@ -309,7 +309,7 @@ function Panel({
             role="img"
             aria-label={`${series.label} from ${longDate(startDate)} to ${longDate(endDate)}: ${
               s.start !== undefined && s.end !== undefined
-                ? `${fmt(s.start, d)} to ${fmt(s.end, d)} ${series.unit}, trend ${s.trend}`
+                ? `now ${fmt(s.end, d)} ${series.unit} vs average ${fmt(s.mean ?? s.end, d)}, range ${fmt(s.min!.value, d)} to ${fmt(s.max!.value, d)}, trend ${s.trend}`
                 : "not enough data"
             }`}
           >
@@ -484,54 +484,70 @@ function DashboardTable({ data }: { data: DashboardData }) {
 
 // ── Text for Claude ───────────────────────────────────────────────────────
 
-function metricSentence(m: MetricSeries): string {
+const ready = (m: MetricSeries) =>
+  !m.error && m.summary.points > 0 && m.summary.end !== undefined && m.summary.mean !== undefined;
+
+/** "last 7 days to Oct 4" / "week of Sep 28": what the current value covers. */
+function currentSpan(m: MetricSeries): string {
+  const d = shortDate(m.summary.latest!.date);
+  return m.granularity === "weekly" ? `week of ${d}` : `last 7 days to ${d}`;
+}
+
+function metricSentence(m: MetricSeries, range: RangeKey): string {
   const d = DECIMALS[m.metric] ?? 0;
   const s = m.summary;
   if (m.error) return `${m.label}: couldn't load`;
-  if (!s.points || s.start === undefined || s.end === undefined) return `${m.label}: no data`;
-  const pct = s.changePct != null ? `${signed(s.changePct)}%; ` : "";
-  return `${m.label} ${fmt(s.start, d)}→${withUnit(fmt(s.end, d), m.unit)} (${pct}fitted trend over the range: ${s.trend})`;
+  if (!ready(m)) return `${m.label}: no data`;
+  const pct = s.vsMeanPct != null ? `, ${signed(s.vsMeanPct)}%` : "";
+  const firstSpan = m.granularity === "weekly" ? "first week" : "first 7 days";
+  return (
+    `${m.label} now ${withUnit(fmt(s.end!, d), m.unit)} (${currentSpan(m)}) vs ` +
+    `${rangeAdj(range)} avg ${fmt(s.mean!, d)} (${signed(s.vsMean!, d)}${pct}); ` +
+    `range ${fmt(s.min!.value, d)}–${fmt(s.max!.value, d)}; ${firstSpan} ${fmt(s.start!, d)}; ` +
+    `fitted trend ${s.trend}`
+  );
 }
 
 function dashboardContext(data: DashboardData): string {
-  return `Performance dashboard, ${periodPhrase(data.range, data.endDate)} (${longDate(
-    data.startDate,
-  )} – ${longDate(data.endDate)}, ${data.granularity} points; start/end = first/last ${
-    data.granularity === "weekly" ? "week" : "7-day average"
-  }): ${data.metrics.map(metricSentence).join("; ")}.`;
+  const head =
+    `Performance dashboard, ${periodPhrase(data.range, data.endDate)} ` +
+    `(${longDate(data.startDate)} – ${longDate(data.endDate)}, ${data.granularity} points). ` +
+    "Per metric: current level vs the period's average, min–max, the level at the start " +
+    "(often unrepresentative, e.g. a new watch), fitted trend.";
+  return `${head} ${data.metrics.map((m) => metricSentence(m, data.range)).join("; ")}.`;
 }
 
 function questions(data: DashboardData): string[] {
   const period = periodPhrase(data.range, data.endDate);
-  const ok = data.metrics.filter(
-    (m) => !m.error && m.summary.start !== undefined && m.summary.end !== undefined,
-  );
-  const describe = (m: MetricSeries) => {
-    const d = DECIMALS[m.metric] ?? 0;
-    return `${PHRASE[m.metric] ?? m.label} went from ${fmt(m.summary.start!, d)} to ${withUnit(
-      fmt(m.summary.end!, d),
-      m.unit,
-    )}`;
-  };
+  const adj = rangeAdj(data.range);
+  const ok = data.metrics.filter(ready);
+  const name = (m: MetricSeries) => PHRASE[m.metric] ?? m.label;
+  const now = (m: MetricSeries) => withUnit(fmt(m.summary.end!, DECIMALS[m.metric] ?? 0), m.unit);
+  const avg = (m: MetricSeries) => fmt(m.summary.mean!, DECIMALS[m.metric] ?? 0);
   const out: string[] = [];
   if (ok.length >= 2) {
+    const [a, b] = ok as [MetricSeries, MetricSeries];
     out.push(
-      `My ${describe(ok[0]!)} over ${period} while my ${describe(ok[1]!)} — what does that say about my fitness?`,
+      `Over ${period} my ${name(a)} averaged ${avg(a)} and is now ${now(a)}, while my ` +
+        `${name(b)} averaged ${avg(b)} and is now ${now(b)} — what does that say about my fitness?`,
     );
   }
   const biggest = [...ok]
-    .filter((m) => m.summary.changePct != null)
-    .sort((a, b) => Math.abs(b.summary.changePct!) - Math.abs(a.summary.changePct!))[0];
-  if (biggest && Math.abs(biggest.summary.changePct!) >= 3) {
-    const pct = Math.round(Math.abs(biggest.summary.changePct!));
-    const dir = biggest.summary.changePct! > 0 ? "rise" : "drop";
+    .filter((m) => m.summary.vsMeanPct != null)
+    .sort((x, y) => Math.abs(y.summary.vsMeanPct!) - Math.abs(x.summary.vsMeanPct!))[0];
+  if (biggest && Math.abs(biggest.summary.vsMeanPct!) >= 5) {
+    const pct = Math.round(Math.abs(biggest.summary.vsMeanPct!));
+    const dir = biggest.summary.vsMeanPct! > 0 ? "above" : "below";
     out.push(
-      `Why did my ${PHRASE[biggest.metric] ?? biggest.label} ${dir} ${pct}% between ${longDate(
-        data.startDate,
-      )} and ${longDate(data.endDate)}?`,
+      `Why is my ${name(biggest)} ${pct}% ${dir} my ${adj} average ` +
+        `(${now(biggest)} in the ${currentSpan(biggest)}, vs ${avg(biggest)})?`,
     );
   } else if (ok.length === 1) {
-    out.push(`My ${describe(ok[0]!)} over ${period} — is that a good trend?`);
+    const m = ok[0]!;
+    out.push(
+      `My ${name(m)} is ${now(m)} (${currentSpan(m)}), close to my ${adj} average of ` +
+        `${avg(m)} — how should I read that?`,
+    );
   }
   return out.slice(0, 2);
 }

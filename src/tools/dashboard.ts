@@ -52,7 +52,7 @@ export function registerDashboardTools(server: McpServer, resourceUri: string) {
 
 Metrics (max 4): restingHR, hrv (nightly avg, with Garmin's baseline band), vo2max, sleepScore, sleepDuration (h), steps (per day), stress (avg), bodyBattery (daily high), intensityMinutes (weekly, vigorous counted double), trainingLoad (acute load with Garmin's optimal range), weight (kg, only if the user weighs in). Points are daily for 4w/12w and weekly means for 26w/52w.
 
-Each metric has a summary: start/end (means of the first/last 7 days, or first/last week), min/max with dates, mean, change (absolute and %), and trend (direction of a least-squares fit; "flat" = fitted change under 3% of the mean). The chart only shows the data: interpret it for the user — what changed, how the metrics relate (e.g. HRV vs resting HR vs training load vs sleep), and gaps in the data. Don't over-read small changes.`,
+Each metric has a summary: end = current level (mean of the last 7 days, or the latest week), mean = the period's average, vsMean/vsMeanPct = current level vs that average (the headline comparison; % omitted when the average is near zero), min/max with dates, start = the first 7 days/week (often unrepresentative, e.g. a new watch still calibrating or load ramping up from zero, so don't quote start→end percentages), and trend (direction of a least-squares fit; "flat" = fitted change under 3% of the mean). The chart only shows the data: interpret it for the user — what changed, how the metrics relate (e.g. HRV vs resting HR vs training load vs sleep), and gaps in the data. Don't over-read small changes.`,
       inputSchema: z.object({
         metrics: z
           .array(z.enum(METRIC_KEYS))

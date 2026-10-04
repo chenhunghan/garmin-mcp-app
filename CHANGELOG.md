@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.5.0...garmin-mcp-app-v0.5.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* **deps:** bump fast-uri, vite, hono and other dependencies ([#14](https://github.com/chenhunghan/garmin-mcp-app/issues/14)) ([1fc3d87](https://github.com/chenhunghan/garmin-mcp-app/commit/1fc3d8705b9b8445c2e80f352c60f9dd1292fb34))
+
 ## [0.5.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.4.0...garmin-mcp-app-v0.5.0) (2026-10-04)
 
 

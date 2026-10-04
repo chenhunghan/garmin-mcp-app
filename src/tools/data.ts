@@ -270,21 +270,14 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       withAuth(async () => {
         const client = getClient();
 
-        // Compute relative dates
-        const refDate = new Date(date + "T00:00:00");
-        const fmt = (d: Date) => d.toISOString().slice(0, 10);
-
-        const days7Ago = new Date(refDate);
-        days7Ago.setDate(days7Ago.getDate() - 7);
-        const start7 = fmt(days7Ago);
-
-        const days14Ago = new Date(refDate);
-        days14Ago.setDate(days14Ago.getDate() - 14);
-        const start14 = fmt(days14Ago);
-
-        const days30Ago = new Date(refDate);
-        days30Ago.setDate(days30Ago.getDate() - 30);
-        const start30 = fmt(days30Ago);
+        // Compute relative dates in UTC: a local-midnight Date printed with
+        // toISOString() lands on the previous day east of UTC
+        const refDate = new Date(date + "T00:00:00Z");
+        const daysAgo = (n: number) =>
+          new Date(refDate.getTime() - n * 86_400_000).toISOString().slice(0, 10);
+        const start7 = daysAgo(7);
+        const start14 = daysAgo(14);
+        const start30 = daysAgo(30);
 
         // Fetch all data in parallel
         const [
@@ -322,18 +315,17 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
         // Days since last run
         let daysSinceLastRun: number | null = null;
         if (recentRuns.length > 0) {
-          const lastRunDate = new Date(recentRuns[0].startTimeLocal as string);
-          daysSinceLastRun = Math.floor(
-            (refDate.getTime() - lastRunDate.getTime()) / (1000 * 60 * 60 * 24),
+          const lastRunDay = (recentRuns[0].startTimeLocal as string).slice(0, 10);
+          daysSinceLastRun = Math.round(
+            (refDate.getTime() - new Date(lastRunDay + "T00:00:00Z").getTime()) / 86_400_000,
           );
         }
 
-        // Weekly volume: runs in the last 7 days
-        const weekCutoff = days7Ago.getTime();
-        const runsThisWeek = runningActivities.filter((a) => {
-          const t = new Date(a.startTimeLocal as string).getTime();
-          return t >= weekCutoff;
-        });
+        // Weekly volume: runs in the last 7 days. startTimeLocal is wall-clock
+        // time ("YYYY-MM-DD HH:mm:ss"), so compare its date part as a string
+        const runsThisWeek = runningActivities.filter(
+          (a) => (a.startTimeLocal as string).slice(0, 10) >= start7,
+        );
         const weeklyVolume = {
           distanceKm: runsThisWeek.reduce(
             (sum, a) => sum + ((a.distance as number) ?? 0) / 1000,

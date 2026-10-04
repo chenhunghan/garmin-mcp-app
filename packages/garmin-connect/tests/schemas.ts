@@ -868,6 +868,24 @@ export const responseSchemas: Record<string, z.ZodType> = {
       biometricSourceType: z.string().nullable(),
     })
     .nullable(),
+  dailyStressStats: z
+    .array(
+      z
+        .looseObject({
+          calendarDate: z.string().nullable(),
+          values: z
+            .looseObject({
+              highStressDuration: z.number().nullable(),
+              lowStressDuration: z.number().nullable(),
+              overallStressLevel: z.number().nullable(),
+              restStressDuration: z.number().nullable(),
+              mediumStressDuration: z.number().nullable(),
+            })
+            .nullable(),
+        })
+        .nullable(),
+    )
+    .nullable(),
   deviceLastUsed: z
     .looseObject({
       userDeviceId: z.number().nullable(),
@@ -1502,6 +1520,36 @@ export const responseSchemas: Record<string, z.ZodType> = {
       restingHeartRate: z.number().nullable(),
     })
     .nullable(),
+  sleepStats: z
+    .looseObject({
+      overallStats: z
+        .looseObject({
+          averageLocalSleepStartTime: z.number().nullable(),
+          averageRespiration: z.number().nullable(),
+          averageBodyBatteryChange: z.number().nullable(),
+          averageSleepScore: z.number().nullable(),
+          averageLocalSleepEndTime: z.number().nullable(),
+          averageSleepSeconds: z.number().nullable(),
+          averageRestingHeartRate: z.number().nullable(),
+          averageSpO2: z.unknown().optional(),
+          meanAvgHeartRate: z.unknown().optional(),
+          averageSkinTempF: z.unknown().optional(),
+          averageSkinTempC: z.unknown().optional(),
+          averageSleepNeed: z.unknown().optional(),
+        })
+        .nullable(),
+      individualStats: z
+        .array(
+          z
+            .looseObject({
+              calendarDate: z.string().nullable(),
+              values: z.looseObject({}).nullable(),
+            })
+            .nullable(),
+        )
+        .nullable(),
+    })
+    .nullable(),
   spo2: z
     .looseObject({
       userProfilePK: z.number().nullable(),
@@ -1714,6 +1762,47 @@ export const responseSchemas: Record<string, z.ZodType> = {
               recordedDevices: z.array(z.unknown()).nullable(),
               showSelector: z.boolean().nullable(),
               lastPrimarySyncDate: z.string().nullable(),
+            })
+            .nullable(),
+          successful: z.boolean().nullable(),
+          errorMessage: z.unknown().optional(),
+        })
+        .nullable(),
+    })
+    .nullable(),
+  trainingStatusRange: z
+    .looseObject({
+      vo2MaxWeeklyStatistics: z
+        .looseObject({
+          requestUrl: z.string().nullable(),
+          statusCode: z.number().nullable(),
+          headers: z.looseObject({}).nullable(),
+          payload: z
+            .looseObject({
+              userProfileId: z.number().nullable(),
+              statisticsStartDate: z.string().nullable(),
+              statisticsEndDate: z.string().nullable(),
+              allMetrics: z.looseObject({}).nullable(),
+              groupedMetrics: z.unknown().optional(),
+            })
+            .nullable(),
+          successful: z.boolean().nullable(),
+          errorMessage: z.unknown().optional(),
+        })
+        .nullable(),
+      weeklyTrainingStatus: z
+        .looseObject({
+          requestUrl: z.string().nullable(),
+          statusCode: z.number().nullable(),
+          headers: z.looseObject({}).nullable(),
+          payload: z
+            .looseObject({
+              userId: z.number().nullable(),
+              fromCalendarDate: z.string().nullable(),
+              toCalendarDate: z.string().nullable(),
+              showSelector: z.boolean().nullable(),
+              recordedDevices: z.array(z.unknown()).nullable(),
+              reportData: z.looseObject({}).nullable(),
             })
             .nullable(),
           successful: z.boolean().nullable(),

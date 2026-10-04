@@ -1,0 +1,561 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/userstats-service/wellness/daily/test-user?fromDate=2026-09-06&untilDate=2026-10-03&metricId=60",
+    "status": 200,
+    "body": {
+      "userProfileId": 10000001,
+      "statisticsStartDate": "2026-09-06",
+      "statisticsEndDate": "2026-10-03",
+      "allMetrics": {
+        "metricsMap": {
+          "WELLNESS_RESTING_HEART_RATE": [
+            {
+              "value": 60,
+              "calendarDate": "2026-09-06"
+            },
+            {
+              "value": 60,
+              "calendarDate": "2026-09-07"
+            },
+            {
+              "value": 60,
+              "calendarDate": "2026-09-08"
+            },
+            {
+              "value": 60,
+              "calendarDate": "2026-09-09"
+            },
+            {
+              "value": 60,
+              "calendarDate": "2026-09-10"
+            },
+            {
+              "value": 60,
+              "calendarDate": "2026-09-11"
+            },
+            {
+              "value": 60,
+              "calendarDate": "2026-09-12"
+            },
+            {
+              "value": 59,
+              "calendarDate": "2026-09-13"
+            },
+            {
+              "value": 59,
+              "calendarDate": "2026-09-14"
+            },
+            {
+              "value": 59,
+              "calendarDate": "2026-09-15"
+            },
+            {
+              "value": 59,
+              "calendarDate": "2026-09-16"
+            },
+            {
+              "value": 59,
+              "calendarDate": "2026-09-17"
+            },
+            {
+              "value": 59,
+              "calendarDate": "2026-09-18"
+            },
+            {
+              "value": 59,
+              "calendarDate": "2026-09-19"
+            },
+            {
+              "value": 58,
+              "calendarDate": "2026-09-20"
+            },
+            {
+              "value": 58,
+              "calendarDate": "2026-09-21"
+            },
+            {
+              "value": 58,
+              "calendarDate": "2026-09-22"
+            },
+            {
+              "value": 58,
+              "calendarDate": "2026-09-23"
+            },
+            {
+              "value": 58,
+              "calendarDate": "2026-09-24"
+            },
+            {
+              "value": 58,
+              "calendarDate": "2026-09-25"
+            },
+            {
+              "value": 58,
+              "calendarDate": "2026-09-26"
+            },
+            {
+              "value": 57,
+              "calendarDate": "2026-09-27"
+            },
+            {
+              "value": 57,
+              "calendarDate": "2026-09-28"
+            },
+            {
+              "value": 57,
+              "calendarDate": "2026-09-29"
+            },
+            {
+              "value": 57,
+              "calendarDate": "2026-09-30"
+            },
+            {
+              "value": 57,
+              "calendarDate": "2026-10-01"
+            },
+            {
+              "value": 57,
+              "calendarDate": "2026-10-02"
+            },
+            {
+              "value": 57,
+              "calendarDate": "2026-10-03"
+            }
+          ]
+        }
+      },
+      "groupedMetrics": null
+    }
+  },
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/hrv-service/hrv/daily/2026-09-06/2026-10-03",
+    "status": 200,
+    "body": {
+      "hrvSummaries": [
+        {
+          "calendarDate": "2026-09-06",
+          "weeklyAvg": 40,
+          "lastNightAvg": 40,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-06T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-07",
+          "weeklyAvg": 40,
+          "lastNightAvg": 41,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-07T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-08",
+          "weeklyAvg": 40,
+          "lastNightAvg": 40,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-08T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-09",
+          "weeklyAvg": 40,
+          "lastNightAvg": 41,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-09T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-10",
+          "weeklyAvg": 40,
+          "lastNightAvg": 40,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-10T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-11",
+          "weeklyAvg": 40,
+          "lastNightAvg": 41,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-11T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-12",
+          "weeklyAvg": 40,
+          "lastNightAvg": 40,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-12T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-13",
+          "weeklyAvg": 42,
+          "lastNightAvg": 43,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-13T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-14",
+          "weeklyAvg": 42,
+          "lastNightAvg": 42,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-14T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-15",
+          "weeklyAvg": 42,
+          "lastNightAvg": 43,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-15T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-16",
+          "weeklyAvg": 42,
+          "lastNightAvg": 42,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-16T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-17",
+          "weeklyAvg": 42,
+          "lastNightAvg": 43,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-17T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-18",
+          "weeklyAvg": 42,
+          "lastNightAvg": 42,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-18T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-19",
+          "weeklyAvg": 42,
+          "lastNightAvg": 43,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-19T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-20",
+          "weeklyAvg": 44,
+          "lastNightAvg": 44,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-20T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-21",
+          "weeklyAvg": 44,
+          "lastNightAvg": 45,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-21T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-22",
+          "weeklyAvg": 44,
+          "lastNightAvg": 44,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-22T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-23",
+          "weeklyAvg": 44,
+          "lastNightAvg": 45,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-23T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-24",
+          "weeklyAvg": 44,
+          "lastNightAvg": 44,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-24T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-25",
+          "weeklyAvg": 44,
+          "lastNightAvg": 45,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-25T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-26",
+          "weeklyAvg": 44,
+          "lastNightAvg": 44,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-26T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-27",
+          "weeklyAvg": 46,
+          "lastNightAvg": 47,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-27T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-28",
+          "weeklyAvg": 46,
+          "lastNightAvg": 46,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-28T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-29",
+          "weeklyAvg": 46,
+          "lastNightAvg": 47,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-29T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-09-30",
+          "weeklyAvg": 46,
+          "lastNightAvg": 46,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-09-30T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-10-01",
+          "weeklyAvg": 46,
+          "lastNightAvg": 47,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-10-01T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-10-02",
+          "weeklyAvg": 46,
+          "lastNightAvg": 46,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-10-02T06:00:00.0"
+        },
+        {
+          "calendarDate": "2026-10-03",
+          "weeklyAvg": 46,
+          "lastNightAvg": 47,
+          "lastNight5MinHigh": 60,
+          "baseline": {
+            "lowUpper": 30,
+            "balancedLow": 35,
+            "balancedUpper": 50,
+            "markerValue": 0.5
+          },
+          "status": "BALANCED",
+          "feedbackPhrase": "SAMPLE",
+          "createTimeStamp": "2026-10-03T06:00:00.0"
+        }
+      ],
+      "userProfilePk": 10000001
+    }
+  }
+]

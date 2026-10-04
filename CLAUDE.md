@@ -354,6 +354,10 @@ All tools share a single `ui://garmin-mcp/app.html` resource. The app uses `stru
    - `anchorSuffix(args, "range" | "day")` / `rangeLabel(label, args)` — say which day is shown when it isn't today ("Sleep · to Sun 20 Sept", "7 days" instead of "Last 7 days")
    - `resolveActivity(callTool, args)` (`src/lib/activity.ts`) — the requested activity, else the latest; includes the date, since Garmin auto-names many activities identically
 
+4. **Expensive views render the tool result itself** — `app.tsx` also parses the result's text into `toolData`; `DashboardView` gets it as `data` so opening the panel doesn't repeat Claude's Garmin requests, and only calls the tool again when the user changes the filters (missing metrics only, cached per range).
+
+Long-range series (`packages/garmin-connect/src/series.ts`, used by `show-performance-dashboard`): `fetchMetricSeries` returns `{ date, value, low?, high? }[]` + a summary per metric, daily for ≤ 12 weeks and weekly beyond. Verified limits: HRV, resting HR, VO₂ max, training status and weight answer a whole year in one request; sleep stats, body battery, daily steps/stress need 28-day pages (Garmin answers 400 beyond); there is no weekly sleep endpoint.
+
 Dates: use `formatDate`/`parseDate` from `src/lib/dates.ts` (local calendar days). Never `toISOString().slice(0, 10)` — it prints UTC and lands on the previous day east of UTC.
 
 ### Adding a new chart

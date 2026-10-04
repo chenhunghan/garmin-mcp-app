@@ -285,6 +285,31 @@ export class GarminClient {
     return this.connectapi(`/usersummary-service/stats/im/weekly/${startDate}/${endDate}`);
   }
 
+  // ── Long-range series (see series.ts for paging) ────
+
+  /**
+   * Nightly sleep stats (score, duration, stages, overnight HRV) per day.
+   * Garmin rejects ranges over 28 days (400).
+   */
+  async getSleepStats(startDate: string, endDate: string): Promise<unknown> {
+    return this.connectapi(`/sleep-service/stats/sleep/daily/${startDate}/${endDate}`);
+  }
+
+  /** Average stress per day. Max 28 days per request. */
+  async getDailyStressStats(startDate: string, endDate: string): Promise<unknown> {
+    return this.connectapi(`/usersummary-service/stats/stress/daily/${startDate}/${endDate}`);
+  }
+
+  /**
+   * Training status history: one row per day (despite the path) with acute
+   * load and its optimal range, per device. A year fits in one request.
+   */
+  async getTrainingStatusRange(startDate: string, endDate: string): Promise<unknown> {
+    return this.connectapi(
+      `/mobile-gateway/usersummary/trainingstatus/weekly/${startDate}/${endDate}`,
+    );
+  }
+
   // ── Performance Metrics ─────────────────────────────
 
   async getEnduranceScore(startDate: string, endDate?: string): Promise<unknown> {

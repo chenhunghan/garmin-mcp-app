@@ -1,7 +1,12 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import { GarminAuthError, GarminTokenExpiredError } from "garmin-connect";
+import {
+  buildWorkout,
+  GarminAuthError,
+  GarminTokenExpiredError,
+  type WorkoutSpec,
+} from "garmin-connect";
 import { getClient } from "../garmin.js";
 
 type ToolResult = {
@@ -84,6 +89,88 @@ const workoutBodySchema = {
     .describe("Workout object following Garmin workout JSON structure"),
 };
 
+// ── Structured workout spec (built into Garmin JSON by buildWorkout) ──
+
+const durationSchema = z
+  .union([
+    z.object({ seconds: z.number().positive().describe("Step length in seconds") }),
+    z.object({ meters: z.number().positive().describe("Step length in meters") }),
+    z.literal("lap.button"),
+  ])
+  .describe(
+    'How the step ends: { seconds: 600 }, { meters: 1000 }, or "lap.button" (until the user presses lap). Default "lap.button".',
+  );
+
+const paceSchema = z
+  .string()
+  .regex(/^\d{1,2}:[0-5]\d$/, 'min:sec per km, e.g. "4:30"')
+  .describe('Pace per km as min:sec, e.g. "4:30"');
+
+const targetSchema = z
+  .union([
+    z.object({ hrZone: z.number().int().min(1).max(5).describe("Heart rate zone 1-5") }),
+    z.object({
+      pace: z
+        .object({ fast: paceSchema, slow: paceSchema })
+        .describe('Pace range per km, e.g. { fast: "4:30", slow: "4:50" }'),
+    }),
+  ])
+  .describe("Optional intensity target: an HR zone or a pace range. Omit for no target.");
+
+const simpleStepSchema = z.object({
+  type: z
+    .enum(["warmup", "run", "recovery", "rest", "cooldown", "other"])
+    .describe(
+      'Step kind. "run" is a work interval or the main set; "recovery" is an easy jog between reps.',
+    ),
+  duration: durationSchema.optional(),
+  target: targetSchema.optional(),
+  description: z.string().optional().describe("Optional note shown on the watch"),
+});
+
+// Repeats nest up to two levels (enough for ladders and sets), which keeps the
+// JSON schema free of recursive $refs
+const innerRepeatSchema = z.object({
+  repeat: z.number().int().min(1).describe("Number of times to repeat the steps"),
+  steps: z.array(simpleStepSchema).min(1),
+});
+const repeatSchema = z.object({
+  repeat: z.number().int().min(1).describe("Number of times to repeat the steps"),
+  steps: z
+    .array(z.union([simpleStepSchema, innerRepeatSchema]))
+    .min(1)
+    .describe("Steps inside the repeat (e.g. a run and a recovery)"),
+});
+
+const structuredWorkoutSchema = {
+  name: z.string().min(1).describe('Workout name, e.g. "Easy 45 min" or "5x1km @ 4:00"'),
+  sport: z
+    .enum([
+      "running",
+      "cycling",
+      "swimming",
+      "strength_training",
+      "cardio_training",
+      "yoga",
+      "pilates",
+      "hiit",
+      "other",
+    ])
+    .describe("Sport"),
+  description: z.string().optional().describe("Optional workout description"),
+  steps: z
+    .array(z.union([simpleStepSchema, repeatSchema]))
+    .min(1)
+    .describe(
+      "Steps in order. A step is { type, duration?, target? }; a repeat is { repeat: n, steps: [...] }.",
+    ),
+  scheduleDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .describe("Optional YYYY-MM-DD: also put the workout on the user's Garmin calendar that day"),
+};
+
 export function registerWorkoutTools(server: McpServer, resourceUri: string) {
   registerAppTool(
     server,
@@ -131,7 +218,7 @@ export function registerWorkoutTools(server: McpServer, resourceUri: string) {
     "create-workout",
     {
       title: "Create Workout",
-      description: `Create a new workout on Garmin Connect.
+      description: `Create a workout from raw Garmin workout JSON. Prefer create-structured-workout, which builds this JSON from a simple step list and avoids format mistakes; use this only for something it can't express.
 
 Workout structure:
 - sportType: { sportTypeId: 1, sportTypeKey: 'running' } for running
@@ -158,6 +245,80 @@ Example - 5x1000m intervals:
         { action: "created" },
         (data) => ({ workoutId: (data as { workoutId?: number } | null)?.workoutId }),
       ),
+  );
+
+  registerAppTool(
+    server,
+    "create-structured-workout",
+    {
+      title: "Create Structured Workout",
+      description: `Create a workout on Garmin Connect from a simple step list, and optionally put it on the calendar (scheduleDate). Use this instead of create-workout. The app shows the new workout's steps.
+
+Example: 5x1km intervals on a Tuesday
+{ "name": "5x1km @ 4:00", "sport": "running", "scheduleDate": "2026-10-06",
+  "steps": [
+    { "type": "warmup", "duration": { "seconds": 900 }, "target": { "hrZone": 2 } },
+    { "repeat": 5, "steps": [
+      { "type": "run", "duration": { "meters": 1000 }, "target": { "pace": { "fast": "3:55", "slow": "4:05" } } },
+      { "type": "recovery", "duration": { "seconds": 90 } } ] },
+    { "type": "cooldown", "duration": { "seconds": 600 }, "target": { "hrZone": 1 } } ] }
+
+An easy run is a single { "type": "run", "duration": { "seconds": 2700 }, "target": { "hrZone": 2 } } step. Base targets on the user's own zones and recent paces (get-training-context).`,
+      inputSchema: z.object(structuredWorkoutSchema),
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ scheduleDate, ...spec }) => {
+      let workout;
+      try {
+        workout = buildWorkout(spec as WorkoutSpec);
+      } catch (err) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: `Invalid workout: ${err instanceof Error ? err.message : String(err)}`,
+            },
+          ],
+        };
+      }
+      return withAuth(
+        async () => {
+          const client = getClient();
+          const created = (await client.createWorkout(
+            workout as unknown as Record<string, unknown>,
+          )) as {
+            workoutId?: number;
+            workoutName?: string;
+            estimatedDurationInSecs?: number | null;
+            estimatedDistanceInMeters?: number | null;
+          } | null;
+          const workoutId = created?.workoutId;
+          // A compact answer for Claude; the app fetches the steps itself
+          const result: Record<string, unknown> = {
+            workoutId,
+            workoutName: created?.workoutName ?? workout.workoutName,
+            sport: spec.sport,
+            estimatedDurationInSecs:
+              created?.estimatedDurationInSecs ?? workout.estimatedDurationInSecs ?? null,
+            estimatedDistanceInMeters:
+              created?.estimatedDistanceInMeters ?? workout.estimatedDistanceInMeters ?? null,
+          };
+          if (scheduleDate && workoutId !== undefined) {
+            const scheduled = (await client.scheduleWorkout(workoutId, scheduleDate)) as {
+              workoutScheduleId?: number;
+            } | null;
+            result.scheduled = {
+              date: scheduleDate,
+              workoutScheduleId: scheduled?.workoutScheduleId ?? null,
+            };
+          }
+          return result;
+        },
+        scheduleDate ? { action: "scheduled", date: scheduleDate } : { action: "created" },
+        (data) => ({ workoutId: (data as { workoutId?: number } | null)?.workoutId }),
+      );
+    },
   );
 
   registerAppTool(

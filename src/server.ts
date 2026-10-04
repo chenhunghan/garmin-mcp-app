@@ -9,6 +9,7 @@ import { registerDataTools } from "./tools/data.js";
 import { registerWorkoutTools } from "./tools/workouts.js";
 import { registerInsightTools } from "./tools/insights.js";
 import { registerBriefingTools } from "./tools/briefing.js";
+import { formatLocalDate, mondayOf, registerWeekTools } from "./tools/week.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -49,6 +50,7 @@ export function createServer(version: string) {
   registerWorkoutTools(server, resourceUri);
   registerInsightTools(server);
   registerBriefingTools(server, resourceUri);
+  registerWeekTools(server, resourceUri);
 
   // --- Prompts ---
 
@@ -159,6 +161,74 @@ The app already shows every number, so don't list them all.`,
         },
       ],
     }),
+  );
+
+  server.registerPrompt(
+    "plan-training-week",
+    {
+      title: "Plan My Training Week",
+      description:
+        "Design a week of training from your Garmin data, then create and schedule the workouts on your Garmin calendar",
+      argsSchema: z.object({
+        startDate: z
+          .string()
+          .describe("Any day of the week to plan (YYYY-MM-DD); defaults to the coming week")
+          .optional(),
+        goal: z
+          .string()
+          .describe("What you're training for, e.g. 'half marathon in 8 weeks', 'base building'")
+          .optional(),
+      }),
+    },
+    ({ startDate, goal }) => {
+      // Default: this week if today is Monday, else the coming week
+      const today = new Date();
+      const todayStr = formatLocalDate(today);
+      const weekStart = startDate
+        ? mondayOf(startDate)
+        : today.getDay() === 1
+          ? todayStr
+          : mondayOf(
+              formatLocalDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7)),
+            );
+
+      return {
+        description: "Plan your training week",
+        messages: [
+          {
+            role: "user" as const,
+            content: {
+              type: "text" as const,
+              text: `You are an expert endurance coach. Plan my training week starting Monday ${weekStart}, then put it on my Garmin calendar.
+
+## Step 1: Collect data
+Call "get-training-context" with date "${todayStr}" for my recent runs, weekly volume, readiness, HRV, training status, sleep and body battery. Call "show-training-week" with startDate "${weekStart}" if you need to see what's already scheduled or done that week.
+
+## Step 2: Ask what you don't know
+${goal ? `My goal: ${goal}.` : "Ask me for my goal (race and date, base building, getting back after a break, …)."}
+Also ask, unless I already said: which days I can train and how long on each day, my preferred long-run day, and any constraints (injury, terrain, treadmill, other sports). Keep it to one short round of questions.
+
+## Step 3: Design the week
+- 80/20: about 80% of time easy (HR zone 1-2), at most two hard sessions (tempo/threshold/intervals)
+- At least 48 hours between hard sessions; no hard session the day before the long run
+- Long run about 25-30% of the weekly volume
+- Weekly volume at most +10% over my recent weeks; hold or cut volume if readiness is low, HRV is below baseline or training status says overreaching/strained
+- Rest or easy days where I can't train; respect my constraints
+- Targets from my own data: HR zones, recent easy and race paces
+
+## Step 4: Confirm
+Present the week as a compact table (day, session, duration/distance, target) with one line on why it fits my data. Ask me to confirm or adjust. Don't create anything before I confirm.
+
+## Step 5: Create and schedule
+For each session, call "create-structured-workout" with its steps and scheduleDate set to its day. Use warmup / run / recovery / cooldown steps, HR-zone targets for easy running and pace targets for quality work.
+
+## Step 6: Show the week
+Finish with "show-training-week" (startDate "${weekStart}") so I can see the plan, and summarise it in two or three sentences.`,
+            },
+          },
+        ],
+      };
+    },
   );
 
   return server;

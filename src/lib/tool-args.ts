@@ -8,6 +8,7 @@ import { parseDate } from "./dates.ts";
 export interface ToolArgs {
   date?: string;
   endDate?: string;
+  startDate?: string;
   activityId?: string | number;
   workoutId?: string | number;
   limit?: number;

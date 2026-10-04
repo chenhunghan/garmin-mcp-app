@@ -1,0 +1,75 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/calendar-service/year/2026/month/8",
+    "status": 200,
+    "body": {
+      "startDayOfMonth": 1,
+      "numOfDaysInMonth": 30,
+      "numOfDaysInPrevMonth": 31,
+      "month": 8,
+      "year": 2026,
+      "calendarItems": [
+        {
+          "id": 1000000102,
+          "itemType": "activity",
+          "activityTypeId": 1,
+          "title": "Test Run",
+          "date": "2026-09-27",
+          "duration": 3000000,
+          "distance": 1000000,
+          "workoutId": null,
+          "startTimestampLocal": "2026-09-27T08:00:00.0"
+        },
+        {
+          "id": 3000000001,
+          "itemType": "workout",
+          "title": "Easy 45 min",
+          "date": "2026-09-28",
+          "workoutId": 2000000101,
+          "sportTypeKey": "running",
+          "duration": null,
+          "distance": null
+        },
+        {
+          "id": 1000000101,
+          "itemType": "activity",
+          "activityTypeId": 1,
+          "title": "Test Run",
+          "date": "2026-09-28",
+          "duration": 2700000,
+          "distance": 800000,
+          "workoutId": 2000000101,
+          "startTimestampLocal": "2026-09-28T07:00:00.0"
+        },
+        {
+          "id": 1000000005,
+          "itemType": "activity",
+          "activityTypeId": 1,
+          "title": "Test Run",
+          "date": "2026-09-29",
+          "duration": 1800000,
+          "distance": 500000,
+          "workoutId": null,
+          "startTimestampLocal": "2026-09-29T07:00:00.0"
+        },
+        {
+          "id": 4000000001,
+          "itemType": "event",
+          "title": "Test 10K",
+          "date": "2026-09-29"
+        },
+        {
+          "id": 3000000002,
+          "itemType": "workout",
+          "title": "Sample workout",
+          "date": "2026-09-30",
+          "workoutId": 2000000002,
+          "sportTypeKey": "running",
+          "duration": null,
+          "distance": null
+        }
+      ]
+    }
+  }
+]

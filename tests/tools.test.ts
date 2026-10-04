@@ -15,6 +15,7 @@ import {
   loadContext,
 } from "../packages/garmin-connect/tests/helpers/msw.ts";
 import { createServer } from "../src/server.ts";
+import type { TrainingWeek } from "../src/tools/week.ts";
 
 const ctx = loadContext();
 const [year, month] = ctx.date.split("-").map(Number);
@@ -77,6 +78,24 @@ const toolArgs: Record<string, Record<string, unknown>> = {
   "get-goals": {},
   "get-training-plans": {},
   "get-calendar": { year, month },
+  // Synthetic fixtures: week-calendar.json, week-workouts.json
+  "show-training-week": { startDate: ctx.date },
+  "create-structured-workout": {
+    name: "Test intervals",
+    sport: "running",
+    scheduleDate: "2026-10-05",
+    steps: [
+      { type: "warmup", duration: { seconds: 600 }, target: { hrZone: 2 } },
+      {
+        repeat: 4,
+        steps: [
+          { type: "run", duration: { meters: 1000 }, target: { pace: { fast: "4:30", slow: "4:40" } } },
+          { type: "recovery", duration: { seconds: 90 } },
+        ],
+      },
+      { type: "cooldown", duration: "lap.button" },
+    ],
+  },
 };
 
 /** Tools not exercised here, and why. */
@@ -227,6 +246,109 @@ describe("MCP tools", () => {
       arguments: { name: "no such workout", limit: 5 },
     })) as { content: { text: string }[] };
     expect(JSON.parse(none.content[0]!.text)).toEqual([]);
+  });
+
+  it("show-training-week groups the calendar into Monday-Sunday with a summary", async () => {
+    const result = (await client.callTool({
+      name: "show-training-week",
+      arguments: { startDate: ctx.date }, // a Saturday; the week spans September/October
+    })) as {
+      content: { text: string }[];
+      structuredContent?: { view?: string; args?: Record<string, unknown> };
+    };
+    expect(result.structuredContent).toEqual({ view: "week", args: { startDate: "2026-09-28" } });
+    const week = JSON.parse(result.content[0]!.text) as TrainingWeek;
+    expect(week.startDate).toBe("2026-09-28");
+    expect(week.endDate).toBe("2026-10-04");
+    expect(week.days.map((d) => d.weekday)).toEqual([
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ]);
+
+    const [mon, tue, wed] = week.days;
+    // Planned workout with details from get-workout, done by the matching activity
+    expect(mon!.planned).toHaveLength(1);
+    expect(mon!.planned[0]).toMatchObject({
+      workoutId: 2000000101,
+      name: "Easy 45 min",
+      sport: "running",
+      estimatedDurationSecs: 2700,
+      completed: true,
+    });
+    expect(mon!.planned[0]!.steps[0]).toMatchObject({ zoneNumber: 2, endConditionValue: 2700 });
+    // Calendar units: ms → s, cm → m
+    expect(mon!.activities).toEqual([
+      expect.objectContaining({ activityId: 1000000101, durationSecs: 2700, distanceMeters: 8000 }),
+    ]);
+    // The same activity in both months' calendars counts once
+    expect(tue!.activities.filter((a) => a.activityId === 1000000005)).toHaveLength(1);
+    expect(tue!.other).toEqual([{ itemType: "event", title: "Test 10K" }]);
+    expect(wed!.planned[0]).toMatchObject({ workoutId: Number(ctx.workoutId), completed: true });
+    // Sunday before the week is left out
+    expect(week.days.flatMap((d) => d.activities.map((a) => a.activityId))).not.toContain(
+      1000000102,
+    );
+
+    expect(week.summary).toMatchObject({ plannedCount: 2, plannedCompletedCount: 2 });
+    expect(week.summary.activityCount).toBe(week.days.flatMap((d) => d.activities).length);
+    expect(week.summary.plannedDurationSecs).toBeGreaterThanOrEqual(2700);
+  });
+
+  it("create-structured-workout builds, creates and schedules the workout", async () => {
+    const posted: unknown[] = [];
+    const onRequest = async ({ request }: { request: Request }) => {
+      if (request.method === "POST") posted.push(await request.clone().json());
+    };
+    mock.events.on("request:start", onRequest);
+    try {
+      const result = (await client.callTool({
+        name: "create-structured-workout",
+        arguments: toolArgs["create-structured-workout"],
+      })) as {
+        isError?: boolean;
+        content: { text: string }[];
+        structuredContent?: { view?: string; args?: Record<string, unknown> };
+      };
+      expect(result.isError, result.content[0]?.text).toBeFalsy();
+      expect(result.structuredContent).toEqual({
+        view: "workouts",
+        args: { action: "scheduled", date: "2026-10-05", workoutId: 2000000201 },
+      });
+      expect(JSON.parse(result.content[0]!.text)).toMatchObject({
+        workoutId: 2000000201,
+        scheduled: { date: "2026-10-05", workoutScheduleId: 3000000201 },
+      });
+    } finally {
+      mock.events.removeListener("request:start", onRequest);
+    }
+    const [workout, schedule] = posted as [
+      { workoutName: string; workoutSegments: { workoutSteps: { type: string }[] }[] },
+      unknown,
+    ];
+    expect(workout.workoutName).toBe("Test intervals");
+    expect(workout.workoutSegments[0]!.workoutSteps.map((s) => s.type)).toEqual([
+      "ExecutableStepDTO",
+      "RepeatGroupDTO",
+      "ExecutableStepDTO",
+    ]);
+    expect(schedule).toEqual({ date: "2026-10-05" });
+  });
+
+  it("create-structured-workout rejects an invalid spec without calling Garmin", async () => {
+    const result = (await client.callTool({
+      name: "create-structured-workout",
+      arguments: {
+        name: "Bad",
+        sport: "running",
+        steps: [{ type: "run", target: { pace: { fast: "4:30", slow: "4:60" } } }],
+      },
+    })) as { isError?: boolean };
+    expect(result.isError).toBe(true);
   });
 
   it("data-only tools don't open the app UI", async () => {

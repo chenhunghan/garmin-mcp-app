@@ -25,6 +25,7 @@ import type { ToolArgs } from "@/lib/tool-args.ts";
 import { AppActionsContext, type AppActions } from "@/lib/app-actions.tsx";
 import { WorkoutsView } from "./workouts-view.tsx";
 import { BriefingView } from "./briefing-view.tsx";
+import { TrainingWeekView } from "./training-week-view.tsx";
 import "./app.css";
 
 type AuthState = "checking" | "login" | "mfa" | "authenticated";
@@ -151,6 +152,7 @@ const VALID_VIEWS = new Set([
   "splits",
   "workouts",
   "briefing",
+  "week",
 ]);
 
 export function GarminApp() {
@@ -268,6 +270,7 @@ export function GarminApp() {
             "splits",
             "workouts",
             "briefing",
+            "week",
           ]),
         );
       }
@@ -397,6 +400,7 @@ export function GarminApp() {
             {visibleCharts?.has("splits") && <SplitsChart callTool={callTool} args={toolArgs} />}
             {visibleCharts?.has("workouts") && <WorkoutsView callTool={callTool} args={toolArgs} />}
             {visibleCharts?.has("briefing") && <BriefingView callTool={callTool} args={toolArgs} />}
+            {visibleCharts?.has("week") && <TrainingWeekView callTool={callTool} args={toolArgs} />}
           </div>
         </AppActionsContext.Provider>
       );

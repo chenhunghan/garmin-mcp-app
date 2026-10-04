@@ -57,7 +57,7 @@ export async function getOAuth1Token(
       },
     });
   } catch (err) {
-    throw new GarminNetworkError(err instanceof Error ? err.message : "Network request failed");
+    throw GarminNetworkError.fromFetchError(err, url);
   }
 
   if (resp.status === 401) {
@@ -119,7 +119,7 @@ export async function exchangeOAuth2(
       body: new URLSearchParams(data),
     });
   } catch (err) {
-    throw new GarminNetworkError(err instanceof Error ? err.message : "Network request failed");
+    throw GarminNetworkError.fromFetchError(err, url);
   }
 
   if (resp.status === 401) {

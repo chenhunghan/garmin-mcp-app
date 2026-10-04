@@ -7,7 +7,12 @@ import type {
 } from "./types.ts";
 import type { TokenStorage } from "./storage.ts";
 import { FileTokenStorage } from "./storage.ts";
-import { GarminAuthError, GarminError, GarminTokenExpiredError } from "./errors.ts";
+import {
+  GarminAuthError,
+  GarminError,
+  GarminNetworkError,
+  GarminTokenExpiredError,
+} from "./errors.ts";
 import * as sso from "./sso.ts";
 import * as oauth from "./oauth.ts";
 
@@ -287,14 +292,18 @@ export class GarminClient {
     accessToken: string,
   ): Promise<Response> {
     const url = `https://connectapi.${this.domain}/${path.replace(/^\//, "")}`;
-    return fetch(url, {
-      method,
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "User-Agent": this.userAgent,
-        ...(body ? { "Content-Type": "application/json" } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    try {
+      return await fetch(url, {
+        method,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "User-Agent": this.userAgent,
+          ...(body ? { "Content-Type": "application/json" } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch (err) {
+      throw GarminNetworkError.fromFetchError(err, url);
+    }
   }
 }

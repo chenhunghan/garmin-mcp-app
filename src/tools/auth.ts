@@ -3,6 +3,7 @@ import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { getClient } from "../garmin.js";
 import { notifyAuth } from "../auth-gate.js";
+import { decryptWithLoginKey, issueLoginKey } from "../login-key.js";
 
 export function registerAuthTools(server: McpServer, resourceUri: string) {
   registerAppTool(
@@ -30,16 +31,34 @@ export function registerAuthTools(server: McpServer, resourceUri: string) {
 
   registerAppTool(
     server,
+    "garmin-get-login-key",
+    {
+      title: "Get Garmin Login Key",
+      description: "Issue a single-use public key for encrypting the Garmin password",
+      _meta: { ui: { resourceUri, visibility: ["app"] } },
+    },
+    async () => ({
+      content: [{ type: "text" as const, text: JSON.stringify({ publicKey: issueLoginKey() }) }],
+    }),
+  );
+
+  registerAppTool(
+    server,
     "garmin-login",
     {
       title: "Garmin Login",
-      description: "Log in to Garmin Connect with email and password",
-      inputSchema: { email: z.string(), password: z.string() },
+      description: "Log in to Garmin Connect with email and an encrypted password",
+      inputSchema: {
+        email: z.string(),
+        encryptedPassword: z
+          .string()
+          .describe("Password encrypted with the key from garmin-get-login-key"),
+      },
       _meta: { ui: { resourceUri, visibility: ["app"] } },
     },
-    async ({ email, password }) => {
+    async ({ email, encryptedPassword }) => {
       const client = getClient();
-      const result = await client.login(email, password);
+      const result = await client.login(email, decryptWithLoginKey(encryptedPassword));
       if (result.status === "needs_mfa") {
         return {
           content: [{ type: "text" as const, text: JSON.stringify({ status: "needs_mfa" }) }],

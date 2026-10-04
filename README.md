@@ -21,10 +21,10 @@ Connect your Garmin watch to Claude Desktop or ChatGPT. Explore interactive char
 Requires Node.js 20+.
 
 1. In the ChatGPT desktop app, open **Settings → Plugins → Add marketplace**
-2. **Source:** `chenhunghan/garmin-mcp-app` · **Git ref:** `chatgpt-plugin` (leave sparse paths empty) → **Add marketplace**
+2. **Source:** `chenhunghan/garmin-mcp-app` (leave Git ref and sparse paths empty) → **Add marketplace**
 3. Restart the app, open the Plugins Directory, choose the **Run Coach** marketplace and install **Coach**
 
-Or with the [Codex CLI](https://developers.openai.com/codex): `codex plugin marketplace add chenhunghan/garmin-mcp-app@chatgpt-plugin` then `codex plugin add garmin@garmin-mcp`.
+Or with the [Codex CLI](https://developers.openai.com/codex): `codex plugin marketplace add chenhunghan/garmin-mcp-app` then `codex plugin add garmin@garmin-mcp`.
 
 **Coach** then appears in the sidebar (daily briefing and performance dashboard) and as a **Training Week** tab in conversations; or just ask "@Coach how am I today?". It runs on your computer, so it works in the desktop app only.
 

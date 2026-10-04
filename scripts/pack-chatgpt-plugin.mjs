@@ -72,7 +72,7 @@ json(join(plugin, ".codex-plugin/plugin.json"), {
     developerName: "Hung-Han (Henry) Chen",
     category: "Productivity",
     capabilities: ["Interactive", "Read", "Write"],
-    composerIcon: "./assets/icon.svg",
+    composerIcon: "./assets/composer-icon.svg",
     logo: "./assets/icon.svg",
     logoDark: "./assets/icon-dark.svg",
     defaultPrompt: ["@Garmin how am I today?", "@Garmin plan my training week"],

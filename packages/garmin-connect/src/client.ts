@@ -176,7 +176,7 @@ export class GarminClient {
     );
   }
 
-  async getActivityDetails(activityId: string): Promise<unknown> {
+  async getActivityDetails(activityId: string | number): Promise<unknown> {
     return this.connectapi(`/activity-service/activity/${activityId}`);
   }
 
@@ -202,11 +202,11 @@ export class GarminClient {
 
   // ── Activity Deep Dive ──────────────────────────────
 
-  async getActivitySplits(activityId: string): Promise<unknown> {
+  async getActivitySplits(activityId: string | number): Promise<unknown> {
     return this.connectapi(`/activity-service/activity/${activityId}/splits`);
   }
 
-  async getActivityHrZones(activityId: string): Promise<unknown> {
+  async getActivityHrZones(activityId: string | number): Promise<unknown> {
     return this.connectapi(`/activity-service/activity/${activityId}/hrTimeInZones`);
   }
 
@@ -243,7 +243,7 @@ export class GarminClient {
     return this.connectapi(`/workout-service/workouts?start=${start}&limit=${limit}`);
   }
 
-  async getWorkout(workoutId: string): Promise<unknown> {
+  async getWorkout(workoutId: string | number): Promise<unknown> {
     return this.connectapi(`/workout-service/workout/${workoutId}`);
   }
 
@@ -251,15 +251,18 @@ export class GarminClient {
     return this.connectapi("/workout-service/workout", "POST", workout);
   }
 
-  async updateWorkout(workoutId: string, workout: Record<string, unknown>): Promise<unknown> {
+  async updateWorkout(
+    workoutId: string | number,
+    workout: Record<string, unknown>,
+  ): Promise<unknown> {
     return this.connectapi(`/workout-service/workout/${workoutId}`, "PUT", workout);
   }
 
-  async deleteWorkout(workoutId: string): Promise<unknown> {
+  async deleteWorkout(workoutId: string | number): Promise<unknown> {
     return this.connectapi(`/workout-service/workout/${workoutId}`, "DELETE");
   }
 
-  async scheduleWorkout(workoutId: string, date: string): Promise<unknown> {
+  async scheduleWorkout(workoutId: string | number, date: string): Promise<unknown> {
     return this.connectapi(`/workout-service/schedule/${workoutId}`, "POST", { date });
   }
 

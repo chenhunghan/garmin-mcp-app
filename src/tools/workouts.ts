@@ -51,7 +51,7 @@ async function withAuth(fn: () => Promise<unknown>): Promise<ToolResult> {
 }
 
 const workoutIdSchema = {
-  workoutId: z.string().describe("Garmin workout ID"),
+  workoutId: z.union([z.string(), z.number()]).describe("Garmin workout ID"),
 };
 
 const workoutBodySchema = {

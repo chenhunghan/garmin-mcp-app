@@ -48,7 +48,7 @@ const dateRangeSchema = {
   endDate: z.string().describe("End date in YYYY-MM-DD format"),
 };
 const activityIdSchema = {
-  activityId: z.string().describe("Garmin activity ID"),
+  activityId: z.union([z.string(), z.number()]).describe("Garmin activity ID"),
 };
 
 export function registerDataTools(server: McpServer, resourceUri: string) {

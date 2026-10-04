@@ -5,6 +5,8 @@ import { GarminAuthError, GarminNetworkError, GarminRateLimitError } from "./err
 const CSRF_RE = /name="_csrf"\s+value="(.+?)"/;
 const TITLE_RE = /<title>(.+?)<\/title>/;
 const TICKET_RE = /embed\?ticket=([^"]+)"/;
+const MFA_URL_RE = /verifyMFA|loginEnterMfaCode/i;
+const MAX_REDIRECTS = 10;
 
 export interface SsoConfig {
   domain: string;
@@ -51,30 +53,36 @@ export async function login(
   const csrfToken = extractCsrf(signinHtml);
 
   // Step 3: Submit credentials
-  const loginResp = await fetchWithCookies(`${SSO}/signin?${SIGNIN_PARAMS}`, jar, config, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Referer: `${SSO}/signin?${SIGNIN_PARAMS}`,
+  // Follow redirects manually: MFA accounts get a 302 to the MFA page, and each
+  // hop's cookies must land in the jar.
+  const { resp: loginResp, url: loginUrl } = await fetchFollowing(
+    `${SSO}/signin?${SIGNIN_PARAMS}`,
+    jar,
+    config,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Referer: `${SSO}/signin?${SIGNIN_PARAMS}`,
+      },
+      body: new URLSearchParams({
+        username: email,
+        password: password,
+        embed: "true",
+        _csrf: csrfToken,
+      }),
     },
-    body: new URLSearchParams({
-      username: email,
-      password: password,
-      embed: "true",
-      _csrf: csrfToken,
-    }),
-    redirect: "manual",
-  });
+  );
 
   if (loginResp.status === 429) {
     throw new GarminRateLimitError();
   }
 
   const loginHtml = await loginResp.text();
-  const title = extractTitle(loginHtml);
+  const title = TITLE_RE.exec(loginHtml)?.[1]?.trim() ?? "";
 
-  // Handle MFA
-  if (title.includes("MFA") || title.includes("Challenge")) {
+  // Handle MFA — detected by the redirect target or the page title
+  if (MFA_URL_RE.test(loginUrl) || title.includes("MFA") || title.includes("Challenge")) {
     return {
       status: "needs_mfa",
       mfaState: {
@@ -86,7 +94,11 @@ export async function login(
   }
 
   if (title !== "Success") {
-    throw new GarminAuthError(`Login failed: "${title}"`);
+    throw new GarminAuthError(
+      title
+        ? `Login failed: "${title}"`
+        : `Login failed: unexpected response (${loginResp.status})`,
+    );
   }
 
   const ticket = extractTicket(loginHtml);
@@ -102,20 +114,24 @@ export async function submitMfa(
   const SSO = `https://sso.${config.domain}/sso`;
   const params = new URLSearchParams(mfaState.signinParams);
 
-  const resp = await fetchWithCookies(`${SSO}/verifyMFA/loginEnterMfaCode?${params}`, jar, config, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Referer: `${SSO}/verifyMFA/loginEnterMfaCode?${params}`,
+  const { resp } = await fetchFollowing(
+    `${SSO}/verifyMFA/loginEnterMfaCode?${params}`,
+    jar,
+    config,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Referer: `${SSO}/verifyMFA/loginEnterMfaCode?${params}`,
+      },
+      body: new URLSearchParams({
+        "mfa-code": mfaCode,
+        embed: "true",
+        _csrf: mfaState.csrfToken,
+        fromPage: "setupEnterMfaCode",
+      }),
     },
-    body: new URLSearchParams({
-      "mfa-code": mfaCode,
-      embed: "true",
-      _csrf: mfaState.csrfToken,
-      fromPage: "setupEnterMfaCode",
-    }),
-    redirect: "manual",
-  });
+  );
 
   if (resp.status === 429) {
     throw new GarminRateLimitError();
@@ -149,7 +165,11 @@ async function fetchWithCookies(
 
   let resp: Response;
   try {
-    resp = await fetch(url, { ...init, headers, redirect: init?.redirect ?? "follow" });
+    resp = await fetch(url, {
+      ...init,
+      headers,
+      redirect: init?.redirect ?? "follow",
+    });
   } catch (err) {
     throw GarminNetworkError.fromFetchError(err, url);
   }
@@ -161,6 +181,33 @@ async function fetchWithCookies(
   }
 
   return resp;
+}
+
+/**
+ * Follow 3xx redirects manually so cookies set on every hop are stored in the
+ * jar (native fetch drops them). Subsequent hops are plain GETs, per 302/303
+ * semantics. Returns the final response and the URL it was fetched from.
+ */
+async function fetchFollowing(
+  url: string,
+  jar: CookieJar,
+  config: SsoConfig,
+  init: RequestInit,
+): Promise<{ resp: Response; url: string }> {
+  let currentUrl = url;
+  let currentInit: RequestInit = { ...init, redirect: "manual" };
+
+  for (let i = 0; i <= MAX_REDIRECTS; i++) {
+    const resp = await fetchWithCookies(currentUrl, jar, config, currentInit);
+    const location = resp.headers.get("location");
+    if (resp.status < 300 || resp.status >= 400 || !location) {
+      return { resp, url: currentUrl };
+    }
+    currentUrl = new URL(location, currentUrl).toString();
+    currentInit = { redirect: "manual" };
+  }
+
+  throw new GarminAuthError("Too many redirects during SSO login");
 }
 
 function extractCsrf(html: string): string {

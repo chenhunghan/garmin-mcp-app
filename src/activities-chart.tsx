@@ -4,6 +4,7 @@ import { ChartContainer, ChartTooltip } from "@/components/ui/chart.tsx";
 import type { ChartConfig } from "@/components/ui/chart.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import type { ToolArgs } from "@/lib/tool-args.ts";
 
 type LimitKey = "10" | "20" | "50";
 
@@ -198,13 +199,20 @@ function CustomTooltip({
 
 export function ActivitiesChart({
   callTool,
+  args,
 }: {
+  /** What the tool call asked for (date / activity); defaults to today/latest */
+  args?: ToolArgs;
   callTool: (
     name: string,
     args?: Record<string, unknown>,
   ) => Promise<Record<string, unknown> | null>;
 }) {
-  const [limit, setLimit] = useState<LimitKey>("10");
+  // Start from the count the tool call asked for, rounded up to an option
+  const [limit, setLimit] = useState<LimitKey>(() => {
+    const n = args?.limit ?? 10;
+    return n <= 10 ? "10" : n <= 20 ? "20" : "50";
+  });
   const [raw, setRaw] = useState<RawActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

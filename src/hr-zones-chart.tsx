@@ -3,6 +3,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart.tsx";
 import type { ChartConfig } from "@/components/ui/chart.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import type { ToolArgs } from "@/lib/tool-args.ts";
+import { resolveActivity } from "@/lib/activity.ts";
 
 interface RawHrZone {
   zoneNumber: number;
@@ -86,7 +88,10 @@ function CustomTooltip({
 
 export function HrZonesChart({
   callTool,
+  args,
 }: {
+  /** What the tool call asked for (date / activity); defaults to today/latest */
+  args?: ToolArgs;
   callTool: (
     name: string,
     args?: Record<string, unknown>,
@@ -102,22 +107,14 @@ export function HrZonesChart({
     setLoading(true);
     setError(null);
     try {
-      // Fetch most recent activity
-      const activitiesResult = await callTool("get-activities", { start: 0, limit: 1 });
-      if (!Array.isArray(activitiesResult) || activitiesResult.length === 0) {
+      // The requested activity, else the most recent
+      const activity = await resolveActivity(callTool, args);
+      if (!activity) {
         setError("No activities found");
         return;
       }
-
-      const activity = activitiesResult[0] as Record<string, unknown>;
-      const activityId = String(activity.activityId ?? "");
-      const name = (activity.activityName as string) ?? "Activity";
-      setActivityName(name);
-
-      if (!activityId) {
-        setError("No activity ID found");
-        return;
-      }
+      const activityId = activity.id;
+      setActivityName([activity.name ?? "Activity", activity.date].filter(Boolean).join(" · "));
 
       // Fetch HR zones for that activity
       const zonesResult = await callTool("get-activity-hr-zones", { activityId });
@@ -146,7 +143,7 @@ export function HrZonesChart({
     } finally {
       setLoading(false);
     }
-  }, [callTool]);
+  }, [callTool, args]);
 
   useEffect(() => {
     fetchHrZones();

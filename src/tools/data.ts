@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import { GarminAuthError, GarminTokenExpiredError } from "garmin-connect";
+import { GarminAuthError, GarminTokenExpiredError, computeKmSplits } from "garmin-connect";
 import { getClient } from "../garmin.js";
 import { waitForAuth } from "../auth-gate.js";
 
@@ -11,7 +11,17 @@ type ToolResult = {
   isError?: boolean;
 };
 
-async function withAuth(fn: () => Promise<unknown>, view?: string): Promise<ToolResult> {
+/**
+ * Run a Garmin call, waiting for sign-in through the app UI if needed.
+ * `view` picks the chart; `args` are echoed so the chart shows what was asked
+ * for (a specific date or activity) rather than today/latest.
+ */
+async function withAuth(
+  fn: () => Promise<unknown>,
+  view?: string,
+  args?: Record<string, unknown>,
+): Promise<ToolResult> {
+  const structured = view ? { structuredContent: { view, args: args ?? {} } } : {};
   const client = getClient();
   if (!client.isAuthenticated) {
     try {
@@ -26,7 +36,7 @@ async function withAuth(fn: () => Promise<unknown>, view?: string): Promise<Tool
     const data = await fn();
     return {
       content: [{ type: "text", text: JSON.stringify(data) }],
-      ...(view && { structuredContent: { view } }),
+      ...structured,
     };
   } catch (err) {
     if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
@@ -35,12 +45,78 @@ async function withAuth(fn: () => Promise<unknown>, view?: string): Promise<Tool
       const data = await fn();
       return {
         content: [{ type: "text", text: JSON.stringify(data) }],
-        ...(view && { structuredContent: { view } }),
+        ...structured,
       };
     }
     throw err;
   }
 }
+
+/**
+ * Recorded laps, plus per-km splits computed from the time series when the
+ * activity has a single lap (auto-lap off) — like Garmin Connect shows. Falls
+ * back to the laps alone if the time series isn't available.
+ */
+async function splitsWithKmFallback(activityId: string | number) {
+  const client = getClient();
+  const splits = (await client.getActivitySplits(activityId)) as { lapDTOs?: unknown[] } | null;
+  if ((splits?.lapDTOs?.length ?? 0) >= 2) return splits;
+  try {
+    const kmSplits = computeKmSplits(
+      (await client.getActivityChartDetails(activityId, 2000)) as Parameters<
+        typeof computeKmSplits
+      >[0],
+    );
+    if (kmSplits.length >= 2) return { ...splits, kmSplits };
+  } catch {
+    // Laps alone are still a valid answer
+  }
+  return splits;
+}
+
+const MAX_RANGE_DAYS = 14;
+
+/** Calendar days from start to end inclusive (YYYY-MM-DD), capped at MAX_RANGE_DAYS. */
+function daysBetween(start: string, end: string): string[] {
+  const days: string[] = [];
+  const t0 = Date.parse(`${start}T00:00:00Z`);
+  const t1 = Date.parse(`${end}T00:00:00Z`);
+  for (let t = t0; t <= t1 && days.length < MAX_RANGE_DAYS; t += 86_400_000) {
+    days.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+/**
+ * One day's data, or every day in [date, endDate] from a single tool call
+ * (fetched a few at a time to stay gentle on Garmin). Each tool call opens a
+ * chart, so one ranged call beats several single-day calls.
+ */
+async function perDay(
+  fetchDay: (day: string) => Promise<unknown>,
+  date: string,
+  endDate?: string,
+): Promise<unknown> {
+  if (!endDate || endDate === date) return fetchDay(date);
+  const days = daysBetween(date, endDate);
+  const results: { date: string; data: unknown }[] = [];
+  for (let i = 0; i < days.length; i += 4) {
+    const batch = days.slice(i, i + 4);
+    const data = await Promise.all(batch.map(fetchDay));
+    batch.forEach((d, j) => results.push({ date: d, data: data[j] }));
+  }
+  return results;
+}
+
+const dayOrRangeSchema = {
+  date: z.string().describe("Date in YYYY-MM-DD format (the first day when endDate is given)"),
+  endDate: z
+    .string()
+    .optional()
+    .describe(
+      `Optional last day (YYYY-MM-DD, max ${MAX_RANGE_DAYS} days) to get every day in the range in ONE call. Prefer this over calling the tool once per day: each call shows its own chart.`,
+    ),
+};
 
 const dateSchema = { date: z.string().describe("Date in YYYY-MM-DD format") };
 const dateRangeSchema = {
@@ -65,7 +141,8 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       },
       _meta: { ui: { resourceUri } },
     },
-    async ({ date, endDate }) => withAuth(() => getClient().getSteps(date, endDate), "steps"),
+    async ({ date, endDate }) =>
+      withAuth(() => getClient().getSteps(date, endDate), "steps", { date, endDate }),
   );
 
   registerAppTool(
@@ -73,11 +150,16 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     "get-heart-rates",
     {
       title: "Get Heart Rates",
-      description: "Get heart rate data for a given date from Garmin Connect",
-      inputSchema: dateSchema,
+      description:
+        "Get heart rate data (resting, min/max, intraday samples) for a day, or for each day from date to endDate in one call. The chart shows the days ending at the last requested date.",
+      inputSchema: dayOrRangeSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getHeartRates(date), "heart-rate"),
+    async ({ date, endDate }) =>
+      withAuth(() => perDay((d) => getClient().getHeartRates(d), date, endDate), "heart-rate", {
+        date,
+        endDate,
+      }),
   );
 
   registerAppTool(
@@ -85,11 +167,16 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     "get-sleep",
     {
       title: "Get Sleep",
-      description: "Get sleep data for a given date from Garmin Connect",
-      inputSchema: dateSchema,
+      description:
+        "Get sleep data (stages, score, HRV, breathing) for a day, or for each day from date to endDate in one call. The chart shows the days ending at the last requested date.",
+      inputSchema: dayOrRangeSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getSleepData(date), "sleep"),
+    async ({ date, endDate }) =>
+      withAuth(() => perDay((d) => getClient().getSleepData(d), date, endDate), "sleep", {
+        date,
+        endDate,
+      }),
   );
 
   registerAppTool(
@@ -97,11 +184,16 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     "get-stress",
     {
       title: "Get Stress",
-      description: "Get stress data for a given date from Garmin Connect",
-      inputSchema: dateSchema,
+      description:
+        "Get stress data (average, max, intraday levels) for a day, or for each day from date to endDate in one call. The chart shows the days ending at the last requested date.",
+      inputSchema: dayOrRangeSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getStressData(date), "stress"),
+    async ({ date, endDate }) =>
+      withAuth(() => perDay((d) => getClient().getStressData(d), date, endDate), "stress", {
+        date,
+        endDate,
+      }),
   );
 
   registerAppTool(
@@ -117,7 +209,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       _meta: { ui: { resourceUri } },
     },
     async ({ start, limit }) =>
-      withAuth(() => getClient().getActivities(start ?? 0, limit ?? 20), "activities"),
+      withAuth(() => getClient().getActivities(start ?? 0, limit ?? 20), "activities", { limit }),
   );
 
   // ── Recovery & Readiness ─────────────────────────────
@@ -132,7 +224,8 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: dateSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getTrainingReadiness(date), "training"),
+    async ({ date }) =>
+      withAuth(() => getClient().getTrainingReadiness(date), "training", { date }),
   );
 
   registerAppTool(
@@ -145,7 +238,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: dateSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getTrainingStatus(date)),
+    async ({ date }) => withAuth(() => getClient().getTrainingStatus(date), "training", { date }),
   );
 
   registerAppTool(
@@ -158,7 +251,8 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: dateRangeSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ startDate, endDate }) => withAuth(() => getClient().getHrvData(startDate, endDate)),
+    async ({ startDate, endDate }) =>
+      withAuth(() => getClient().getHrvData(startDate, endDate), "training", { date: endDate }),
   );
 
   registerAppTool(
@@ -171,7 +265,9 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       _meta: { ui: { resourceUri } },
     },
     async ({ startDate, endDate }) =>
-      withAuth(() => getClient().getBodyBattery(startDate, endDate)),
+      withAuth(() => getClient().getBodyBattery(startDate, endDate), "heart-rate", {
+        date: endDate,
+      }),
   );
 
   // ── Activity Deep Dive ──────────────────────────────
@@ -185,7 +281,8 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: activityIdSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ activityId }) => withAuth(() => getClient().getActivityDetails(activityId)),
+    async ({ activityId }) =>
+      withAuth(() => getClient().getActivityDetails(activityId), "splits", { activityId }),
   );
 
   registerAppTool(
@@ -193,11 +290,13 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     "get-activity-splits",
     {
       title: "Get Activity Splits",
-      description: "Get per-km/mile splits (pace, HR, cadence) for a specific activity",
+      description:
+        "Get splits (pace, HR, cadence) for a specific activity. Returns the laps recorded by the watch (lapDTOs); when the activity was recorded as a single lap (auto-lap off), also per-km splits computed from the time series (kmSplits).",
       inputSchema: activityIdSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ activityId }) => withAuth(() => getClient().getActivitySplits(activityId), "splits"),
+    async ({ activityId }) =>
+      withAuth(() => splitsWithKmFallback(activityId), "splits", { activityId }),
   );
 
   registerAppTool(
@@ -210,7 +309,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       _meta: { ui: { resourceUri } },
     },
     async ({ activityId }) =>
-      withAuth(() => getClient().getActivityHrZones(activityId), "hr-zones"),
+      withAuth(() => getClient().getActivityHrZones(activityId), "hr-zones", { activityId }),
   );
 
   // ── Fitness Benchmarks ──────────────────────────────
@@ -224,7 +323,10 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       inputSchema: dateRangeSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ startDate, endDate }) => withAuth(() => getClient().getVo2Max(startDate, endDate)),
+    async ({ startDate, endDate }) =>
+      withAuth(() => getClient().getVo2Max(startDate, endDate), "race-predictions", {
+        date: endDate,
+      }),
   );
 
   registerAppTool(
@@ -237,19 +339,6 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       _meta: { ui: { resourceUri } },
     },
     async () => withAuth(() => getClient().getRacePredictions(), "race-predictions"),
-  );
-
-  registerAppTool(
-    server,
-    "get-user-settings",
-    {
-      title: "Get User Settings",
-      description:
-        "Get user profile settings including age, weight, height, and lactate threshold HR",
-      inputSchema: {},
-      _meta: { ui: { resourceUri } },
-    },
-    async () => withAuth(() => getClient().getUserSettings()),
   );
 
   // ── Composite: Training Context ───────────────────────
@@ -267,88 +356,92 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       _meta: { ui: { resourceUri } },
     },
     async ({ date }) =>
-      withAuth(async () => {
-        const client = getClient();
+      withAuth(
+        async () => {
+          const client = getClient();
 
-        // Compute relative dates in UTC: a local-midnight Date printed with
-        // toISOString() lands on the previous day east of UTC
-        const refDate = new Date(date + "T00:00:00Z");
-        const daysAgo = (n: number) =>
-          new Date(refDate.getTime() - n * 86_400_000).toISOString().slice(0, 10);
-        const start7 = daysAgo(7);
-        const start14 = daysAgo(14);
-        const start30 = daysAgo(30);
+          // Compute relative dates in UTC: a local-midnight Date printed with
+          // toISOString() lands on the previous day east of UTC
+          const refDate = new Date(date + "T00:00:00Z");
+          const daysAgo = (n: number) =>
+            new Date(refDate.getTime() - n * 86_400_000).toISOString().slice(0, 10);
+          const start7 = daysAgo(7);
+          const start14 = daysAgo(14);
+          const start30 = daysAgo(30);
 
-        // Fetch all data in parallel
-        const [
-          activitiesResult,
-          sleepResult,
-          hrvResult,
-          readinessResult,
-          batteryResult,
-          vo2Result,
-          statusResult,
-        ] = await Promise.allSettled([
-          client.getActivities(0, 20),
-          client.getSleepData(date),
-          client.getHrvData(start14, date),
-          client.getTrainingReadiness(date),
-          client.getBodyBattery(start7, date),
-          client.getVo2Max(start30, date),
-          client.getTrainingStatus(date),
-        ]);
+          // Fetch all data in parallel
+          const [
+            activitiesResult,
+            sleepResult,
+            hrvResult,
+            readinessResult,
+            batteryResult,
+            vo2Result,
+            statusResult,
+          ] = await Promise.allSettled([
+            client.getActivities(0, 20),
+            client.getSleepData(date),
+            client.getHrvData(start14, date),
+            client.getTrainingReadiness(date),
+            client.getBodyBattery(start7, date),
+            client.getVo2Max(start30, date),
+            client.getTrainingStatus(date),
+          ]);
 
-        const val = <T>(r: PromiseSettledResult<T>): T | null =>
-          r.status === "fulfilled" ? r.value : null;
+          const val = <T>(r: PromiseSettledResult<T>): T | null =>
+            r.status === "fulfilled" ? r.value : null;
 
-        // Filter to running activities
-        const allActivities = (val(activitiesResult) as Array<Record<string, unknown>>) ?? [];
-        const runningActivities = allActivities.filter((a) => {
-          const typeKey = (a.activityType as Record<string, unknown>)?.typeKey as
-            | string
-            | undefined;
-          const sportTypeId = a.sportTypeId as number | undefined;
-          return (typeKey && typeKey.includes("running")) || sportTypeId === 1;
-        });
-        const recentRuns = runningActivities.slice(0, 10);
+          // Filter to running activities
+          const allActivities = (val(activitiesResult) as Array<Record<string, unknown>>) ?? [];
+          const runningActivities = allActivities.filter((a) => {
+            const typeKey = (a.activityType as Record<string, unknown>)?.typeKey as
+              | string
+              | undefined;
+            const sportTypeId = a.sportTypeId as number | undefined;
+            return (typeKey && typeKey.includes("running")) || sportTypeId === 1;
+          });
+          const recentRuns = runningActivities.slice(0, 10);
 
-        // Days since last run
-        let daysSinceLastRun: number | null = null;
-        if (recentRuns.length > 0) {
-          const lastRunDay = (recentRuns[0].startTimeLocal as string).slice(0, 10);
-          daysSinceLastRun = Math.round(
-            (refDate.getTime() - new Date(lastRunDay + "T00:00:00Z").getTime()) / 86_400_000,
+          // Days since last run
+          let daysSinceLastRun: number | null = null;
+          if (recentRuns.length > 0) {
+            const lastRunDay = (recentRuns[0].startTimeLocal as string).slice(0, 10);
+            daysSinceLastRun = Math.round(
+              (refDate.getTime() - new Date(lastRunDay + "T00:00:00Z").getTime()) / 86_400_000,
+            );
+          }
+
+          // Weekly volume: runs in the last 7 days. startTimeLocal is wall-clock
+          // time ("YYYY-MM-DD HH:mm:ss"), so compare its date part as a string
+          const runsThisWeek = runningActivities.filter(
+            (a) => (a.startTimeLocal as string).slice(0, 10) >= start7,
           );
-        }
+          const weeklyVolume = {
+            distanceKm: runsThisWeek.reduce(
+              (sum, a) => sum + ((a.distance as number) ?? 0) / 1000,
+              0,
+            ),
+            durationHours: runsThisWeek.reduce(
+              (sum, a) => sum + ((a.duration as number) ?? 0) / 3600,
+              0,
+            ),
+            count: runsThisWeek.length,
+          };
 
-        // Weekly volume: runs in the last 7 days. startTimeLocal is wall-clock
-        // time ("YYYY-MM-DD HH:mm:ss"), so compare its date part as a string
-        const runsThisWeek = runningActivities.filter(
-          (a) => (a.startTimeLocal as string).slice(0, 10) >= start7,
-        );
-        const weeklyVolume = {
-          distanceKm: runsThisWeek.reduce(
-            (sum, a) => sum + ((a.distance as number) ?? 0) / 1000,
-            0,
-          ),
-          durationHours: runsThisWeek.reduce(
-            (sum, a) => sum + ((a.duration as number) ?? 0) / 3600,
-            0,
-          ),
-          count: runsThisWeek.length,
-        };
-
-        return {
-          recentRuns,
-          daysSinceLastRun,
-          weeklyVolume,
-          sleep: val(sleepResult),
-          hrv: val(hrvResult),
-          trainingReadiness: val(readinessResult),
-          bodyBattery: val(batteryResult),
-          vo2Max: val(vo2Result),
-          trainingStatus: val(statusResult),
-        };
-      }, "run-planner"),
+          return {
+            recentRuns,
+            daysSinceLastRun,
+            weeklyVolume,
+            sleep: val(sleepResult),
+            hrv: val(hrvResult),
+            trainingReadiness: val(readinessResult),
+            bodyBattery: val(batteryResult),
+            vo2Max: val(vo2Result),
+            trainingStatus: val(statusResult),
+          };
+        },
+        "run-planner",
+        { date },
+      ),
   );
 }

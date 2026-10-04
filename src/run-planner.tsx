@@ -3,6 +3,7 @@ import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "r
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart.tsx";
 import type { ChartConfig } from "@/components/ui/chart.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { formatDate } from "@/lib/dates.ts";
 
 type CallToolFn = (
   name: string,
@@ -75,10 +76,6 @@ const bodyBatteryChartConfig = {
 } satisfies ChartConfig;
 
 // --- Utility functions ---
-
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 function dateLabel(dateStr: string): string {
   const parts = dateStr.split("-");

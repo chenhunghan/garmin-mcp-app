@@ -4,6 +4,8 @@ import { ChartContainer, ChartTooltip } from "@/components/ui/chart.tsx";
 import type { ChartConfig } from "@/components/ui/chart.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { formatDate } from "@/lib/dates.ts";
+import { anchorDate, anchorSuffix, rangeLabel, type ToolArgs } from "@/lib/tool-args.ts";
 
 type RangeKey = "7d" | "14d";
 
@@ -29,10 +31,6 @@ const chartConfig = {
   rem: { label: "REM", color: "var(--chart-3)" },
   awake: { label: "Awake", color: "var(--chart-5)" },
 } satisfies ChartConfig;
-
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 function secondsToHours(s: number): number {
   return s / 3600;
@@ -170,7 +168,10 @@ function CustomTooltip({
 
 export function SleepChart({
   callTool,
+  args,
 }: {
+  /** What the tool call asked for (date / activity); defaults to today/latest */
+  args?: ToolArgs;
   callTool: (
     name: string,
     args?: Record<string, unknown>,
@@ -189,7 +190,7 @@ export function SleepChart({
         const totalDays = RANGES[r].days;
         const dates: string[] = [];
         for (let i = totalDays - 1; i >= 0; i--) {
-          const d = new Date();
+          const d = anchorDate(args);
           d.setDate(d.getDate() - i);
           dates.push(formatDate(d));
         }
@@ -224,7 +225,10 @@ export function SleepChart({
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm">Sleep</CardTitle>
+        <CardTitle className="text-sm">
+          {"Sleep"}
+          {anchorSuffix(args, "range")}
+        </CardTitle>
         <div className="flex items-center gap-3">
           {/* Legend */}
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
@@ -260,7 +264,7 @@ export function SleepChart({
           <Select value={range} onValueChange={(v) => setRange(v as RangeKey)}>
             {(Object.keys(RANGES) as RangeKey[]).map((key) => (
               <option key={key} value={key}>
-                {RANGES[key].label}
+                {rangeLabel(RANGES[key].label, args)}
               </option>
             ))}
           </Select>

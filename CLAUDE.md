@@ -298,45 +298,51 @@ When shadcn officially ships Recharts v3 support, replace `chart.tsx` with the o
 
 ## View routing (tool → chart)
 
-All tools share a single `ui://garmin-mcp/app.html` resource. The app uses `structuredContent.view` in tool responses to decide which chart to render.
+All tools share a single `ui://garmin-mcp/app.html` resource. The app uses `structuredContent.view` in tool responses to decide which chart to render, and `structuredContent.args` to show **what Claude asked for** (a specific date or activity) instead of today/latest.
+
+### Which tools open the UI
+
+- **Tool with a UI and a view** (`registerAppTool` + `_meta.ui.resourceUri`, view passed to `withAuth`) → Claude Desktop opens the panel and the app renders that chart.
+- **Data-only tool** (plain `server.registerTool`, e.g. everything in `src/tools/insights.ts`) → no panel; Claude just gets the data. The app can still call it via `callServerTool` (MCP Apps visibility defaults to `["model", "app"]`).
+- Never register a UI tool without a view: it opens an empty "Connected to Garmin" panel. `tests/tools.test.ts` fails if any UI tool returns no view.
 
 ### How it works
 
-1. **Server** (`src/tools/data.ts`) — pass a `view` string to `withAuth()`:
+1. **Server** (`src/tools/data.ts`, `src/tools/workouts.ts`) — pass a view and the call's arguments to `withAuth()`:
 
    ```ts
-   async ({ date, endDate }) => withAuth(() => getClient().getSteps(date, endDate), "steps"),
+   async ({ date }) => withAuth(() => getClient().getSleepData(date), "sleep", { date }),
    ```
 
-   This adds `structuredContent: { view: "steps" }` to the tool response.
+   This adds `structuredContent: { view: "sleep", args: { date } }` to the tool response. Several tools can share a view (e.g. `get-hrv` and `get-training-status` → `training`; `get-body-battery` → `heart-rate`; `get-vo2-max` → `race-predictions`; all workout tools → `workouts`).
 
-2. **App** (`src/app.tsx`) — `ontoolresult` reads `structuredContent.view` and sets `visibleCharts`:
+2. **App** (`src/app.tsx`) — a `toolresult` listener (registered in `onAppCreated`, before connect) sets `visibleCharts` and `toolArgs`:
 
    ```ts
-   app.ontoolresult = (params) => {
-     const view = params.structuredContent?.view;
-     if (typeof view === "string" && VALID_VIEWS.has(view)) {
-       setVisibleCharts(new Set([view]));
+   app.addEventListener("toolresult", (params) => {
+     const sc = params.structuredContent as Record<string, unknown> | undefined;
+     if (typeof sc?.view === "string" && VALID_VIEWS.has(sc.view)) {
+       setToolArgs(sc.args as ToolArgs);
+       setVisibleCharts(new Set([sc.view]));
      }
-   };
+   });
    ```
 
-3. **Render** — charts conditionally render based on `visibleCharts`:
-   ```tsx
-   {
-     visibleCharts?.has("steps") && <StepsChart />;
-   }
-   {
-     visibleCharts?.has("activities") && <ActivitiesChart />;
-   }
-   ```
+   Use `addEventListener`; the `app.ontoolresult = …` setters are deprecated (ext-apps 1.4+).
+
+3. **Render** — charts get the args: `<SleepChart callTool={callTool} args={toolArgs} />`. Helpers in `src/lib/tool-args.ts`:
+   - `anchorDate(args)` — last day a range chart shows (requested `endDate`/`date`, else today); range pickers count back from it
+   - `anchorSuffix(args, "range" | "day")` / `rangeLabel(label, args)` — say which day is shown when it isn't today ("Sleep · to Sun 20 Sept", "7 days" instead of "Last 7 days")
+   - `resolveActivity(callTool, args)` (`src/lib/activity.ts`) — the requested activity, else the latest; includes the date, since Garmin auto-names many activities identically
+
+Dates: use `formatDate`/`parseDate` from `src/lib/dates.ts` (local calendar days). Never `toISOString().slice(0, 10)` — it prints UTC and lands on the previous day east of UTC.
 
 ### Adding a new chart
 
-1. Create `src/my-chart.tsx` with `export function MyChart({ callTool })` (same prop pattern as `StepsChart`)
-2. Add `"my-view"` to `VALID_VIEWS` in `src/app.tsx`
-3. Add the conditional render: `{visibleCharts?.has("my-view") && <MyChart callTool={callTool} />}`
-4. In `src/tools/data.ts`, pass `"my-view"` to `withAuth()` for the relevant tool
+1. Create `src/my-chart.tsx` with `export function MyChart({ callTool, args })` (same prop pattern as `StepsChart`); anchor dates on `anchorDate(args)`
+2. Add `"my-view"` to `VALID_VIEWS` in `src/app.tsx` (and to the dev UI's all-charts set)
+3. Add the conditional render: `{visibleCharts?.has("my-view") && <MyChart callTool={callTool} args={toolArgs} />}`
+4. In `src/tools/data.ts`, pass `"my-view"` and the arguments to `withAuth()` for the relevant tool
 5. Add `src/my-chart.tsx` to `tsconfig.json` exclude list and `tsconfig.app.json` include list
 
 ### Dev UI vs Claude Desktop
@@ -344,9 +350,8 @@ All tools share a single `ui://garmin-mcp/app.html` resource. The app uses `stru
 The `__DEV_UI__` compile-time flag (set in `vite.config.dev.ts`) controls the default:
 
 - **`npm run dev:ui`** → `__DEV_UI__ = true` → all charts shown immediately (no host tool calls)
-- **Production build** → `__DEV_UI__ = false` → `visibleCharts` starts as `null`, waits for `ontoolresult`
-
-Tools without a `view` tag don't change which charts are visible. If no `ontoolresult` with a view ever fires (e.g. tool has no view), no charts are shown in Claude Desktop.
+- **`npm run dev:ui` with `?tool=<name>&args=<json>`** → simulates Claude calling that tool: the real tool runs and its result is delivered to the app like Claude Desktop does, so routing and args can be tested in a browser, e.g. `http://localhost:5173/?tool=get-activity-splits&args={"activityId":123}`
+- **Production build** → `__DEV_UI__ = false` → `visibleCharts` starts as `null`, waits for the tool result
 
 ## MCP App in Claude Desktop
 

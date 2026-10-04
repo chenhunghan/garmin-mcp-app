@@ -6,10 +6,19 @@ import { getClient } from "../garmin.js";
 
 type ToolResult = {
   content: Array<{ type: "text"; text: string }>;
+  structuredContent?: Record<string, unknown>;
   isError?: boolean;
 };
 
-async function withAuth(fn: () => Promise<unknown>): Promise<ToolResult> {
+/**
+ * Run a workout call and open the workouts view. `args` (or `argsFrom` the
+ * result, e.g. a newly created workout's ID) tell the view what to highlight.
+ */
+async function withAuth(
+  fn: () => Promise<unknown>,
+  args: Record<string, unknown> = {},
+  argsFrom?: (data: unknown) => Record<string, unknown>,
+): Promise<ToolResult> {
   const client = getClient();
   if (!client.isAuthenticated) {
     try {
@@ -32,7 +41,8 @@ async function withAuth(fn: () => Promise<unknown>): Promise<ToolResult> {
   try {
     const data = await fn();
     return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
+      content: [{ type: "text", text: JSON.stringify(data ?? null) }],
+      structuredContent: { view: "workouts", args: { ...args, ...argsFrom?.(data) } },
     };
   } catch (err) {
     if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
@@ -80,14 +90,27 @@ export function registerWorkoutTools(server: McpServer, resourceUri: string) {
     "list-workouts",
     {
       title: "List Workouts",
-      description: "List saved workouts from Garmin Connect",
+      description:
+        "List the user's saved/custom workouts (structured workouts they created, e.g. 'LT', 'Tempo 5K', '4x1km'). Use this whenever the user refers to a workout by name, then get-workout for its steps.",
       inputSchema: {
+        name: z
+          .string()
+          .optional()
+          .describe("Only workouts whose name contains this text (case-insensitive)"),
         start: z.number().optional().describe("Start index (default 0)"),
         limit: z.number().optional().describe("Max results (default 20)"),
       },
       _meta: { ui: { resourceUri } },
     },
-    async ({ start, limit }) => withAuth(() => getClient().getWorkouts(start ?? 0, limit ?? 20)),
+    async ({ name, start, limit }) =>
+      withAuth(async () => {
+        const workouts = await getClient().getWorkouts(start ?? 0, limit ?? 20);
+        if (!name || !Array.isArray(workouts)) return workouts;
+        const needle = name.toLowerCase();
+        return workouts.filter((w: { workoutName?: string }) =>
+          w.workoutName?.toLowerCase().includes(needle),
+        );
+      }),
   );
 
   registerAppTool(
@@ -95,11 +118,12 @@ export function registerWorkoutTools(server: McpServer, resourceUri: string) {
     "get-workout",
     {
       title: "Get Workout",
-      description: "Get workout details by ID from Garmin Connect",
+      description:
+        "Get a saved workout's steps (warm-up, intervals, targets) by ID. To find a workout by name, call list-workouts first.",
       inputSchema: workoutIdSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ workoutId }) => withAuth(() => getClient().getWorkout(workoutId)),
+    async ({ workoutId }) => withAuth(() => getClient().getWorkout(workoutId), { workoutId }),
   );
 
   registerAppTool(
@@ -129,7 +153,11 @@ Example - 5x1000m intervals:
       _meta: { ui: { resourceUri } },
     },
     async ({ workout }) =>
-      withAuth(() => getClient().createWorkout(workout as Record<string, unknown>)),
+      withAuth(
+        () => getClient().createWorkout(workout as Record<string, unknown>),
+        { action: "created" },
+        (data) => ({ workoutId: (data as { workoutId?: number } | null)?.workoutId }),
+      ),
   );
 
   registerAppTool(
@@ -142,7 +170,10 @@ Example - 5x1000m intervals:
       _meta: { ui: { resourceUri } },
     },
     async ({ workoutId, workout }) =>
-      withAuth(() => getClient().updateWorkout(workoutId, workout as Record<string, unknown>)),
+      withAuth(() => getClient().updateWorkout(workoutId, workout as Record<string, unknown>), {
+        workoutId,
+        action: "updated",
+      }),
   );
 
   registerAppTool(
@@ -154,7 +185,8 @@ Example - 5x1000m intervals:
       inputSchema: workoutIdSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ workoutId }) => withAuth(() => getClient().deleteWorkout(workoutId)),
+    async ({ workoutId }) =>
+      withAuth(() => getClient().deleteWorkout(workoutId), { action: "deleted" }),
   );
 
   registerAppTool(
@@ -169,6 +201,11 @@ Example - 5x1000m intervals:
       },
       _meta: { ui: { resourceUri } },
     },
-    async ({ workoutId, date }) => withAuth(() => getClient().scheduleWorkout(workoutId, date)),
+    async ({ workoutId, date }) =>
+      withAuth(() => getClient().scheduleWorkout(workoutId, date), {
+        workoutId,
+        date,
+        action: "scheduled",
+      }),
   );
 }

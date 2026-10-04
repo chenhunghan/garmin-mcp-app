@@ -1,130 +1,88 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Bar, XAxis, YAxis, CartesianGrid, Line, ComposedChart } from "recharts";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart.tsx";
-import type { ChartConfig } from "@/components/ui/chart.tsx";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card.tsx";
+import type { ToolArgs } from "@/lib/tool-args.ts";
+import { resolveActivity } from "@/lib/activity.ts";
 
-interface RawLap {
+/** A recorded lap (lapDTOs) or a computed per-km split (kmSplits). */
+interface RawSplit {
   lapIndex: number;
+  /** Metres */
   distance: number;
+  /** Seconds */
   duration: number;
-  movingDuration?: number;
+  /** m/s */
   averageSpeed: number;
-  averageMovingSpeed?: number;
-  maxSpeed?: number;
-  calories?: number;
   averageHR?: number;
   maxHR?: number;
   averageRunCadence?: number;
-  maxRunCadence?: number;
-  averagePower?: number;
-  maxPower?: number;
   intensityType?: string;
 }
 
-interface SplitPoint {
+interface SplitRow {
   label: string;
-  /** Pace in total seconds per km (for Y-axis scaling) */
+  distance: number;
+  duration: number;
   paceSeconds: number | null;
-  /** Formatted pace string like "5:30" */
-  paceFormatted: string;
-  /** Average HR in bpm */
   avgHR: number | null;
-  /** Raw lap data for tooltip */
-  raw: RawLap;
+  cadence: number | null;
+  intensity?: string;
 }
 
-const chartConfig = {
-  pace: { label: "Pace", color: "var(--chart-1)" },
-  avgHR: { label: "Avg HR", color: "var(--chart-3)" },
-} satisfies ChartConfig;
-
-/** Convert speed in m/s to pace in total seconds per km */
-function speedToPaceSeconds(speedMs: number): number {
-  if (!speedMs || speedMs <= 0) return 0;
-  return 1000 / speedMs;
+/** Format seconds as M:SS (or H:MM:SS). */
+function formatTime(totalSeconds: number): string {
+  if (!totalSeconds || totalSeconds <= 0) return "–";
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = Math.round(totalSeconds % 60);
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 }
 
-/** Format pace seconds into MM:SS string */
-function formatPace(totalSeconds: number): string {
-  if (!totalSeconds || totalSeconds <= 0) return "-";
-  const mins = Math.floor(totalSeconds / 60);
-  const secs = Math.round(totalSeconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
-
-function formatIntensity(type: string | undefined): string {
-  if (!type) return "-";
+function formatIntensity(type: string | undefined): string | undefined {
+  if (!type || type === "ACTIVE") return undefined;
   const map: Record<string, string> = {
-    WARMUP: "Warm Up",
-    ACTIVE: "Active",
+    WARMUP: "Warm up",
     RECOVERY: "Recovery",
     REST: "Rest",
-    COOLDOWN: "Cool Down",
+    COOLDOWN: "Cool down",
     INTERVAL: "Interval",
-    OTHER: "Other",
   };
   return map[type] ?? type.charAt(0) + type.slice(1).toLowerCase();
 }
 
-function TooltipRow({ label, value }: { label: string; value: string }) {
-  if (!value || value === "-") return null;
-  return (
-    <div className="flex justify-between gap-4">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-mono font-medium tabular-nums">{value}</span>
-    </div>
-  );
-}
-
-function CustomTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: SplitPoint }>;
-}) {
-  if (!active || !payload?.length) return null;
-  const p = payload[0].payload;
-  const lap = p.raw;
-
-  return (
-    <div className="min-w-[160px] rounded-lg border border-border/50 bg-background px-2 py-1.5 text-[10px] leading-tight shadow-xl">
-      <div className="font-medium text-[11px]">Lap {lap.lapIndex}</div>
-      <div className="text-muted-foreground">{formatIntensity(lap.intensityType)}</div>
-
-      <div className="mt-1 grid gap-px">
-        <TooltipRow label="Distance" value={`${Math.round(lap.distance)} m`} />
-        <TooltipRow label="Pace" value={p.paceFormatted !== "-" ? `${p.paceFormatted} /km` : "-"} />
-        {lap.averageHR != null && lap.averageHR > 0 && (
-          <TooltipRow
-            label="HR"
-            value={`${Math.round(lap.averageHR)}${lap.maxHR ? ` / ${Math.round(lap.maxHR)}` : ""} bpm`}
-          />
-        )}
-        {lap.averageRunCadence != null && lap.averageRunCadence > 0 && (
-          <TooltipRow label="Cadence" value={`${Math.round(lap.averageRunCadence)} spm`} />
-        )}
-        {lap.averagePower != null && lap.averagePower > 0 && (
-          <TooltipRow label="Power" value={`${Math.round(lap.averagePower)} W`} />
-        )}
-        {lap.calories != null && lap.calories > 0 && (
-          <TooltipRow label="Calories" value={`${Math.round(lap.calories)} kcal`} />
-        )}
-      </div>
-    </div>
-  );
+function toRows(splits: RawSplit[], perKm: boolean): SplitRow[] {
+  return splits.map((s) => ({
+    // A partial last km shows its distance ("0.10"), whole kms their number
+    label: perKm && s.distance < 990 ? (s.distance / 1000).toFixed(2) : String(s.lapIndex),
+    distance: s.distance,
+    duration: s.duration,
+    paceSeconds: s.averageSpeed > 0 ? 1000 / s.averageSpeed : null,
+    avgHR: s.averageHR && s.averageHR > 0 ? Math.round(s.averageHR) : null,
+    cadence:
+      s.averageRunCadence && s.averageRunCadence > 0 ? Math.round(s.averageRunCadence) : null,
+    intensity: formatIntensity(s.intensityType),
+  }));
 }
 
 export function SplitsChart({
   callTool,
+  args,
 }: {
+  /** What the tool call asked for (date / activity); defaults to today/latest */
+  args?: ToolArgs;
   callTool: (
     name: string,
     args?: Record<string, unknown>,
   ) => Promise<Record<string, unknown> | null>;
 }) {
-  const [laps, setLaps] = useState<RawLap[]>([]);
+  const [splits, setSplits] = useState<RawSplit[]>([]);
+  const [perKm, setPerKm] = useState(false);
   const [activityName, setActivityName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,105 +91,80 @@ export function SplitsChart({
     setLoading(true);
     setError(null);
     try {
-      // Step 1: Get the most recent activity to find its ID
-      const activitiesResult = await callTool("get-activities", { start: 0, limit: 1 });
-      if (!Array.isArray(activitiesResult) || activitiesResult.length === 0) {
+      // The requested activity, else the most recent
+      const activity = await resolveActivity(callTool, args);
+      if (!activity) {
         setError("No activities found");
         return;
       }
+      setActivityName([activity.name, activity.date].filter(Boolean).join(" · ") || null);
 
-      const activity = activitiesResult[0] as Record<string, unknown>;
-      const activityId = String(activity.activityId ?? "");
-      if (!activityId) {
-        setError("Activity has no ID");
-        return;
+      const result = await callTool("get-activity-splits", { activityId: activity.id });
+      // Single-lap activities come with per-km splits computed by the server
+      const km = result?.kmSplits;
+      const laps = result?.lapDTOs;
+      if (Array.isArray(km) && km.length > 1) {
+        setPerKm(true);
+        setSplits(km as RawSplit[]);
+      } else {
+        setPerKm(false);
+        setSplits(Array.isArray(laps) ? (laps as RawSplit[]) : []);
       }
-
-      setActivityName((activity.activityName as string) ?? null);
-
-      // Step 2: Fetch splits for that activity
-      const splitsResult = await callTool("get-activity-splits", { activityId });
-      if (!splitsResult || typeof splitsResult !== "object") {
-        setError("No splits data available");
-        return;
-      }
-
-      const lapDTOs = (splitsResult as Record<string, unknown>).lapDTOs;
-      if (!Array.isArray(lapDTOs) || lapDTOs.length === 0) {
-        setLaps([]);
-        return;
-      }
-
-      setLaps(lapDTOs as unknown as RawLap[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load splits");
     } finally {
       setLoading(false);
     }
-  }, [callTool]);
+  }, [callTool, args]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const data: SplitPoint[] = useMemo(() => {
-    return laps.map((lap) => {
-      const paceSeconds = lap.averageSpeed > 0 ? speedToPaceSeconds(lap.averageSpeed) : null;
-      const paceFormatted = paceSeconds != null ? formatPace(paceSeconds) : "-";
-      const avgHR = lap.averageHR != null && lap.averageHR > 0 ? lap.averageHR : null;
+  const rows = useMemo(() => toRows(splits, perKm), [splits, perKm]);
 
-      return {
-        label: String(lap.lapIndex),
-        paceSeconds,
-        paceFormatted,
-        avgHR,
-        raw: lap,
-      };
-    });
-  }, [laps]);
+  // Bar length ∝ speed (longer = faster), scaled between the slowest and
+  // fastest split so differences are visible; ignore short partial splits
+  const { fastest, slowest } = useMemo(() => {
+    const paces = rows.filter((r) => r.distance >= 500 && r.paceSeconds).map((r) => r.paceSeconds!);
+    return { fastest: Math.min(...paces), slowest: Math.max(...paces) };
+  }, [rows]);
+  const barWidth = (pace: number | null) => {
+    if (!pace || !Number.isFinite(fastest)) return 0;
+    if (slowest === fastest) return 100;
+    const t = (slowest - Math.min(Math.max(pace, fastest), slowest)) / (slowest - fastest);
+    return 35 + t * 65; // 35% (slowest) … 100% (fastest)
+  };
 
-  // Compute Y-axis domain for pace (reversed: lower = faster = top)
-  const paceDomain = useMemo(() => {
-    const paces = data.map((d) => d.paceSeconds).filter((p): p is number => p != null && p > 0);
-    if (paces.length === 0) return [0, 600];
-    const min = Math.min(...paces);
-    const max = Math.max(...paces);
-    // Add 10% padding on each side
-    const padding = (max - min) * 0.15 || 30;
-    return [Math.max(0, Math.floor(min - padding)), Math.ceil(max + padding)];
-  }, [data]);
+  const total = useMemo(() => {
+    const distance = rows.reduce((a, r) => a + r.distance, 0);
+    const duration = rows.reduce((a, r) => a + r.duration, 0);
+    const hrs = rows.filter((r) => r.avgHR);
+    const avgHR = hrs.length
+      ? Math.round(
+          hrs.reduce((a, r) => a + r.avgHR! * r.duration, 0) /
+            hrs.reduce((a, r) => a + r.duration, 0),
+        )
+      : null;
+    return { distance, duration, pace: distance > 0 ? (duration / distance) * 1000 : null, avgHR };
+  }, [rows]);
 
-  const hrDomain = useMemo(() => {
-    const hrs = data.map((d) => d.avgHR).filter((h): h is number => h != null && h > 0);
-    if (hrs.length === 0) return [60, 200];
-    const min = Math.min(...hrs);
-    const max = Math.max(...hrs);
-    const padding = (max - min) * 0.15 || 10;
-    return [Math.max(0, Math.floor(min - padding)), Math.ceil(max + padding)];
-  }, [data]);
-
-  const title = activityName ? `Splits — ${activityName}` : "Activity Splits";
+  const unit = perKm ? "Km" : "Lap";
+  const description = perKm
+    ? "Per-km splits, computed from GPS (your watch recorded this run as one lap). Longer bar = faster."
+    : rows.length === 1
+      ? "Your watch recorded this activity as a single lap. Turn on auto-lap for per-km splits."
+      : "Laps recorded by your watch. Longer bar = faster.";
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm">{title}</CardTitle>
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <span
-              className="inline-block h-2 w-2 rounded-[2px]"
-              style={{ backgroundColor: "var(--color-pace, var(--chart-1))" }}
-            />
-            Pace
-          </span>
-          <span className="flex items-center gap-1">
-            <span
-              className="inline-block h-2 w-2 rounded-[2px]"
-              style={{ backgroundColor: "var(--color-avgHR, var(--chart-3))" }}
-            />
-            Avg HR
-          </span>
-        </div>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm">
+          {activityName ? `Splits — ${activityName}` : "Activity Splits"}
+        </CardTitle>
+        {!loading && !error && rows.length > 0 && (
+          <CardDescription className="text-xs">{description}</CardDescription>
+        )}
       </CardHeader>
       <CardContent>
         {loading && (
@@ -246,77 +179,68 @@ export function SplitsChart({
           </div>
         )}
 
-        {!loading && !error && data.length === 0 && (
+        {!loading && !error && rows.length === 0 && (
           <div className="flex items-center justify-center h-48 text-sm text-muted-foreground">
             No splits data available
           </div>
         )}
 
-        {!loading && !error && data.length > 0 && (
-          <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
-            <ComposedChart data={data} margin={{ top: 4, right: 16, bottom: 0, left: -12 }}>
-              <defs>
-                <linearGradient id="fill-pace" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor="var(--color-pace, var(--chart-1))"
-                    stopOpacity={0.8}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="var(--color-pace, var(--chart-1))"
-                    stopOpacity={0.3}
-                  />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} />
-              <XAxis
-                dataKey="label"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={4}
-                padding={{ left: 8, right: 8 }}
-              />
-              <YAxis
-                yAxisId="pace"
-                tickLine={false}
-                axisLine={false}
-                reversed
-                domain={paceDomain}
-                tickFormatter={(v: number) => formatPace(v)}
-              />
-              <YAxis
-                yAxisId="hr"
-                orientation="right"
-                tickLine={false}
-                axisLine={false}
-                domain={hrDomain}
-                tickFormatter={(v: number) => `${v}`}
-              />
-              <ChartTooltip cursor={false} content={<CustomTooltip />} />
-              <Bar
-                yAxisId="pace"
-                dataKey="paceSeconds"
-                name="Pace"
-                fill="url(#fill-pace)"
-                stroke="var(--color-pace, var(--chart-1))"
-                strokeOpacity={0.3}
-                strokeWidth={1}
-                radius={[4, 4, 0, 0]}
-                isAnimationActive={false}
-              />
-              <Line
-                yAxisId="hr"
-                dataKey="avgHR"
-                name="Avg HR"
-                stroke="var(--color-avgHR, var(--chart-3))"
-                strokeWidth={2}
-                dot={{ r: 2.5 }}
-                type="monotone"
-                connectNulls
-              />
-            </ComposedChart>
-          </ChartContainer>
+        {!loading && !error && rows.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full whitespace-nowrap text-sm tabular-nums">
+              <thead>
+                <tr className="text-xs text-muted-foreground">
+                  <th className="py-1 pr-3 text-left font-normal">{unit}</th>
+                  <th className="py-1 pr-3 text-left font-normal">Pace /km</th>
+                  <th className="w-full py-1 pr-3 font-normal" aria-label="Pace bar" />
+                  <th className="py-1 pr-3 text-right font-normal">Time</th>
+                  <th className="py-1 pr-3 text-right font-normal">Avg HR</th>
+                  <th className="py-1 text-right font-normal">Cadence</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => {
+                  const isFastest = r.paceSeconds === fastest && rows.length > 1;
+                  return (
+                    <tr key={r.label} className="border-t border-border/50">
+                      <td className="py-1.5 pr-3 text-muted-foreground">
+                        {r.label}
+                        {r.intensity && <div className="text-[10px]">{r.intensity}</div>}
+                      </td>
+                      <td className={`py-1.5 pr-3 ${isFastest ? "font-semibold" : ""}`}>
+                        {r.paceSeconds ? formatTime(r.paceSeconds) : "–"}
+                      </td>
+                      <td className="py-1.5 pr-3">
+                        <div
+                          className="h-2.5 rounded-full"
+                          style={{
+                            width: `${barWidth(r.paceSeconds)}%`,
+                            backgroundColor: "var(--chart-1)",
+                            opacity: isFastest ? 1 : 0.6,
+                          }}
+                        />
+                      </td>
+                      <td className="py-1.5 pr-3 text-right">{formatTime(r.duration)}</td>
+                      <td className="py-1.5 pr-3 text-right">{r.avgHR ?? "–"}</td>
+                      <td className="py-1.5 text-right">{r.cadence ?? "–"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              {rows.length > 1 && (
+                <tfoot>
+                  <tr className="border-t border-border font-medium">
+                    <td className="py-1.5 pr-3">{(total.distance / 1000).toFixed(2)} km</td>
+                    <td className="py-1.5 pr-3">{total.pace ? formatTime(total.pace) : "–"}</td>
+                    <td />
+                    <td className="py-1.5 pr-3 text-right">{formatTime(total.duration)}</td>
+                    <td className="py-1.5 pr-3 text-right">{total.avgHR ?? "–"}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
         )}
       </CardContent>
     </Card>

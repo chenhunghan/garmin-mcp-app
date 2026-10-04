@@ -168,7 +168,7 @@ export function registerInsightTools(server: McpServer) {
   tool(
     "get-lactate-threshold",
     "Get Lactate Threshold",
-    "Latest lactate threshold heart rate and pace",
+    "The user's latest lactate threshold measurement (heart rate and pace), a physiological metric detected by the watch. Not a saved workout: for workouts named like 'LT' use list-workouts.",
     {},
     (c) => c.getLactateThreshold(),
   );
@@ -276,6 +276,13 @@ export function registerInsightTools(server: McpServer) {
 
   // ── Devices, gear, plans ──
   // No profile tool on purpose: it would expose name, email and location to the LLM
+  tool(
+    "get-user-settings",
+    "Get User Settings",
+    "User settings: units, sleep schedule, physiological data (age, weight, height, HR zones, lactate threshold)",
+    {},
+    (c) => c.getUserSettings(),
+  );
   tool("get-devices", "Get Devices", "Registered Garmin devices", {}, (c) => c.getDevices());
   tool(
     "get-primary-training-device",

@@ -3,6 +3,8 @@ import { Bar, XAxis, YAxis, CartesianGrid, Line, ComposedChart } from "recharts"
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart.tsx";
 import type { ChartConfig } from "@/components/ui/chart.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import type { ToolArgs } from "@/lib/tool-args.ts";
+import { resolveActivity } from "@/lib/activity.ts";
 
 interface RawLap {
   lapIndex: number;
@@ -118,7 +120,10 @@ function CustomTooltip({
 
 export function SplitsChart({
   callTool,
+  args,
 }: {
+  /** What the tool call asked for (date / activity); defaults to today/latest */
+  args?: ToolArgs;
   callTool: (
     name: string,
     args?: Record<string, unknown>,
@@ -133,21 +138,14 @@ export function SplitsChart({
     setLoading(true);
     setError(null);
     try {
-      // Step 1: Get the most recent activity to find its ID
-      const activitiesResult = await callTool("get-activities", { start: 0, limit: 1 });
-      if (!Array.isArray(activitiesResult) || activitiesResult.length === 0) {
+      // Step 1: The requested activity, else the most recent
+      const activity = await resolveActivity(callTool, args);
+      if (!activity) {
         setError("No activities found");
         return;
       }
-
-      const activity = activitiesResult[0] as Record<string, unknown>;
-      const activityId = String(activity.activityId ?? "");
-      if (!activityId) {
-        setError("Activity has no ID");
-        return;
-      }
-
-      setActivityName((activity.activityName as string) ?? null);
+      const activityId = activity.id;
+      setActivityName([activity.name, activity.date].filter(Boolean).join(" · ") || null);
 
       // Step 2: Fetch splits for that activity
       const splitsResult = await callTool("get-activity-splits", { activityId });
@@ -168,7 +166,7 @@ export function SplitsChart({
     } finally {
       setLoading(false);
     }
-  }, [callTool]);
+  }, [callTool, args]);
 
   useEffect(() => {
     fetchData();

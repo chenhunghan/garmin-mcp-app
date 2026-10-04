@@ -4,6 +4,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import type { ChartConfig } from "@/components/ui/chart.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { formatDate } from "@/lib/dates.ts";
+import { anchorDate, anchorSuffix, rangeLabel, type ToolArgs } from "@/lib/tool-args.ts";
 
 type RangeKey = "7d" | "14d" | "30d";
 
@@ -26,10 +28,6 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
 function transformStepsData(raw: unknown): StepDay[] {
   if (!Array.isArray(raw)) return [];
 
@@ -51,7 +49,10 @@ function transformStepsData(raw: unknown): StepDay[] {
 
 export function StepsChart({
   callTool,
+  args,
 }: {
+  /** What the tool call asked for (date / activity); defaults to today/latest */
+  args?: ToolArgs;
   callTool: (
     name: string,
     args?: Record<string, unknown>,
@@ -68,8 +69,8 @@ export function StepsChart({
       setError(null);
       try {
         const totalDays = RANGES[r].days;
-        const end = new Date();
-        const start = new Date();
+        const end = anchorDate(args);
+        const start = new Date(end);
         start.setDate(end.getDate() - totalDays + 1);
 
         const MAX_RANGE = 28;
@@ -108,11 +109,14 @@ export function StepsChart({
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm">Daily Steps</CardTitle>
+        <CardTitle className="text-sm">
+          {"Daily Steps"}
+          {anchorSuffix(args, "range")}
+        </CardTitle>
         <Select value={range} onValueChange={(v) => setRange(v as RangeKey)}>
           {(Object.keys(RANGES) as RangeKey[]).map((key) => (
             <option key={key} value={key}>
-              {RANGES[key].label}
+              {rangeLabel(RANGES[key].label, args)}
             </option>
           ))}
         </Select>

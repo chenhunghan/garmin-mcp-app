@@ -21,6 +21,8 @@ import {
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/input.tsx";
 import { encryptPassword } from "@/lib/encrypt-password.ts";
+import type { ToolArgs } from "@/lib/tool-args.ts";
+import { WorkoutsView } from "./workouts-view.tsx";
 import "./app.css";
 
 type AuthState = "checking" | "login" | "mfa" | "authenticated";
@@ -145,6 +147,7 @@ const VALID_VIEWS = new Set([
   "hr-zones",
   "stress",
   "splits",
+  "workouts",
 ]);
 
 export function GarminApp() {
@@ -153,6 +156,8 @@ export function GarminApp() {
   const [error, setError] = useState<string | null>(null);
   // null = unknown (waiting for ontoolresult to tell us which view)
   const [visibleCharts, setVisibleCharts] = useState<Set<string> | null>(null);
+  // Arguments of the tool call that opened the app (date, activityId, ...)
+  const [toolArgs, setToolArgs] = useState<ToolArgs | undefined>(undefined);
   const appRef = useRef<App | null>(null);
 
   const callTool = useCallback(async (name: string, args?: Record<string, unknown>) => {
@@ -240,7 +245,12 @@ export function GarminApp() {
 
       // Dev UI: show all charts (no host tool calls to route).
       // Claude Desktop: stay null until ontoolresult sets the view.
-      if (typeof __DEV_UI__ !== "undefined" && __DEV_UI__) {
+      // With ?tool=..., wait for the simulated tool result instead (see dev.tsx).
+      if (
+        typeof __DEV_UI__ !== "undefined" &&
+        __DEV_UI__ &&
+        !new URLSearchParams(location.search).has("tool")
+      ) {
         setVisibleCharts(
           new Set([
             "run-planner",
@@ -253,15 +263,19 @@ export function GarminApp() {
             "hr-zones",
             "stress",
             "splits",
+            "workouts",
           ]),
         );
       }
 
-      app.ontoolresult = (params: Record<string, unknown>) => {
-        // Route to the correct chart based on structuredContent.view
+      // Registered before connect(): the host sends the result once
+      app.addEventListener("toolresult", (params) => {
+        // Route to the chart named in structuredContent.view, showing what
+        // the call asked for (structuredContent.args)
         const sc = params.structuredContent as Record<string, unknown> | undefined;
         const view = sc?.view;
         if (typeof view === "string" && VALID_VIEWS.has(view)) {
+          setToolArgs((sc?.args as ToolArgs | undefined) ?? undefined);
           setVisibleCharts(new Set([view]));
         }
 
@@ -279,7 +293,7 @@ export function GarminApp() {
             }
           }
         }
-      };
+      });
     },
   });
 
@@ -339,15 +353,22 @@ export function GarminApp() {
             </Button>
           </div>
           {visibleCharts?.has("run-planner") && <RunPlanner callTool={callTool} />}
-          {visibleCharts?.has("steps") && <StepsChart callTool={callTool} />}
-          {visibleCharts?.has("activities") && <ActivitiesChart callTool={callTool} />}
-          {visibleCharts?.has("heart-rate") && <HeartRateChart callTool={callTool} />}
-          {visibleCharts?.has("sleep") && <SleepChart callTool={callTool} />}
-          {visibleCharts?.has("training") && <TrainingChart callTool={callTool} />}
-          {visibleCharts?.has("race-predictions") && <RacePredictionsChart callTool={callTool} />}
-          {visibleCharts?.has("hr-zones") && <HrZonesChart callTool={callTool} />}
-          {visibleCharts?.has("stress") && <StressChart callTool={callTool} />}
-          {visibleCharts?.has("splits") && <SplitsChart callTool={callTool} />}
+          {visibleCharts?.has("steps") && <StepsChart callTool={callTool} args={toolArgs} />}
+          {visibleCharts?.has("activities") && (
+            <ActivitiesChart callTool={callTool} args={toolArgs} />
+          )}
+          {visibleCharts?.has("heart-rate") && (
+            <HeartRateChart callTool={callTool} args={toolArgs} />
+          )}
+          {visibleCharts?.has("sleep") && <SleepChart callTool={callTool} args={toolArgs} />}
+          {visibleCharts?.has("training") && <TrainingChart callTool={callTool} args={toolArgs} />}
+          {visibleCharts?.has("race-predictions") && (
+            <RacePredictionsChart callTool={callTool} args={toolArgs} />
+          )}
+          {visibleCharts?.has("hr-zones") && <HrZonesChart callTool={callTool} args={toolArgs} />}
+          {visibleCharts?.has("stress") && <StressChart callTool={callTool} args={toolArgs} />}
+          {visibleCharts?.has("splits") && <SplitsChart callTool={callTool} args={toolArgs} />}
+          {visibleCharts?.has("workouts") && <WorkoutsView callTool={callTool} args={toolArgs} />}
         </div>
       );
   }

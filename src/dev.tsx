@@ -11,6 +11,11 @@
  * Tool calls (tools/call) are forwarded via fetch to /api/tools/call, which
  * the Vite plugin (dev-plugin.ts) routes to the real MCP server in-process.
  *
+ * Simulating a tool call from Claude: `?tool=<name>&args=<json>` runs that tool
+ * on the real server once the app has initialized, and delivers the result as a
+ * `ui/notifications/tool-result`, like Claude Desktop does when Claude calls a
+ * tool with a UI. Without `?tool`, all charts are shown.
+ *
  * stopImmediatePropagation() is called on every handled message because in dev
  * mode window.parent === window, so postMessages echo back to the App's own
  * PostMessageTransport. Without stopping propagation, the transport receives
@@ -20,6 +25,28 @@
  */
 import { createRoot } from "react-dom/client";
 import { GarminApp } from "./app.tsx";
+
+function callServerTool(name: string, args: unknown) {
+  return fetch("/api/tools/call", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, arguments: args }),
+  }).then((r) => r.json());
+}
+
+/** `?tool=...&args=...`: deliver that tool's result like the host would. */
+function simulateToolCall() {
+  const params = new URLSearchParams(location.search);
+  const tool = params.get("tool");
+  if (!tool) return;
+  const args = JSON.parse(params.get("args") ?? "{}");
+  void callServerTool(tool, args).then((result) => {
+    window.postMessage(
+      { jsonrpc: "2.0", method: "ui/notifications/tool-result", params: result },
+      "*",
+    );
+  });
+}
 
 window.addEventListener("message", (e) => {
   // In dev mode, window.parent === window so all postMessages echo back.
@@ -55,15 +82,13 @@ window.addEventListener("message", (e) => {
   } else if (e.data.method === "ping") {
     e.stopImmediatePropagation();
     window.postMessage({ jsonrpc: "2.0", id: e.data.id, result: {} }, "*");
+  } else if (e.data.method === "ui/notifications/initialized") {
+    e.stopImmediatePropagation();
+    simulateToolCall();
   } else if (e.data.method === "tools/call") {
     e.stopImmediatePropagation();
     const { name, arguments: args } = e.data.params ?? {};
-    fetch("/api/tools/call", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, arguments: args }),
-    })
-      .then((r) => r.json())
+    callServerTool(name, args)
       .then((result) => {
         window.postMessage({ jsonrpc: "2.0", id: e.data.id, result }, "*");
       })

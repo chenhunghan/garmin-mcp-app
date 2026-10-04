@@ -4,6 +4,8 @@ import { ChartContainer, ChartTooltip } from "@/components/ui/chart.tsx";
 import type { ChartConfig } from "@/components/ui/chart.tsx";
 import { Select } from "@/components/ui/select.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { formatDate } from "@/lib/dates.ts";
+import { anchorDate, anchorSuffix, rangeLabel, type ToolArgs } from "@/lib/tool-args.ts";
 
 type RangeKey = "7d" | "14d" | "30d";
 
@@ -26,10 +28,6 @@ interface DayData {
   maxHR: number | null;
   bbCharged: number | null;
   bbDrained: number | null;
-}
-
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 function dateLabel(dateStr: string): string {
@@ -74,7 +72,10 @@ function CustomTooltip({
 
 export function HeartRateChart({
   callTool,
+  args,
 }: {
+  /** What the tool call asked for (date / activity); defaults to today/latest */
+  args?: ToolArgs;
   callTool: (
     name: string,
     args?: Record<string, unknown>,
@@ -92,8 +93,8 @@ export function HeartRateChart({
       setError(null);
       try {
         const totalDays = RANGES[r].days;
-        const end = new Date();
-        const start = new Date();
+        const end = anchorDate(args);
+        const start = new Date(end);
         start.setDate(end.getDate() - totalDays + 1);
 
         // Build individual date strings for heart rate fetches
@@ -144,8 +145,8 @@ export function HeartRateChart({
 
     // Build merged array — hrRaw is ordered by date (one entry per day)
     const totalDays = RANGES[range].days;
-    const end = new Date();
-    const start = new Date();
+    const end = anchorDate(args);
+    const start = new Date(end);
     start.setDate(end.getDate() - totalDays + 1);
 
     const result: DayData[] = [];
@@ -182,7 +183,10 @@ export function HeartRateChart({
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm">Heart Rate & Body Battery</CardTitle>
+        <CardTitle className="text-sm">
+          {"Heart Rate & Body Battery"}
+          {anchorSuffix(args, "range")}
+        </CardTitle>
         <div className="flex items-center gap-3">
           {/* Legend */}
           <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
@@ -204,7 +208,7 @@ export function HeartRateChart({
           <Select value={range} onValueChange={(v) => setRange(v as RangeKey)}>
             {(Object.keys(RANGES) as RangeKey[]).map((key) => (
               <option key={key} value={key}>
-                {RANGES[key].label}
+                {rangeLabel(RANGES[key].label, args)}
               </option>
             ))}
           </Select>

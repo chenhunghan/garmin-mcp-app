@@ -3,6 +3,8 @@ import { AreaChart, Area } from "recharts";
 import { ChartContainer } from "@/components/ui/chart.tsx";
 import type { ChartConfig } from "@/components/ui/chart.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { formatDate } from "@/lib/dates.ts";
+import { anchorDate, anchorSuffix, type ToolArgs } from "@/lib/tool-args.ts";
 
 interface RacePrediction {
   label: string;
@@ -20,10 +22,6 @@ interface Vo2Point {
 const chartConfig = {
   vo2: { label: "VO2 Max", color: "var(--chart-2)" },
 } satisfies ChartConfig;
-
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 /**
  * Format seconds into a readable race time.
@@ -175,7 +173,10 @@ function transformVo2Data(raw: unknown): Vo2Point[] {
 
 export function RacePredictionsChart({
   callTool,
+  args,
 }: {
+  /** What the tool call asked for (date / activity); defaults to today/latest */
+  args?: ToolArgs;
   callTool: (
     name: string,
     args?: Record<string, unknown>,
@@ -190,8 +191,8 @@ export function RacePredictionsChart({
     setLoading(true);
     setError(null);
     try {
-      const end = new Date();
-      const start = new Date();
+      const end = anchorDate(args);
+      const start = new Date(end);
       start.setDate(end.getDate() - 29);
 
       const [racePredResult, vo2Result] = await Promise.all([
@@ -206,7 +207,7 @@ export function RacePredictionsChart({
     } finally {
       setLoading(false);
     }
-  }, [callTool]);
+  }, [callTool, args]);
 
   useEffect(() => {
     fetchData();
@@ -217,7 +218,10 @@ export function RacePredictionsChart({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Race Predictions</CardTitle>
+        <CardTitle className="text-sm">
+          {"Race Predictions"}
+          {anchorSuffix(args, "range").replace(" · to", " · VO₂ max to")}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {loading && (

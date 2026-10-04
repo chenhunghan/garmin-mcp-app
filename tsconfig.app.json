@@ -31,6 +31,7 @@
     "src/stress-chart.tsx",
     "src/hr-zones-chart.tsx",
     "src/run-planner.tsx",
+    "src/workouts-view.tsx",
     "src/lib/**/*.ts",
     "src/components/**/*.tsx",
     "src/env.d.ts"

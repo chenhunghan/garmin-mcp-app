@@ -276,6 +276,13 @@ export function registerInsightTools(server: McpServer) {
 
   // ── Devices, gear, plans ──
   // No profile tool on purpose: it would expose name, email and location to the LLM
+  tool(
+    "get-user-settings",
+    "Get User Settings",
+    "User settings: units, sleep schedule, physiological data (age, weight, height, HR zones, lactate threshold)",
+    {},
+    (c) => c.getUserSettings(),
+  );
   tool("get-devices", "Get Devices", "Registered Garmin devices", {}, (c) => c.getDevices());
   tool(
     "get-primary-training-device",

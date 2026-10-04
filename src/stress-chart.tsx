@@ -3,6 +3,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ReferenceLine } from "rec
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart.tsx";
 import type { ChartConfig } from "@/components/ui/chart.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { formatDate } from "@/lib/dates.ts";
+import { anchorDate, anchorSuffix, type ToolArgs } from "@/lib/tool-args.ts";
 
 interface StressPoint {
   time: string;
@@ -16,10 +18,6 @@ const chartConfig = {
     color: "var(--chart-5)",
   },
 } satisfies ChartConfig;
-
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 function getStressCategory(level: number): string {
   if (level <= 25) return "Rest";
@@ -94,7 +92,10 @@ function CustomTooltip({
 
 export function StressChart({
   callTool,
+  args,
 }: {
+  /** What the tool call asked for (date / activity); defaults to today/latest */
+  args?: ToolArgs;
   callTool: (
     name: string,
     args?: Record<string, unknown>,
@@ -109,8 +110,8 @@ export function StressChart({
     setLoading(true);
     setError(null);
     try {
-      const today = formatDate(new Date());
-      const result = await callTool("get-stress", { date: today });
+      const day = formatDate(anchorDate(args));
+      const result = await callTool("get-stress", { date: day });
 
       const transformed = transformStressData(result);
       setData(transformed);
@@ -129,7 +130,7 @@ export function StressChart({
     } finally {
       setLoading(false);
     }
-  }, [callTool]);
+  }, [callTool, args]);
 
   useEffect(() => {
     fetchStress();
@@ -138,7 +139,10 @@ export function StressChart({
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm">Stress</CardTitle>
+        <CardTitle className="text-sm">
+          {"Stress"}
+          {anchorSuffix(args, "day")}
+        </CardTitle>
         {summary && (
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
             <span>Avg: {summary.avg}</span>

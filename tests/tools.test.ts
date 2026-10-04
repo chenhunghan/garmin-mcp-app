@@ -144,6 +144,59 @@ describe("MCP tools", () => {
     }
   });
 
+  it("every tool that opens the app UI routes to a view (no empty panels)", async () => {
+    const { tools } = await client.listTools();
+    const authTools = new Set(["garmin-check-auth", "garmin-logout"]);
+    const withUi = tools.filter(
+      (t) =>
+        (t._meta as { ui?: { resourceUri?: string; visibility?: string[] } } | undefined)?.ui
+          ?.resourceUri &&
+        // app-only tools never open a panel from the model side
+        !(t._meta as { ui?: { visibility?: string[] } }).ui?.visibility?.every((v) => v === "app"),
+    );
+    const noView: string[] = [];
+    for (const t of withUi) {
+      if (authTools.has(t.name) || !(t.name in toolArgs)) continue;
+      const result = (await client.callTool({ name: t.name, arguments: toolArgs[t.name] })) as {
+        structuredContent?: { view?: string };
+      };
+      if (!result.structuredContent?.view) noView.push(t.name);
+    }
+    expect(noView).toEqual([]);
+  });
+
+  it("echoes the call's arguments so the chart shows what was asked for", async () => {
+    const splits = (await client.callTool({
+      name: "get-activity-splits",
+      arguments: { activityId: ctx.activityId },
+    })) as { structuredContent?: { view?: string; args?: Record<string, unknown> } };
+    expect(splits.structuredContent).toEqual({
+      view: "splits",
+      args: { activityId: ctx.activityId },
+    });
+
+    const hrv = (await client.callTool({
+      name: "get-hrv",
+      arguments: { startDate: ctx.twoWeeksAgo, endDate: ctx.date },
+    })) as { structuredContent?: { view?: string; args?: Record<string, unknown> } };
+    expect(hrv.structuredContent).toEqual({ view: "training", args: { date: ctx.date } });
+
+    const workout = (await client.callTool({
+      name: "get-workout",
+      arguments: { workoutId: ctx.workoutId },
+    })) as { structuredContent?: { view?: string; args?: Record<string, unknown> } };
+    expect(workout.structuredContent).toEqual({
+      view: "workouts",
+      args: { workoutId: ctx.workoutId },
+    });
+  });
+
+  it("data-only tools don't open the app UI", async () => {
+    const { tools } = await client.listTools();
+    const settings = tools.find((t) => t.name === "get-user-settings");
+    expect((settings?._meta as { ui?: unknown } | undefined)?.ui).toBeUndefined();
+  });
+
   it("rejects nothing for numeric IDs (regression: #19)", async () => {
     const result = await client.callTool({
       name: "get-activity-splits",

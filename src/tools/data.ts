@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { GarminAuthError, GarminTokenExpiredError, computeKmSplits } from "garmin-connect";
@@ -135,10 +135,10 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       title: "Get Steps",
       description:
         "Get step count data from Garmin Connect. Supports a single date or a date range.",
-      inputSchema: {
+      inputSchema: z.object({
         date: z.string().describe("Start date in YYYY-MM-DD format"),
         endDate: z.string().optional().describe("End date in YYYY-MM-DD format (defaults to date)"),
-      },
+      }),
       _meta: { ui: { resourceUri } },
     },
     async ({ date, endDate }) =>
@@ -152,7 +152,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       title: "Get Heart Rates",
       description:
         "Get heart rate data (resting, min/max, intraday samples) for a day, or for each day from date to endDate in one call. The chart shows the days ending at the last requested date.",
-      inputSchema: dayOrRangeSchema,
+      inputSchema: z.object(dayOrRangeSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ date, endDate }) =>
@@ -169,7 +169,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       title: "Get Sleep",
       description:
         "Get sleep data (stages, score, HRV, breathing) for a day, or for each day from date to endDate in one call. The chart shows the days ending at the last requested date.",
-      inputSchema: dayOrRangeSchema,
+      inputSchema: z.object(dayOrRangeSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ date, endDate }) =>
@@ -186,7 +186,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       title: "Get Stress",
       description:
         "Get stress data (average, max, intraday levels) for a day, or for each day from date to endDate in one call. The chart shows the days ending at the last requested date.",
-      inputSchema: dayOrRangeSchema,
+      inputSchema: z.object(dayOrRangeSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ date, endDate }) =>
@@ -202,10 +202,10 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     {
       title: "Get Activities",
       description: "Get recent activities from Garmin Connect",
-      inputSchema: {
+      inputSchema: z.object({
         start: z.number().optional().describe("Start index (default 0)"),
         limit: z.number().optional().describe("Max results (default 20)"),
-      },
+      }),
       _meta: { ui: { resourceUri } },
     },
     async ({ start, limit }) =>
@@ -221,7 +221,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       title: "Get Training Readiness",
       description:
         "Get training readiness score (0-100) and breakdown (sleep, HRV, recovery, stress) for a given date",
-      inputSchema: dateSchema,
+      inputSchema: z.object(dateSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ date }) =>
@@ -235,7 +235,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       title: "Get Training Status",
       description:
         "Get training status including acute/chronic load, ACWR, and load status for a given date",
-      inputSchema: dateSchema,
+      inputSchema: z.object(dateSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ date }) => withAuth(() => getClient().getTrainingStatus(date), "training", { date }),
@@ -248,7 +248,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       title: "Get HRV",
       description:
         "Get heart rate variability data (nightly avg, weekly avg, baseline, status) for a date range",
-      inputSchema: dateRangeSchema,
+      inputSchema: z.object(dateRangeSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ startDate, endDate }) =>
@@ -261,7 +261,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     {
       title: "Get Body Battery",
       description: "Get daily body battery charged/drained values for a date range",
-      inputSchema: dateRangeSchema,
+      inputSchema: z.object(dateRangeSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ startDate, endDate }) =>
@@ -278,7 +278,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     {
       title: "Get Activity Details",
       description: "Get full details for a specific Garmin activity by ID",
-      inputSchema: activityIdSchema,
+      inputSchema: z.object(activityIdSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ activityId }) =>
@@ -292,7 +292,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       title: "Get Activity Splits",
       description:
         "Get splits (pace, HR, cadence) for a specific activity. Returns the laps recorded by the watch (lapDTOs); when the activity was recorded as a single lap (auto-lap off), also per-km splits computed from the time series (kmSplits).",
-      inputSchema: activityIdSchema,
+      inputSchema: z.object(activityIdSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ activityId }) =>
@@ -305,7 +305,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     {
       title: "Get Activity HR Zones",
       description: "Get heart rate time-in-zones breakdown for a specific activity",
-      inputSchema: activityIdSchema,
+      inputSchema: z.object(activityIdSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ activityId }) =>
@@ -320,7 +320,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     {
       title: "Get VO2 Max",
       description: "Get VO2 Max trend data for a date range",
-      inputSchema: dateRangeSchema,
+      inputSchema: z.object(dateRangeSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ startDate, endDate }) =>
@@ -335,7 +335,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     {
       title: "Get Race Predictions",
       description: "Get predicted race times for 5K, 10K, half marathon, and marathon",
-      inputSchema: {},
+      inputSchema: z.object({}),
       _meta: { ui: { resourceUri } },
     },
     async () => withAuth(() => getClient().getRacePredictions(), "race-predictions"),
@@ -350,9 +350,9 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       title: "Get Training Context",
       description:
         "Collects comprehensive training context for workout planning: recent running activities, sleep, HRV, training readiness, body battery, VO2 max, and training status. Use this before planning a workout.",
-      inputSchema: {
+      inputSchema: z.object({
         date: z.string().describe("Reference date (YYYY-MM-DD), typically today"),
-      },
+      }),
       _meta: { ui: { resourceUri } },
     },
     async ({ date }) =>

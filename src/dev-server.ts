@@ -9,8 +9,8 @@
  * Important: the server must connect before the client — client.connect()
  * sends an `initialize` request and blocks until the server responds.
  */
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { Client } from "@modelcontextprotocol/client";
+import { InMemoryTransport } from "@modelcontextprotocol/client";
 import { createServer } from "./server.js";
 
 let client: Client | null = null;

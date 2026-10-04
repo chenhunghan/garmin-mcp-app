@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import { readFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
@@ -56,9 +56,9 @@ export function createServer(version: string) {
       title: "Plan My Next Run",
       description:
         "Analyze your training data and plan your next run based on readiness, recovery, and goals",
-      argsSchema: {
+      argsSchema: z.object({
         date: z.string().describe("Reference date (YYYY-MM-DD), defaults to today").optional(),
-      },
+      }),
     },
     ({ date }) => {
       const resolvedDate = date || new Date().toISOString().split("T")[0];

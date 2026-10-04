@@ -4,8 +4,8 @@
  *   build/chatgpt-plugin/
  *     .agents/plugins/marketplace.json   ← marketplace "garmin-mcp"
  *     plugins/garmin/
- *       .codex-plugin/plugin.json        ← plugin "garmin"
- *       .mcp.json                        ← runs the same dist/index.js over stdio
+ *       plugin.json                      ← plugin "garmin" (root Agent Plugins format)
+ *       mcp.json                         ← runs the same dist/index.js over stdio
  *       dist/index.js, dist/app.html
  *       package.json                     ← {"type":"module"} so node loads the ESM bundle
  *       assets/, skills/
@@ -33,7 +33,6 @@ for (const f of ["dist/index.js", "dist/app.html"]) {
 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, ".agents/plugins"), { recursive: true });
-mkdirSync(join(plugin, ".codex-plugin"), { recursive: true });
 mkdirSync(join(plugin, "dist"), { recursive: true });
 mkdirSync(join(plugin, "assets"), { recursive: true });
 
@@ -52,37 +51,54 @@ json(join(out, ".agents/plugins/marketplace.json"), {
   ],
 });
 
-json(join(plugin, ".codex-plugin/plugin.json"), {
+// Root plugin.json (Agent Plugins format): portable identity at the top level,
+// ChatGPT presentation under extensions["com.openai"]. Skills are discovered
+// from ./skills, MCP servers from ./mcp.json.
+json(join(plugin, "plugin.json"), {
+  $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   name: "garmin",
   version: pkg.version,
   description:
     "Your Garmin data with interactive views: daily briefing, performance trends, training week, splits and workouts.",
-  author: { name: "Hung-Han (Henry) Chen" },
+  author: { name: "Hung-Han (Henry) Chen", url: "https://github.com/chenhunghan" },
   homepage: "https://github.com/chenhunghan/garmin-mcp-app",
   repository: "https://github.com/chenhunghan/garmin-mcp-app",
   license: "MIT",
-  skills: "./skills/",
-  extensions: { "com.openai": { onboardingSkill: "./skills/onboarding/SKILL.md" } },
-  mcpServers: "./.mcp.json",
-  interface: {
-    displayName: "Garmin",
-    shortDescription: "Daily briefing, trends and training plans from your Garmin",
-    longDescription:
-      "Connect your Garmin account to see a daily briefing against your own baselines, compare health and fitness trends over a year, plan and schedule a week of structured workouts, and analyze runs split by split. Runs locally: your password and data stay on your computer.",
-    developerName: "Hung-Han (Henry) Chen",
-    category: "Productivity",
-    capabilities: ["Interactive", "Read", "Write"],
-    composerIcon: "./assets/composer-icon.svg",
-    logo: "./assets/icon.svg",
-    logoDark: "./assets/icon-dark.svg",
-    defaultPrompt: ["@Garmin how am I today?", "@Garmin plan my training week"],
+  keywords: ["garmin", "fitness", "running", "health", "training"],
+  extensions: {
+    "com.openai": {
+      onboardingSkill: "./skills/onboarding/SKILL.md",
+      interface: {
+        displayName: "Garmin",
+        shortDescription: "Daily briefing, trends and training plans from your Garmin",
+        longDescription:
+          "Connect your Garmin account to see a daily briefing against your own baselines, compare health and fitness trends over a year, plan and schedule a week of structured workouts, and analyze runs split by split. Runs locally: your password and data stay on your computer.",
+        developerName: "Hung-Han (Henry) Chen",
+        category: "Productivity",
+        capabilities: ["Interactive", "Read", "Write"],
+        websiteURL: "https://github.com/chenhunghan/garmin-mcp-app",
+        defaultPrompt: ["@Garmin how am I today?", "@Garmin plan my training week"],
+        brandColor: "#3E6FEF",
+        composerIcon: "./assets/composer-icon.svg",
+        logo: "./assets/icon.svg",
+        logoDark: "./assets/icon-dark.svg",
+      },
+    },
   },
 });
 
-json(join(plugin, ".mcp.json"), {
-  mcpServers: { garmin: { command: "node", args: ["./dist/index.js"], cwd: "." } },
+// Local stdio server: the same dist/index.js as the Claude Desktop .mcpb
+json(join(plugin, "mcp.json"), {
+  $schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  mcpServers: {
+    garmin: { type: "stdio", command: "node", args: ["./dist/index.js"], cwd: "./" },
+  },
 });
-json(join(plugin, "package.json"), { name: "garmin-chatgpt-plugin", private: true, type: "module" });
+json(join(plugin, "package.json"), {
+  name: "garmin-chatgpt-plugin",
+  private: true,
+  type: "module",
+});
 
 cpSync(join(root, "dist/index.js"), join(plugin, "dist/index.js"));
 cpSync(join(root, "dist/app.html"), join(plugin, "dist/app.html"));

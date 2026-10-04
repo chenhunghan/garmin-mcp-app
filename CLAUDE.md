@@ -299,6 +299,8 @@ Shared pieces for views that frame data and hand interpretation to Claude:
 
 Dataviz rules for new charts (from the dataviz skill): pick the form before color; one y-axis per chart (two measures → small multiples, never dual axes); a single series needs no legend (the title names it); thin marks (2px lines, ≤24px bars with 4px rounded ends), solid hairline gridlines; text never wears the series color; a hover tooltip on every plotted chart and a table/values fallback; dark mode checked. The existing `--chart-1…5` palette fails the categorical checks for chart-3↔chart-4 and dark chart-1 contrast — for a single-series chart use `--chart-3` (passes contrast in both themes).
 
+**Composite insight tools** (e.g. `get-daily-briefing` in `src/tools/briefing.ts`): fetch sources with `Promise.allSettled` (one failure leaves a gap, not an error), keep the pure framing (baselines, deltas, statuses, the `shareContext` summary, `AskClaude` questions) in a unit-tested module (`src/briefing-model.ts`, shared by server and view), and return each metric as `{ value, unit, baseline: { name, … }, delta, status, missing? }`. The view re-calls the tool to render, so the tool caches its result for 2 minutes to avoid doubling Garmin requests.
+
 Dev UI: the mock host advertises `message` and `updateModelContext`; what views send is recorded on `window.__devHost.messages` / `.contexts` and logged as `[dev host]`.
 
 ### Recharts v3 + shadcn compatibility

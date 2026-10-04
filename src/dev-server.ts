@@ -18,6 +18,13 @@ let client: Client | null = null;
 export async function getDevClient(): Promise<Client> {
   if (client) return client;
 
+  // `npm run dev:ui:demo`: answer Garmin with the fictional demo athlete.
+  // Imported only here, so nothing demo-related reaches the production build.
+  if (process.env.GARMIN_DEMO === "1") {
+    const { startDemoMode } = await import("./demo/server.ts");
+    startDemoMode();
+  }
+
   const server = createServer("dev");
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 

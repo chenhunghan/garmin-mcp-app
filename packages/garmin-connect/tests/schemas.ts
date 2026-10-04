@@ -933,43 +933,16 @@ export const responseSchemas: Record<string, z.ZodType> = {
       startDate: z.string().nullable(),
       endDate: z.string().nullable(),
       groupMap: z
-        .looseObject({
-          "2026-08-30": z
+        .record(
+          z.string(),
+          z
             .looseObject({
               enduranceContributorDTOList: z.array(z.unknown()).nullable(),
               groupAverage: z.unknown().optional(),
               groupMax: z.unknown().optional(),
             })
             .nullable(),
-          "2026-09-06": z
-            .looseObject({
-              enduranceContributorDTOList: z.array(z.unknown()).nullable(),
-              groupAverage: z.unknown().optional(),
-              groupMax: z.unknown().optional(),
-            })
-            .nullable(),
-          "2026-09-13": z
-            .looseObject({
-              enduranceContributorDTOList: z.array(z.unknown()).nullable(),
-              groupAverage: z.unknown().optional(),
-              groupMax: z.unknown().optional(),
-            })
-            .nullable(),
-          "2026-09-20": z
-            .looseObject({
-              enduranceContributorDTOList: z.array(z.unknown()).nullable(),
-              groupAverage: z.unknown().optional(),
-              groupMax: z.unknown().optional(),
-            })
-            .nullable(),
-          "2026-09-27": z
-            .looseObject({
-              enduranceContributorDTOList: z.array(z.unknown()).nullable(),
-              groupAverage: z.unknown().optional(),
-              groupMax: z.unknown().optional(),
-            })
-            .nullable(),
-        })
+        )
         .nullable(),
       avg: z.unknown().optional(),
       max: z.unknown().optional(),
@@ -1123,15 +1096,7 @@ export const responseSchemas: Record<string, z.ZodType> = {
       userProfilePK: z.number().nullable(),
       startDate: z.string().nullable(),
       endDate: z.string().nullable(),
-      periodAvgScore: z
-        .looseObject({
-          "2026-08-30": z.unknown().optional(),
-          "2026-09-06": z.unknown().optional(),
-          "2026-09-13": z.unknown().optional(),
-          "2026-09-20": z.unknown().optional(),
-          "2026-09-27": z.unknown().optional(),
-        })
-        .nullable(),
+      periodAvgScore: z.record(z.string(), z.unknown()).nullable(),
       hillScoreDTOList: z.array(z.unknown()).nullable(),
       maxScore: z.unknown().optional(),
     })

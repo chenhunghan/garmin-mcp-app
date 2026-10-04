@@ -3,6 +3,7 @@ import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { GarminAuthError, GarminTokenExpiredError, computeKmSplits } from "garmin-connect";
 import { getClient } from "../garmin.js";
+import { readinessMetric, trainingStatusSummary } from "../briefing-model.js";
 import { waitForAuth } from "../auth-gate.js";
 
 type ToolResult = {
@@ -50,6 +51,22 @@ export async function withAuth(
     }
     throw err;
   }
+}
+
+function readinessForContext(raw: unknown, date: string) {
+  if (raw == null) return null;
+  const m = readinessMetric(raw, date);
+  if (m.value === null) return null;
+  return {
+    score: m.value,
+    level: m.status?.label ?? null,
+    feedback: (m.details?.garminFeedback as string | null) ?? null,
+  };
+}
+
+function statusForContext(raw: unknown) {
+  const s = trainingStatusSummary(raw);
+  return s ? { trainingStatus: s.label, acuteLoad: s.acwrStatus } : null;
 }
 
 /**
@@ -434,10 +451,12 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
             weeklyVolume,
             sleep: val(sleepResult),
             hrv: val(hrvResult),
-            trainingReadiness: val(readinessResult),
+            // Garmin returns readiness as a list of readings and training status
+            // nested per device; hand both over parsed (same logic as the briefing)
+            trainingReadiness: readinessForContext(val(readinessResult), date),
             bodyBattery: val(batteryResult),
             vo2Max: val(vo2Result),
-            trainingStatus: val(statusResult),
+            trainingStatus: statusForContext(val(statusResult)),
           };
         },
         "run-planner",

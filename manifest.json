@@ -1,9 +1,9 @@
 {
   "manifest_version": "0.3",
   "name": "garmin-mcp",
-  "display_name": "Garmin MCP",
+  "display_name": "Run Coach",
   "version": "0.7.0",
-  "description": "MCP server for Garmin integration",
+  "description": "Run Coach for your Garmin data: daily briefing, performance trends, training plans and interactive charts. Unofficial. Not affiliated with or endorsed by Garmin. Garmin is a trademark of Garmin Ltd.",
   "author": {
     "name": "chh"
   },

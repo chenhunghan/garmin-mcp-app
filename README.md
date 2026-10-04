@@ -1,6 +1,8 @@
-# Garmin MCP App
+# Run Coach — Garmin MCP App
 
 Connect your Garmin watch to Claude Desktop or ChatGPT. Explore interactive charts.
+
+<sub>Unofficial. Not affiliated with or endorsed by Garmin. Garmin is a trademark of Garmin Ltd.</sub>
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/62b5ec61-a772-4502-b717-c32c4ea89195" alt="demo" width="600" />
@@ -20,11 +22,11 @@ Requires Node.js 20+.
 
 1. In the ChatGPT desktop app, open **Settings → Plugins → Add marketplace**
 2. **Source:** `chenhunghan/garmin-mcp-app` · **Git ref:** `chatgpt-plugin` (leave sparse paths empty) → **Add marketplace**
-3. Restart the app, open the Plugins Directory, choose the **Garmin MCP** marketplace and install **Garmin**
+3. Restart the app, open the Plugins Directory, choose the **Run Coach** marketplace and install **Coach**
 
 Or with the [Codex CLI](https://developers.openai.com/codex): `codex plugin marketplace add chenhunghan/garmin-mcp-app@chatgpt-plugin` then `codex plugin add garmin@garmin-mcp`.
 
-**Garmin** then appears in the sidebar (daily briefing and performance dashboard) and as a **Training Week** tab in conversations; or just ask "@Garmin how am I today?". It runs on your computer, so it works in the desktop app only.
+**Coach** then appears in the sidebar (daily briefing and performance dashboard) and as a **Training Week** tab in conversations; or just ask "@Coach how am I today?". It runs on your computer, so it works in the desktop app only.
 
 ## What you can do
 
@@ -181,3 +183,7 @@ type(optional-scope): description
 Allowed types: `feat`, `fix`, `chore`, `docs`, `ci`, `refactor`, `test`
 
 </details>
+
+## Disclaimer
+
+Run Coach is an independent, open-source project. It is not affiliated with, endorsed by, or sponsored by Garmin Ltd. or its subsidiaries. Garmin and Garmin Connect are trademarks of Garmin Ltd. or its subsidiaries; they are used here only to describe compatibility. The app uses the unofficial Garmin Connect API with your own account.

@@ -1,4 +1,4 @@
-# Garmin MCP App
+# Garmin MCP App (Run Coach)
 
 MCP App server with interactive React UI for Garmin Connect integration.
 
@@ -412,6 +412,10 @@ The `__DEV_UI__` compile-time flag (set in `vite.config.dev.ts`) controls the de
 
 - Don't externalize dependencies to a CDN (esm.sh etc.): ChatGPT's sandbox is stricter, and the old esm.sh setup also caused `z.custom is not a function` Zod mismatches for ext-apps. If something external is ever unavoidable, declare its domain in the resource `_meta.ui.csp` (`resourceDomains` + `connectDomains`, see `src/server.ts`).
 
+## Naming and trademarks
+
+The user-facing product name is **Run Coach** (Claude extension `display_name`, ChatGPT marketplace name, MCP server `title`); the ChatGPT plugin itself is **Coach**, because its `displayName` is also the composer @-mention (`@Coach`) — never "Garmin" alone, which would imply an official Garmin product. Describing compatibility is fine ("Connected to Garmin", "for Garmin users"). Don't use Garmin's logo or artwork (the icon is an original generic watch). Keep the disclaimer in the README and plugin/extension descriptions: "Unofficial. Not affiliated with or endorsed by Garmin. Garmin is a trademark of Garmin Ltd." Internal IDs (`garmin-mcp`, plugin `garmin`, repo name) stay for compatibility.
+
 ## ChatGPT plugin (openai/mcp-extensions)
 
 The same server and UI also run as a **local ChatGPT desktop plugin** (Codex plugin format). ChatGPT-specific metadata is additive and ignored by Claude Desktop; it lives in `src/tools/openai.ts`:
@@ -421,7 +425,7 @@ The same server and UI also run as a **local ChatGPT desktop plugin** (Codex plu
 - **Host-neutral UI**: never hardcode "Claude" in user-visible text. `useAppActions().assistantName` comes from the host (`app.getHostVersion()`): "Claude", "ChatGPT", or null → plain "Ask". Preview in the dev UI with `?host=ChatGPT`.
 - **Packaging**: `npm run pack:chatgpt` builds, assembles `build/chatgpt-plugin/` and validates it — a marketplace (`.agents/plugins/marketplace.json`, name `garmin-mcp`) with plugin `garmin` in the **root Agent Plugins format**: `plugin.json` (identity at the top level, ChatGPT presentation and `onboardingSkill` under `extensions["com.openai"]`), `mcp.json` (stdio server `node ./dist/index.js`, `cwd` must start with `./` or `${PLUGIN_ROOT}`), skills auto-discovered from `skills/`, icons from `plugin/assets`. `scripts/validate-chatgpt-plugin.mjs` checks both manifests against the vendored schemas in `scripts/schemas/` (also in CI). The older `.codex-plugin/plugin.json` layout is only a fallback — don't reintroduce it. Local MCP servers make it **Desktop only**. Users need Node 20+ on PATH (ChatGPT, unlike Claude Desktop's `.mcpb`, doesn't bundle Node).
 - **Release**: the `chatgpt-plugin` job in `release-please.yml` publishes that folder to the `chatgpt-plugin` branch on each release.
-- **Install**: ChatGPT desktop → Settings → Plugins → **Add marketplace** (source `chenhunghan/garmin-mcp-app`, git ref `chatgpt-plugin`), restart, install **Garmin**; or `codex plugin marketplace add chenhunghan/garmin-mcp-app@chatgpt-plugin` + `codex plugin add garmin@garmin-mcp`. To test a local build: same dialog with source = the absolute path of `build/chatgpt-plugin` (no ref). Don't point it at a source branch — only `chatgpt-plugin` has the built `dist/` and the marketplace at its root.
+- **Install**: ChatGPT desktop → Settings → Plugins → **Add marketplace** (source `chenhunghan/garmin-mcp-app`, git ref `chatgpt-plugin`), restart, install **Coach**; or `codex plugin marketplace add chenhunghan/garmin-mcp-app@chatgpt-plugin` + `codex plugin add garmin@garmin-mcp`. To test a local build: same dialog with source = the absolute path of `build/chatgpt-plugin` (no ref). Don't point it at a source branch — only `chatgpt-plugin` has the built `dist/` and the marketplace at its root.
 - Spec: https://github.com/openai/mcp-extensions/blob/main/docs/spec.md (v0.1, moving fast). We don't depend on `@openai/mcp-extensions` (it pins ext-apps 1.x / MCP SDK v1); the keys are hand-written.
 
 ### Reference implementation

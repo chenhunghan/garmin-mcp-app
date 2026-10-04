@@ -18,7 +18,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export function createServer(version: string) {
   const server = new McpServer({
     name: "garmin-mcp",
-    title: "Garmin",
+    title: "Run Coach",
     version,
     icons: GARMIN_ICONS,
   });

@@ -1,9 +1,9 @@
 ---
 name: garmin
-description: Read the user's Garmin health and training data and show it in interactive views — daily briefing, performance trends, training week, activity splits and workouts.
+description: Run Coach — read the user's Garmin health and training data and show it in interactive views — daily briefing, performance trends, training week, activity splits and workouts.
 ---
 
-# Garmin
+# Run Coach (Garmin data)
 
 Prefer the tools that open a view, and let the view carry the numbers — answer with what they mean, not a list of values:
 

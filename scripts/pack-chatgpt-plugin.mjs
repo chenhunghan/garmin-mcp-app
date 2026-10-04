@@ -40,7 +40,7 @@ const json = (path, data) => writeFileSync(path, JSON.stringify(data, null, 2) +
 
 json(join(out, ".agents/plugins/marketplace.json"), {
   name: "garmin-mcp",
-  interface: { displayName: "Garmin MCP" },
+  interface: { displayName: "Run Coach" },
   plugins: [
     {
       name: "garmin",
@@ -59,7 +59,7 @@ json(join(plugin, "plugin.json"), {
   name: "garmin",
   version: pkg.version,
   description:
-    "Your Garmin data with interactive views: daily briefing, performance trends, training week, splits and workouts.",
+    "Run Coach for your Garmin data: daily briefing, performance trends, training week, splits and workouts. Unofficial. Not affiliated with or endorsed by Garmin. Garmin is a trademark of Garmin Ltd.",
   author: { name: "Hung-Han (Henry) Chen", url: "https://github.com/chenhunghan" },
   homepage: "https://github.com/chenhunghan/garmin-mcp-app",
   repository: "https://github.com/chenhunghan/garmin-mcp-app",
@@ -69,15 +69,16 @@ json(join(plugin, "plugin.json"), {
     "com.openai": {
       onboardingSkill: "./skills/onboarding/SKILL.md",
       interface: {
-        displayName: "Garmin",
-        shortDescription: "Daily briefing, trends and training plans from your Garmin",
+        // Also the @-mention in ChatGPT's composer: "@Coach"
+        displayName: "Coach",
+        shortDescription: "Daily briefing, trends and training plans for Garmin users",
         longDescription:
-          "Connect your Garmin account to see a daily briefing against your own baselines, compare health and fitness trends over a year, plan and schedule a week of structured workouts, and analyze runs split by split. Runs locally: your password and data stay on your computer.",
+          "Connect your Garmin account to see a daily briefing against your own baselines, compare health and fitness trends over a year, plan and schedule a week of structured workouts, and analyze runs split by split. Runs locally: your password and data stay on your computer. Unofficial. Not affiliated with or endorsed by Garmin. Garmin is a trademark of Garmin Ltd.",
         developerName: "Hung-Han (Henry) Chen",
         category: "Productivity",
         capabilities: ["Interactive", "Read", "Write"],
         websiteURL: "https://github.com/chenhunghan/garmin-mcp-app",
-        defaultPrompt: ["@Garmin how am I today?", "@Garmin plan my training week"],
+        defaultPrompt: ["@Coach how am I today?", "@Coach plan my training week"],
         brandColor: "#3E6FEF",
         composerIcon: "./assets/composer-icon.svg",
         logo: "./assets/icon.svg",

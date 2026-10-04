@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.4.0...garmin-mcp-app-v0.5.0) (2026-10-04)
+
+
+### Features
+
+* add run planner with training context analysis and workout creation ([e2d7dbe](https://github.com/chenhunghan/garmin-mcp-app/commit/e2d7dbe11889768810c3becfc0bcf66ebddaff20))
+
+
+### Bug Fixes
+
+* accept numeric workout and activity IDs ([#19](https://github.com/chenhunghan/garmin-mcp-app/issues/19)) ([ef03afd](https://github.com/chenhunghan/garmin-mcp-app/commit/ef03afdc1ab218ceda730b4ecaa6b53c0f505a60))
+* **garmin-connect:** follow SSO redirects so MFA login works ([76e0a30](https://github.com/chenhunghan/garmin-mcp-app/commit/76e0a30bec29e271dcf12727a407465fc9bf70ba)), closes [#16](https://github.com/chenhunghan/garmin-mcp-app/issues/16)
+* MFA login, plaintext password in logs, and opaque fetch errors ([#18](https://github.com/chenhunghan/garmin-mcp-app/issues/18)) ([76e0a30](https://github.com/chenhunghan/garmin-mcp-app/commit/76e0a30bec29e271dcf12727a407465fc9bf70ba))
+* never send the Garmin password in plaintext tool arguments ([76e0a30](https://github.com/chenhunghan/garmin-mcp-app/commit/76e0a30bec29e271dcf12727a407465fc9bf70ba)), closes [#15](https://github.com/chenhunghan/garmin-mcp-app/issues/15)
+* show real error messages instead of JSON parse errors ([76e0a30](https://github.com/chenhunghan/garmin-mcp-app/commit/76e0a30bec29e271dcf12727a407465fc9bf70ba)), closes [#17](https://github.com/chenhunghan/garmin-mcp-app/issues/17)
+
 ## [0.4.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.3.0...garmin-mcp-app-v0.4.0) (2026-02-21)
 
 

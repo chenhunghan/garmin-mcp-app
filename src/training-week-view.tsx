@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { AskClaude } from "@/components/ask-claude.tsx";
+import { AskAssistant } from "@/components/ask-assistant.tsx";
 import { StatTile, StatusBadge } from "@/components/stat-tile.tsx";
 import {
   formatDuration,
@@ -454,7 +454,7 @@ export function TrainingWeekView({
               })}
             </ol>
 
-            <AskClaude questions={questions} />
+            <AskAssistant questions={questions} />
           </div>
         )}
       </CardContent>

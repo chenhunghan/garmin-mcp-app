@@ -5,3 +5,4 @@ dist/
 *.mcpb
 .live-capture/
 .DS_Store
+build/

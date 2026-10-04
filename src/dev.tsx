@@ -77,7 +77,11 @@ window.addEventListener("message", (e) => {
         result: {
           protocolVersion: "2026-01-26",
           capabilities: {},
-          hostInfo: { name: "dev-mock", version: "0.0.0" },
+          // ?host=ChatGPT (or Claude) previews host-specific labels like "Ask ChatGPT"
+          hostInfo: {
+            name: new URLSearchParams(location.search).get("host") ?? "dev-mock",
+            version: "0.0.0",
+          },
           // Like Claude Desktop: tools, messages and model context
           hostCapabilities: {
             serverTools: {},

@@ -2,18 +2,14 @@ import { useState } from "react";
 import { useAppActions } from "@/lib/app-actions.tsx";
 
 /**
- * Suggested follow-up questions that, when clicked, are sent to Claude as the
- * user's next message. Claude does the analysis; the app only frames it.
- * Renders nothing when the host can't receive messages.
+ * Suggested follow-up questions that, when clicked, are sent to the host's
+ * assistant (Claude, ChatGPT, ...) as the user's next message. The assistant
+ * does the analysis; the app only frames it. Renders nothing when the host
+ * can't receive messages.
  */
-export function AskClaude({
-  questions,
-  label = "Ask Claude",
-}: {
-  questions: string[];
-  label?: string;
-}) {
-  const { canAsk, ask } = useAppActions();
+export function AskAssistant({ questions }: { questions: string[] }) {
+  const { canAsk, ask, assistantName } = useAppActions();
+  const label = assistantName ? `Ask ${assistantName}` : "Ask";
   const [sent, setSent] = useState<string | null>(null);
   if (!canAsk || questions.length === 0) return null;
 
@@ -35,7 +31,7 @@ export function AskClaude({
           }}
           className="rounded-full border border-border/50 px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-50 disabled:hover:bg-transparent"
         >
-          {sent === q ? "Sent to Claude ✓" : q}
+          {sent === q ? `Sent${assistantName ? ` to ${assistantName}` : ""} ✓` : q}
         </button>
       ))}
     </div>

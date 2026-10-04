@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
-import { AskClaude } from "@/components/ask-claude.tsx";
+import { AskAssistant } from "@/components/ask-assistant.tsx";
 import { useAppActions, type CallTool } from "@/lib/app-actions.tsx";
 import { formatDate, parseDate } from "@/lib/dates.ts";
 import type { ToolArgs } from "@/lib/tool-args.ts";
@@ -777,7 +777,7 @@ export function DashboardView({
               </button>
             </div>
             {showTable && <DashboardTable data={shown} />}
-            <AskClaude questions={qs} />
+            <AskAssistant questions={qs} />
           </div>
         )}
       </CardContent>

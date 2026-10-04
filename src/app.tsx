@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/input.tsx";
 import { encryptPassword } from "@/lib/encrypt-password.ts";
 import type { ToolArgs } from "@/lib/tool-args.ts";
-import { AppActionsContext, type AppActions } from "@/lib/app-actions.tsx";
+import { AppActionsContext, assistantNameFor, type AppActions } from "@/lib/app-actions.tsx";
 import { WorkoutsView } from "./workouts-view.tsx";
 import { BriefingView } from "./briefing-view.tsx";
 import { TrainingWeekView } from "./training-week-view.tsx";
@@ -324,6 +324,7 @@ export function GarminApp() {
   const actions = useMemo<AppActions>(
     () => ({
       callTool,
+      assistantName: assistantNameFor(isConnected ? app?.getHostVersion()?.name : undefined),
       canAsk: !!caps?.message,
       ask: async (text) => {
         await appRef.current?.sendMessage({ role: "user", content: [{ type: "text", text }] });
@@ -336,7 +337,7 @@ export function GarminApp() {
         });
       },
     }),
-    [callTool, caps],
+    [callTool, caps, app, isConnected],
   );
 
   useEffect(() => {

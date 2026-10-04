@@ -16,6 +16,7 @@
     "fmt": "oxfmt --write src/ packages/",
     "fmt:check": "oxfmt src/ packages/",
     "pack": "npm run build && mcpb pack . garmin-mcp-app.mcpb",
+    "pack:chatgpt": "npm run build && node scripts/pack-chatgpt-plugin.mjs",
     "pack:validate": "mcpb validate manifest.json",
     "test:lib": "npm test --workspace=packages/garmin-connect",
     "test:live": "npm run test:live --workspace=packages/garmin-connect",

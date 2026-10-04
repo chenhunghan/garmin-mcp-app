@@ -35,28 +35,10 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: false,
+    // Everything (React, Recharts) is bundled into one self-contained file:
+    // ChatGPT's sandbox and offline use can't rely on a CDN.
     rollupOptions: {
       input: "src/app.html",
-      external: [
-        "react",
-        "react-dom",
-        "react-dom/client",
-        "react/jsx-runtime",
-        "react/jsx-dev-runtime",
-        "react-is",
-        "recharts",
-      ],
-      output: {
-        paths: {
-          react: "https://esm.sh/react@19",
-          "react-dom": "https://esm.sh/react-dom@19",
-          "react-dom/client": "https://esm.sh/react-dom@19/client",
-          "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime",
-          "react/jsx-dev-runtime": "https://esm.sh/react@19/jsx-dev-runtime",
-          "react-is": "https://esm.sh/react-is@19?external=react",
-          recharts: "https://esm.sh/recharts@3.7.0?external=react,react-dom,react-is",
-        },
-      },
     },
   },
 });

@@ -53,3 +53,36 @@ jobs:
           files: garmin-mcp-app.mcpb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ChatGPT / Codex plugin: publish the ready-built marketplace to the
+  # `chatgpt-plugin` branch, so users can run
+  #   codex plugin marketplace add chenhunghan/garmin-mcp-app@chatgpt-plugin
+  chatgpt-plugin:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run pack:chatgpt
+
+      - name: Publish to the chatgpt-plugin branch
+        working-directory: build/chatgpt-plugin
+        run: |
+          git init -q -b chatgpt-plugin
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "chatgpt plugin ${{ needs.release-please.outputs.tag_name }}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" chatgpt-plugin

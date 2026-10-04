@@ -13,7 +13,9 @@ export type CallTool = (
  */
 export interface AppActions {
   callTool: CallTool;
-  /** Host accepts `ui/message`: send `text` as the user's next message to Claude. */
+  /** The host's assistant ("Claude", "ChatGPT"), for labels; null when unknown. */
+  assistantName: string | null;
+  /** Host accepts `ui/message`: send `text` as the user's next message to the assistant. */
   canAsk: boolean;
   ask: (text: string) => Promise<void>;
   /** Host accepts `ui/update-model-context`. */
@@ -30,11 +32,20 @@ const noop = async () => {};
 
 export const AppActionsContext = createContext<AppActions>({
   callTool: async () => null,
+  assistantName: null,
   canAsk: false,
   ask: noop,
   canShareContext: false,
   shareContext: noop,
 });
+
+/** Name the assistant after the host, e.g. "Claude Desktop" → "Claude". */
+export function assistantNameFor(hostName: string | undefined): string | null {
+  if (!hostName) return null;
+  if (/claude/i.test(hostName)) return "Claude";
+  if (/chatgpt|openai|codex/i.test(hostName)) return "ChatGPT";
+  return null;
+}
 
 export function useAppActions(): AppActions {
   return useContext(AppActionsContext);

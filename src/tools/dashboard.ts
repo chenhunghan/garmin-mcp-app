@@ -11,6 +11,7 @@ import {
 } from "garmin-connect";
 import { getClient } from "../garmin.js";
 import { withAuth } from "./data.js";
+import { entrypointIcons, openaiEntrypoint } from "./openai.js";
 
 export const RANGE_WEEKS = { "4w": 4, "12w": 12, "26w": 26, "52w": 52 } as const;
 export type DashboardRange = keyof typeof RANGE_WEEKS;
@@ -48,6 +49,7 @@ export function registerDashboardTools(server: McpServer, resourceUri: string) {
     "show-performance-dashboard",
     {
       title: "Performance Dashboard",
+      ...entrypointIcons,
       description: `Show how key health and fitness metrics trend over 4 weeks to 1 year, one small chart per metric on a shared time range. Use it for trends, progress and comparing metrics over time: "is my fitness improving?", "how has my HRV changed?", "why did my resting HR go up in March?" (pick a range/endDate that covers the period).
 
 Metrics (max 4): restingHR, hrv (nightly avg, with Garmin's baseline band), vo2max, sleepScore, sleepDuration (h), steps (per day), stress (avg), bodyBattery (daily high), intensityMinutes (weekly, vigorous counted double), trainingLoad (acute load with Garmin's optimal range), weight (kg, only if the user weighs in). Points are daily for 4w/12w and weekly means for 26w/52w.
@@ -70,7 +72,7 @@ Each metric has a summary: end = current level (mean of the last 7 days, or the 
           .optional()
           .describe("Last day shown, YYYY-MM-DD (default today)"),
       }),
-      _meta: { ui: { resourceUri } },
+      _meta: { ui: { resourceUri }, ...openaiEntrypoint("global") },
     },
     async ({ metrics, range, endDate }) => {
       const args = {

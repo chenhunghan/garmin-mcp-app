@@ -8,6 +8,7 @@ import { registerAuthTools } from "./tools/auth.js";
 import { registerDataTools } from "./tools/data.js";
 import { registerWorkoutTools } from "./tools/workouts.js";
 import { registerInsightTools } from "./tools/insights.js";
+import { GARMIN_ICONS } from "./tools/openai.js";
 import { registerBriefingTools } from "./tools/briefing.js";
 import { formatLocalDate, mondayOf, registerWeekTools } from "./tools/week.js";
 import { registerDashboardTools } from "./tools/dashboard.js";
@@ -17,7 +18,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export function createServer(version: string) {
   const server = new McpServer({
     name: "garmin-mcp",
+    title: "Garmin",
     version,
+    icons: GARMIN_ICONS,
   });
 
   const resourceUri = "ui://garmin-mcp/app.html";
@@ -34,12 +37,12 @@ export function createServer(version: string) {
           mimeType: RESOURCE_MIME_TYPE,
           text: await readFile(resolve(__dirname, "app.html"), "utf-8"),
           _meta: {
-            ui: {
-              csp: {
-                resourceDomains: ["https://esm.sh"],
-                connectDomains: ["https://esm.sh"],
-              },
-            },
+            // Fully self-contained (React and Recharts are bundled): no external
+            // domains, so the strictest CSP applies in every host
+            ui: { csp: { resourceDomains: [], connectDomains: [] } },
+            // ChatGPT (openai/mcp-extensions): the app works inline and fullscreen;
+            // other hosts ignore this key
+            "openai/ui": { availableDisplayModes: ["inline", "fullscreen"] },
           },
         },
       ],

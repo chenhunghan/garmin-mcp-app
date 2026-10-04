@@ -24,7 +24,7 @@ The host (e.g. Claude Desktop) brokers all communication: Server ←stdio→ Hos
 npm workspaces (`packages/*`). Root scripts:
 
 - `npm run dev` — watch-build server + UI
-- `npm run dev:ui` — standalone UI dev wired to the MCP server
+- `npm run dev:ui` — standalone UI dev wired to the MCP server (`dev:ui:demo`: with a fictional demo account, see below)
 - `npm run test:lib` — run garmin-connect tests
 - `npm run pack` — build + package `.mcpb` bundle
 
@@ -46,6 +46,16 @@ agent-browser eval "document.body.innerHTML" # Inspect raw DOM
 ```
 
 This is the preferred way to debug the MCP app UI during development — it can read elements, check auth state, interact with forms, and inspect console logs without needing a real browser window.
+
+### Demo mode (`npm run dev:ui:demo`)
+
+The dev UI with a **fully fictional** Garmin account ("Demo Runner", a recreational runner training for a half marathon) — for README screenshots and screencasts without anyone's personal data. `GARMIN_DEMO=1` makes `src/dev-server.ts` call `startDemoMode()` (`src/demo/server.ts`) before creating the MCP server: fake tokens in a temp dir (`GARMIN_TOKEN_PATH`, never `~/.garminconnect`) and an MSW server in the Vite process that answers every `connectapi.garmin.com` request from the demo world; any other `*.garmin.com` request (sign-in) fails as a network error, and unknown API paths return 404 with a `[demo] no demo data for …` warning. Nothing in `src/demo/` is imported by the production entry (`src/index.ts`).
+
+- `src/demo/world.ts` — the athlete, simulated day by day for the 400 days up to today (seeded by date, so the same day always looks the same): runs in 3 build + 1 recovery week cycles, sleep, HRV + baseline, resting HR, stress, body battery, load, VO₂ max, readiness, weight, saved workouts and the calendar. "Today" is pinned for screenshots (readiness 72, sleep 81, yesterday's run recorded as one lap, data up to 10:30).
+- `src/demo/run.ts` — each run is a 5-second time series from its plan; summary, laps, HR zones, training load/effect all derive from it. `src/demo/intraday.ts` — per-day HR, stress, body battery, sleep stages.
+- `src/demo/garmin-api.ts` — one route per endpoint. Routes write the fields that matter; `fill()` adds every other key the response schema (`packages/garmin-connect/tests/schemas.ts`) requires, as null. Workout create/schedule/delete only change memory.
+- Tests: `tests/demo-endpoints.test.ts` checks every endpoint in `tests/live/endpoints.ts` against its schema; `tests/demo-tools.test.ts` runs every view tool in demo mode.
+- **New endpoint**: add a route in `garmin-api.ts` (with its `schema` key) — the endpoints test fails until the demo answers it. New view: add its tool's args in `tests/demo-tools.test.ts`.
 
 ### garmin-connect library
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.8.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.7.0...garmin-mcp-app-v0.8.0) (2026-10-04)
+
+
+### Features
+
+* host-aware Ask labels (Ask Claude / Ask ChatGPT) ([37b6cb0](https://github.com/chenhunghan/garmin-mcp-app/commit/37b6cb0567248423a826e6d0c769eebc0d10caa7))
+* install the ChatGPT plugin from the repo name, no git ref ([37b6cb0](https://github.com/chenhunghan/garmin-mcp-app/commit/37b6cb0567248423a826e6d0c769eebc0d10caa7))
+* name the app Run Coach, with a Garmin trademark disclaimer ([37b6cb0](https://github.com/chenhunghan/garmin-mcp-app/commit/37b6cb0567248423a826e6d0c769eebc0d10caa7))
+* run as a ChatGPT desktop plugin from the same server and UI ([37b6cb0](https://github.com/chenhunghan/garmin-mcp-app/commit/37b6cb0567248423a826e6d0c769eebc0d10caa7))
+* run as a ChatGPT plugin named Coach, from the same server and UI ([#38](https://github.com/chenhunghan/garmin-mcp-app/issues/38)) ([37b6cb0](https://github.com/chenhunghan/garmin-mcp-app/commit/37b6cb0567248423a826e6d0c769eebc0d10caa7))
+
+
+### Bug Fixes
+
+* composer icon that stays visible in ChatGPT's dark theme ([37b6cb0](https://github.com/chenhunghan/garmin-mcp-app/commit/37b6cb0567248423a826e6d0c769eebc0d10caa7))
+
 ## [0.7.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.6.0...garmin-mcp-app-v0.7.0) (2026-10-04)
 
 

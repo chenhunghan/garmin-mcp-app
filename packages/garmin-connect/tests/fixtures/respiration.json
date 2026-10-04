@@ -1,0 +1,101 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/wellness-service/wellness/daily/respiration/2026-10-03",
+    "status": 200,
+    "body": {
+      "userProfilePK": 10000001,
+      "calendarDate": "2026-10-03",
+      "startTimestampGMT": "2026-09-18T13:55:34.0",
+      "endTimestampGMT": "2026-09-03T22:41:44.0",
+      "startTimestampLocal": "2026-09-25T13:28:39.0",
+      "endTimestampLocal": "2026-10-01T15:21:25.0",
+      "sleepStartTimestampGMT": "2026-09-28T21:06:06.0",
+      "sleepEndTimestampGMT": "2026-09-17T11:35:45.0",
+      "sleepStartTimestampLocal": "2026-09-19T07:49:16.0",
+      "sleepEndTimestampLocal": "2026-09-19T05:13:11.0",
+      "tomorrowSleepStartTimestampGMT": "2026-09-06T01:58:18.0",
+      "tomorrowSleepEndTimestampGMT": "2026-09-25T14:13:57.0",
+      "tomorrowSleepStartTimestampLocal": "2026-09-03T01:52:15.0",
+      "tomorrowSleepEndTimestampLocal": "2026-09-17T09:15:50.0",
+      "lowestRespirationValue": 6,
+      "highestRespirationValue": 15,
+      "avgWakingRespirationValue": 12,
+      "avgSleepRespirationValue": 8,
+      "avgTomorrowSleepRespirationValue": 7,
+      "respirationValueDescriptorsDTOList": [
+        {
+          "index": 0,
+          "key": "timestamp"
+        },
+        {
+          "index": 1,
+          "key": "respiration"
+        }
+      ],
+      "respirationValuesArray": [
+        [1790389254963, 16],
+        [1791040496961, 17],
+        [1790184169015, 17],
+        [1788803708509, 16],
+        [1788762252488, 16],
+        [1790702469659, 17],
+        [1790889180153, 16],
+        [1788625692322, 18],
+        [1789634651849, 15],
+        [1790093741043, 15],
+        [1789110571045, 15],
+        [1789139560959, 16],
+        [1790036953986, 16],
+        [1789480240611, 19],
+        [1790515222107, 17],
+        [1788815920562, 15],
+        [1789273472715, 16],
+        [1789616178485, 15],
+        [1788988764732, 15],
+        [1791018297570, 14]
+      ],
+      "respirationAveragesValueDescriptorDTOList": [
+        {
+          "respirationAveragesValueDescriptorIndex": 0,
+          "respirationAveragesValueDescriptionKey": "timestamp"
+        },
+        {
+          "respirationAveragesValueDescriptorIndex": 1,
+          "respirationAveragesValueDescriptionKey": "averageRespirationValue"
+        },
+        {
+          "respirationAveragesValueDescriptorIndex": 2,
+          "respirationAveragesValueDescriptionKey": "highRespirationValue"
+        },
+        {
+          "respirationAveragesValueDescriptorIndex": 3,
+          "respirationAveragesValueDescriptionKey": "lowRespirationValue"
+        }
+      ],
+      "respirationAveragesValuesArray": [
+        [1789568522415, 10.5958, 10, 14],
+        [1789406602172, 9.273, 10, 13],
+        [1791059405668, 10, 10, 13],
+        [1789599589237, 8.3956, 8, 14],
+        [1790799123324, 8.9494, 10, 13],
+        [1789736147201, 11.2964, 13, 12],
+        [1789677608489, 8.6598, 11, 11],
+        [1788861130785, 10.4606, 10, 14],
+        [1790913369929, 11.6506, 9, 16],
+        [1788780661192, 11.3746, 10, 16],
+        [1790402238667, 2, null, null],
+        [1790169648818, 0, null, null],
+        [1788464393192, 1, null, null],
+        [1789294907600, 11.024, 11, 14],
+        [1789582127655, 12.1603, 11, 16],
+        [1788857582526, 10.581, 12, 14],
+        [1789631156598, 10.9901, 11, 14],
+        [1789246041804, 12.6991, 13, 15],
+        [1790232819509, 10.7356, 14, 17],
+        [1789911885820, 10.1465, 10, 16]
+      ],
+      "respirationVersion": 100
+    }
+  }
+]

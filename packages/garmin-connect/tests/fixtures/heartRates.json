@@ -1,0 +1,51 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/wellness-service/wellness/dailyHeartRate?date=2026-10-03",
+    "status": 200,
+    "body": {
+      "userProfilePK": 10000001,
+      "calendarDate": "2026-10-03",
+      "startTimestampGMT": "2026-09-27T04:35:38.0",
+      "endTimestampGMT": "2026-09-15T16:20:45.0",
+      "startTimestampLocal": "2026-09-14T08:00:56.0",
+      "endTimestampLocal": "2026-09-20T18:42:12.0",
+      "maxHeartRate": 84,
+      "minHeartRate": 32,
+      "restingHeartRate": 40,
+      "lastSevenDaysAvgRestingHeartRate": 40,
+      "heartRateValueDescriptors": [
+        {
+          "index": 0,
+          "key": "timestamp"
+        },
+        {
+          "index": 1,
+          "key": "heartrate"
+        }
+      ],
+      "heartRateValues": [
+        [1790902098073, 82],
+        [1789786996052, 81],
+        [1789665047583, 77],
+        [1791055449764, 80],
+        [1790405378660, 78],
+        [1788971956756, 82],
+        [1788436925014, 74],
+        [1789496211448, 75],
+        [1788928164040, 89],
+        [1788940023062, 78],
+        [1788812820954, 82],
+        [1789627131078, 88],
+        [1790037359163, 75],
+        [1789444598160, 90],
+        [1790791968347, 85],
+        [1790328081150, 71],
+        [1789742198512, 71],
+        [1790987425930, 80],
+        [1790126883425, 73],
+        [1790442690935, 82]
+      ]
+    }
+  }
+]

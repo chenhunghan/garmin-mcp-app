@@ -1,0 +1,17 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/device-service/deviceservice/mylastused",
+    "status": 200,
+    "body": {
+      "userDeviceId": 1000000001,
+      "userProfileNumber": 10000001,
+      "applicationNumber": 37114,
+      "lastUsedDeviceApplicationKey": "Garmin Watch",
+      "lastUsedDeviceName": "Garmin Watch",
+      "lastUsedDeviceUploadTime": 1790233343829,
+      "imageUrl": null,
+      "released": true
+    }
+  }
+]

@@ -17,6 +17,8 @@
     "pack": "npm run build && mcpb pack . garmin-mcp-app.mcpb",
     "pack:validate": "mcpb validate manifest.json",
     "test:lib": "npm test --workspace=packages/garmin-connect",
+    "test:live": "npm run test:live --workspace=packages/garmin-connect",
+    "test": "vitest run",
     "typecheck:lib": "tsc --noEmit --project packages/garmin-connect/tsconfig.json",
     "prepare": "prek install || true"
   },
@@ -39,6 +41,7 @@
     "clsx": "^2.1.1",
     "concurrently": "^9.2.1",
     "esbuild": "^0.27.3",
+    "msw": "^2.15.0",
     "oxfmt": "^0.34.0",
     "oxlint": "^1.49.0",
     "react": "^19.2.4",
@@ -47,6 +50,7 @@
     "tailwind-merge": "^3.5.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.6",
-    "vite-plugin-singlefile": "^2.3.0"
+    "vite-plugin-singlefile": "^2.3.0",
+    "vitest": "^3.2.7"
   }
 }

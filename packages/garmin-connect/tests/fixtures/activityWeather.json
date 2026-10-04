@@ -1,0 +1,26 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/activity-service/activity/1000000001/weather",
+    "status": 200,
+    "body": {
+      "issueDate": "2026-09-10T13:44:47.000+00:00",
+      "temp": 120,
+      "apparentTemp": 66,
+      "dewPoint": 112,
+      "relativeHumidity": 108,
+      "windDirection": 161,
+      "windDirectionCompassPoint": "se",
+      "windSpeed": 4,
+      "windGust": null,
+      "latitude": 0,
+      "longitude": 0,
+      "weatherStationDTO": null,
+      "weatherTypeDTO": {
+        "weatherTypePk": null,
+        "desc": "Unknown",
+        "image": null
+      }
+    }
+  }
+]

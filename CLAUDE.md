@@ -140,7 +140,46 @@ Key gotchas:
 - Stress endpoint uses `/{date}` path param (works fine)
 - Workout DELETE returns 204 No Content (no JSON body)
 - Training effect (aerobic/anaerobic) is included in `get-activity-details` response under `summaryDTO.trainingEffect` and `summaryDTO.anaerobicTrainingEffect`
-- API paths match Python [garth](https://github.com/matin/garth) library — use it as reference for new endpoints
+- API paths match Python [garth](https://github.com/matin/garth) library — use it as reference for new endpoints; [python-garminconnect](https://github.com/cyberjunky/python-garminconnect) has the broadest endpoint list
+- Garmin **omits keys that don't apply** instead of sending null (e.g. no elevation/GPS keys on treadmill runs) — don't assume every activity has the same fields
+- Some endpoints return **204 No Content** when there's no data for a date (endurance/hill score for a single day) — `connectapi` returns `undefined`
+- IDs are numbers in most responses (`activityId`, `workoutId`) but `deviceId` is a string inside activity details — tool input schemas accept `string | number` for IDs
+- `/device-service/deviceregistration/devices/usage` was retired (404); last-used device is `/device-service/deviceservice/mylastused`
+- 429 → `GarminRateLimitError`; other non-2xx → `GarminApiError` with `.status`
+
+## Testing
+
+- `npm run test:lib` — library tests (SSO flow with mocked fetch + every endpoint against recorded fixtures)
+- `npm test` — calls every MCP tool through an in-memory MCP client against the recorded fixtures
+- Both run in CI and are fully offline: [MSW](https://mswjs.io) serves sanitized recordings from `packages/garmin-connect/tests/fixtures/`, matched by exact method + URL, so the tests also check that each method builds the right request
+
+### Live API check (manual, before releases)
+
+`npm run test:live` calls every read-only endpoint on the real Garmin API and validates the responses against the zod schemas in `packages/garmin-connect/tests/schemas.ts`. It is deliberately careful so it can't get an account blocked:
+
+- uses saved tokens in `~/.garminconnect` only — **never signs in** (sign in through the app first)
+- one request at a time, 2 s apart, read-only endpoints only
+- stops on the first 429 or 403
+- never runs in CI or on a schedule
+
+Raw responses land in `packages/garmin-connect/.live-capture/` (gitignored, contains personal data — never commit it). To refresh the offline tests from a live run:
+
+```bash
+npm run test:live                                  # capture + validate
+npm run schemas:generate -w packages/garmin-connect # only if Garmin changed a shape on purpose
+npm run fixtures:update  -w packages/garmin-connect # sanitize captures into fixtures
+```
+
+`fixtures:update` scrubs identity (IDs, name, email, GUID, displayName — also inside URLs), GPS, place names (Garmin names activities after the location), device serials, birth date/height/weight, and trims time series to 20 samples; it fails if any identifying value survives. It then **replaces every value with synthetic data** (`tests/live/synthesize.ts`): per-field random scaling (forced ≥15% away from 1) plus noise for metrics, every timestamp replaced by a uniformly random instant in the capture window, independent of the real value (shifted timestamps leaked the time zone: Garmin repeats the same instant across many fields), fixed placeholder weight/height, generic device/gear/settings strings and health labels — so fixtures keep Garmin's structure and types but not the account's values. Randomness is unseeded on purpose, so each `fixtures:update` produces different values. **Still review the fixture diff before committing** — the check only knows the identity values it collected.
+
+When a live schema check fails, decide whether Garmin changed (update the client/UI, then regenerate) or the schema was too strict for your data (e.g. a field only some activity types have).
+
+### Adding an endpoint
+
+1. Add the method to `packages/garmin-connect/src/client.ts`
+2. Add a case to `packages/garmin-connect/tests/live/endpoints.ts`
+3. Add a tool (data-only tools go in `src/tools/insights.ts`) and its args in `tests/tools.test.ts` — a test fails if a tool has neither args nor an exclusion reason
+4. `npm run test:live`, then `schemas:generate` and `fixtures:update`, and review the fixture diff
 
 ## UI Stack
 

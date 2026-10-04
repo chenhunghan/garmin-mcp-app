@@ -1,0 +1,233 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/activity-service/activity/1000000001/splits",
+    "status": 200,
+    "body": {
+      "activityId": 1000000001,
+      "lapDTOs": [
+        {
+          "startTimeGMT": "2026-09-19T13:17:41.0",
+          "startLatitude": 0,
+          "startLongitude": 0,
+          "distance": 4464.1012,
+          "duration": 1622.6888,
+          "movingDuration": 3119,
+          "elapsedDuration": 3789.6084,
+          "elevationGain": 9,
+          "elevationLoss": 9,
+          "maxElevation": 24.349,
+          "minElevation": 32,
+          "averageSpeed": 2.86,
+          "averageMovingSpeed": 1.739,
+          "maxSpeed": 1.718,
+          "calories": 352,
+          "bmrCalories": 56,
+          "averageHR": 171,
+          "maxHR": 113,
+          "averageRunCadence": 188.7639,
+          "maxRunCadence": 241,
+          "averageTemperature": 34,
+          "maxTemperature": 43,
+          "minTemperature": 40,
+          "averagePower": 318,
+          "maxPower": 437,
+          "minPower": 75,
+          "normalizedPower": 199,
+          "totalWork": 139.6371,
+          "strideLength": 53.4261,
+          "endLatitude": 0,
+          "endLongitude": 0,
+          "maxVerticalSpeed": 0.565,
+          "avgGradeAdjustedSpeed": 1.2641,
+          "lapIndex": 1,
+          "lengthDTOs": [],
+          "connectIQMeasurement": [],
+          "messageIndex": 0
+        }
+      ],
+      "eventDTOs": [
+        {
+          "startTimeGMT": "2026-09-04T08:44:36.0",
+          "startTimeGMTDoubleValue": 1789837964633,
+          "sectionTypeDTO": {
+            "id": 2,
+            "key": "timerTrigger",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-09T05:13:48.0",
+          "startTimeGMTDoubleValue": 1788667141756,
+          "sectionTypeDTO": {
+            "id": 10,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-03T06:52:24.0",
+          "startTimeGMTDoubleValue": 1789742431714,
+          "sectionTypeDTO": {
+            "id": 3,
+            "key": "timerTrigger",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-30T21:45:57.0",
+          "startTimeGMTDoubleValue": 1790389911796,
+          "sectionTypeDTO": {
+            "id": 11,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-19T07:07:47.0",
+          "startTimeGMTDoubleValue": 1790809165847,
+          "sectionTypeDTO": {
+            "id": 10,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-28T03:31:13.0",
+          "startTimeGMTDoubleValue": 1788841802691,
+          "sectionTypeDTO": {
+            "id": 10,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-10-03T21:47:53.0",
+          "startTimeGMTDoubleValue": 1790324644284,
+          "sectionTypeDTO": {
+            "id": 11,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-24T21:14:49.0",
+          "startTimeGMTDoubleValue": 1788834783686,
+          "sectionTypeDTO": {
+            "id": 10,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-23T20:53:16.0",
+          "startTimeGMTDoubleValue": 1788599053454,
+          "sectionTypeDTO": {
+            "id": 10,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-26T19:18:54.0",
+          "startTimeGMTDoubleValue": 1789234390459,
+          "sectionTypeDTO": {
+            "id": 12,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-14T22:08:43.0",
+          "startTimeGMTDoubleValue": 1790476447837,
+          "sectionTypeDTO": {
+            "id": 11,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-25T11:39:19.0",
+          "startTimeGMTDoubleValue": 1790123751047,
+          "sectionTypeDTO": {
+            "id": 12,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-30T17:15:46.0",
+          "startTimeGMTDoubleValue": 1789114137150,
+          "sectionTypeDTO": {
+            "id": 12,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-14T12:03:08.0",
+          "startTimeGMTDoubleValue": 1788990949744,
+          "sectionTypeDTO": {
+            "id": 12,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-10-03T15:35:26.0",
+          "startTimeGMTDoubleValue": 1789869026042,
+          "sectionTypeDTO": {
+            "id": 12,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-10T20:02:06.0",
+          "startTimeGMTDoubleValue": 1789362924222,
+          "sectionTypeDTO": {
+            "id": 11,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-30T03:57:31.0",
+          "startTimeGMTDoubleValue": 1790611777953,
+          "sectionTypeDTO": {
+            "id": 12,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-06T09:19:16.0",
+          "startTimeGMTDoubleValue": 1788468061308,
+          "sectionTypeDTO": {
+            "id": 11,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-30T02:19:38.0",
+          "startTimeGMTDoubleValue": 1790654308936,
+          "sectionTypeDTO": {
+            "id": 11,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        },
+        {
+          "startTimeGMT": "2026-09-22T19:22:40.0",
+          "startTimeGMTDoubleValue": 1790555067077,
+          "sectionTypeDTO": {
+            "id": 12,
+            "key": "hrLowAlert",
+            "sectionTypeKey": "SAMPLE"
+          }
+        }
+      ]
+    }
+  }
+]

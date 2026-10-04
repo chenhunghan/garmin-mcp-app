@@ -1,0 +1,42 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/metrics-service/metrics/endurancescore/stats?startDate=2026-09-03&endDate=2026-10-03&aggregation=weekly",
+    "status": 200,
+    "body": {
+      "userProfilePK": 10000001,
+      "startDate": "2026-09-03",
+      "endDate": "2026-10-03",
+      "avg": null,
+      "max": null,
+      "groupMap": {
+        "2026-08-30": {
+          "groupAverage": null,
+          "groupMax": null,
+          "enduranceContributorDTOList": []
+        },
+        "2026-09-06": {
+          "groupAverage": null,
+          "groupMax": null,
+          "enduranceContributorDTOList": []
+        },
+        "2026-09-13": {
+          "groupAverage": null,
+          "groupMax": null,
+          "enduranceContributorDTOList": []
+        },
+        "2026-09-20": {
+          "groupAverage": null,
+          "groupMax": null,
+          "enduranceContributorDTOList": []
+        },
+        "2026-09-27": {
+          "groupAverage": null,
+          "groupMax": null,
+          "enduranceContributorDTOList": []
+        }
+      },
+      "enduranceScoreDTO": null
+    }
+  }
+]

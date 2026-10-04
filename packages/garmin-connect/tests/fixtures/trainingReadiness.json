@@ -1,0 +1,40 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/metrics-service/metrics/trainingreadiness/2026-10-03",
+    "status": 200,
+    "body": [
+      {
+        "userProfilePK": 10000001,
+        "calendarDate": "2026-10-03",
+        "timestamp": "2026-09-26T18:40:43.0",
+        "timestampLocal": "2026-09-28T22:22:28.0",
+        "deviceId": 1000000001,
+        "level": "SAMPLE",
+        "feedbackLong": "SAMPLE",
+        "feedbackShort": "SAMPLE",
+        "score": 82,
+        "sleepScore": 115,
+        "sleepScoreFactorPercent": 83,
+        "sleepScoreFactorFeedback": "SAMPLE",
+        "recoveryTime": 59,
+        "recoveryTimeFactorPercent": 134,
+        "recoveryTimeFactorFeedback": "SAMPLE",
+        "acwrFactorPercent": 62,
+        "acwrFactorFeedback": "SAMPLE",
+        "acuteLoad": 397,
+        "stressHistoryFactorPercent": 89,
+        "stressHistoryFactorFeedback": "SAMPLE",
+        "hrvFactorPercent": 65,
+        "hrvFactorFeedback": "SAMPLE",
+        "hrvWeeklyAverage": 71,
+        "sleepHistoryFactorPercent": 102,
+        "sleepHistoryFactorFeedback": "SAMPLE",
+        "validSleep": true,
+        "inputContext": null,
+        "primaryActivityTracker": true,
+        "recoveryTimeChangePhrase": "SAMPLE"
+      }
+    ]
+  }
+]

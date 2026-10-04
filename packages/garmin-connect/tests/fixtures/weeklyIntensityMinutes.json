@@ -1,0 +1,39 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/usersummary-service/stats/im/weekly/2026-09-03/2026-10-03",
+    "status": 200,
+    "body": [
+      {
+        "calendarDate": "2026-08-31",
+        "weeklyGoal": 122,
+        "moderateValue": 0,
+        "vigorousValue": 0
+      },
+      {
+        "calendarDate": "2026-09-07",
+        "weeklyGoal": 104,
+        "moderateValue": 0,
+        "vigorousValue": 0
+      },
+      {
+        "calendarDate": "2026-09-14",
+        "weeklyGoal": 114,
+        "moderateValue": 0,
+        "vigorousValue": 0
+      },
+      {
+        "calendarDate": "2026-09-21",
+        "weeklyGoal": 112,
+        "moderateValue": 0,
+        "vigorousValue": 17
+      },
+      {
+        "calendarDate": "2026-09-28",
+        "weeklyGoal": 114,
+        "moderateValue": 0,
+        "vigorousValue": 0
+      }
+    ]
+  }
+]

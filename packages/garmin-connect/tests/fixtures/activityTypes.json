@@ -1,0 +1,169 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/activity-service/activity/activityTypes",
+    "status": 200,
+    "body": [
+      {
+        "typeId": 2,
+        "typeKey": "running",
+        "parentTypeId": 23,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 2,
+        "typeKey": "cycling",
+        "parentTypeId": 24,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 1,
+        "typeKey": "hiking",
+        "parentTypeId": 24,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 1,
+        "typeKey": "other",
+        "parentTypeId": 22,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 0,
+        "typeKey": "mountain_biking",
+        "parentTypeId": 4,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 4,
+        "typeKey": "trail_running",
+        "parentTypeId": 0,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 4,
+        "typeKey": "street_running",
+        "parentTypeId": 2,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 5,
+        "typeKey": "track_running",
+        "parentTypeId": 0,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 6,
+        "typeKey": "walking",
+        "parentTypeId": 24,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 6,
+        "typeKey": "road_biking",
+        "parentTypeId": 3,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 7,
+        "typeKey": "indoor_cardio",
+        "parentTypeId": 37,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 7,
+        "typeKey": "strength_training",
+        "parentTypeId": 37,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": false
+      },
+      {
+        "typeId": 9,
+        "typeKey": "casual_walking",
+        "parentTypeId": 12,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 9,
+        "typeKey": "speed_walking",
+        "parentTypeId": 12,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 9,
+        "typeKey": "all",
+        "parentTypeId": null,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 12,
+        "typeKey": "treadmill_running",
+        "parentTypeId": 3,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 12,
+        "typeKey": "cyclocross",
+        "parentTypeId": 1,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 13,
+        "typeKey": "downhill_biking",
+        "parentTypeId": 0,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 13,
+        "typeKey": "track_cycling",
+        "parentTypeId": 4,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      },
+      {
+        "typeId": 13,
+        "typeKey": "recumbent_cycling",
+        "parentTypeId": 4,
+        "isHidden": false,
+        "restricted": false,
+        "trimmable": true
+      }
+    ]
+  }
+]

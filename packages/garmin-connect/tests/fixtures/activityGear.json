@@ -1,0 +1,29 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/gear-service/gear/filterGear?activityId=1000000001",
+    "status": 200,
+    "body": [
+      {
+        "gearPk": 60983941,
+        "uuid": "00000000-0000-4000-8000-000000000000",
+        "userProfilePk": 10000001,
+        "gearMakeName": "Other",
+        "gearModelName": "Unknown Shoes",
+        "gearTypeName": "Shoes",
+        "gearStatusName": "active",
+        "displayName": "Gear 1",
+        "customMakeModel": "Running Shoes",
+        "imageNameLarge": null,
+        "imageNameMedium": null,
+        "imageNameSmall": null,
+        "dateBegin": "2026-09-18T10:04:42.0",
+        "dateEnd": null,
+        "maximumMeters": 567593,
+        "notified": false,
+        "createDate": "2026-10-01T18:44:01.0",
+        "updateDate": "2026-09-28T06:14:13.0"
+      }
+    ]
+  }
+]

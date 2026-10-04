@@ -1,0 +1,25 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/weight-service/weight/dateRange?startDate=2026-10-03&endDate=2026-10-03",
+    "status": 200,
+    "body": {
+      "startDate": "2026-10-03",
+      "endDate": "2026-10-03",
+      "dateWeightList": [],
+      "totalAverage": {
+        "from": 1790966226522,
+        "until": 1788436680645,
+        "weight": 55000,
+        "bmi": null,
+        "bodyFat": null,
+        "bodyWater": null,
+        "boneMass": null,
+        "muscleMass": null,
+        "physiqueRating": null,
+        "visceralFat": null,
+        "metabolicAge": null
+      }
+    }
+  }
+]

@@ -1,0 +1,8 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/metrics-service/metrics/runningtolerance/stats?startDate=2026-09-03&endDate=2026-10-03&aggregation=weekly",
+    "status": 200,
+    "body": []
+  }
+]

@@ -1,0 +1,41 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/weight-service/weight/range/2026-09-03/2026-10-03?includeAll=true",
+    "status": 200,
+    "body": {
+      "dailyWeightSummaries": [],
+      "totalAverage": {
+        "from": 1789895571054,
+        "until": 1788850375469,
+        "weight": 55000,
+        "bmi": null,
+        "bodyFat": null,
+        "bodyWater": null,
+        "boneMass": null,
+        "muscleMass": null,
+        "physiqueRating": null,
+        "visceralFat": null,
+        "metabolicAge": null
+      },
+      "previousDateWeight": {
+        "samplePk": 1791046398117,
+        "date": 1790452074737,
+        "calendarDate": "2026-08-09",
+        "weight": 55000,
+        "bmi": null,
+        "bodyFat": null,
+        "bodyWater": null,
+        "boneMass": null,
+        "muscleMass": null,
+        "physiqueRating": null,
+        "visceralFat": null,
+        "metabolicAge": null,
+        "sourceType": "SAMPLE",
+        "timestampGMT": 1790839078771,
+        "weightDelta": 0
+      },
+      "nextDateWeight": null
+    }
+  }
+]

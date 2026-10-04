@@ -1,0 +1,138 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/userprofile-service/userprofile/user-settings",
+    "status": 200,
+    "body": {
+      "id": 10000001,
+      "userData": {
+        "gender": "sample",
+        "weight": 55000,
+        "height": 160,
+        "timeFormat": "sample",
+        "birthDate": "sample",
+        "measurementSystem": "sample",
+        "activityLevel": null,
+        "handedness": "sample",
+        "powerFormat": {
+          "formatId": 77,
+          "formatKey": "sample",
+          "minFraction": 0,
+          "maxFraction": 0,
+          "groupingUsed": true,
+          "displayFormat": null
+        },
+        "heartRateFormat": {
+          "formatId": 64,
+          "formatKey": "sample",
+          "minFraction": 0,
+          "maxFraction": 0,
+          "groupingUsed": false,
+          "displayFormat": null
+        },
+        "firstDayOfWeek": {
+          "dayId": 5,
+          "dayName": "sample",
+          "sortOrder": 3,
+          "isPossibleFirstDay": true
+        },
+        "vo2MaxRunning": 33,
+        "vo2MaxCycling": null,
+        "lactateThresholdSpeed": null,
+        "lactateThresholdHeartRate": 0,
+        "diveNumber": null,
+        "intensityMinutesCalcMethod": "sample",
+        "moderateIntensityMinutesHrZone": 4,
+        "vigorousIntensityMinutesHrZone": 0,
+        "hydrationMeasurementUnit": "sample",
+        "hydrationContainers": [],
+        "hydrationAutoGoalEnabled": true,
+        "firstbeatMaxStressScore": null,
+        "firstbeatCyclingLtTimestamp": null,
+        "firstbeatRunningLtTimestamp": null,
+        "thresholdHeartRateAutoDetected": false,
+        "ftpAutoDetected": true,
+        "trainingStatusPausedDate": null,
+        "weatherLocation": {
+          "useFixedLocation": false,
+          "latitude": null,
+          "longitude": null,
+          "locationName": null,
+          "isoCountryCode": null,
+          "postalCode": null
+        },
+        "golfDistanceUnit": "sample",
+        "golfElevationUnit": null,
+        "golfSpeedUnit": null,
+        "externalBottomTime": null,
+        "availableTrainingDays": [
+          "sample",
+          "sample",
+          "sample",
+          "sample",
+          "sample",
+          "sample",
+          "sample"
+        ],
+        "preferredLongTrainingDays": ["sample", "sample"],
+        "virtualCaddieDataSource": null,
+        "numberDivesAutomatically": null,
+        "firstbeatRowingLtTimestamp": null,
+        "lactateThresholdRowingPace": null,
+        "lactateThresholdHeartRateRowing": null,
+        "lactateThresholdHeartRateCycling": null,
+        "wtrPrimaryActivityType": null
+      },
+      "userSleep": {
+        "sleepTime": 60040,
+        "defaultSleepTime": false,
+        "wakeTime": 18224,
+        "defaultWakeTime": false
+      },
+      "connectDate": null,
+      "sourceType": null,
+      "userSleepWindows": [
+        {
+          "sleepWindowFrequency": "sample",
+          "startSleepTimeSecondsFromMidnight": 66184,
+          "endSleepTimeSecondsFromMidnight": 17911
+        },
+        {
+          "sleepWindowFrequency": "sample",
+          "startSleepTimeSecondsFromMidnight": 57049,
+          "endSleepTimeSecondsFromMidnight": 19345
+        },
+        {
+          "sleepWindowFrequency": "sample",
+          "startSleepTimeSecondsFromMidnight": 62552,
+          "endSleepTimeSecondsFromMidnight": 17012
+        },
+        {
+          "sleepWindowFrequency": "sample",
+          "startSleepTimeSecondsFromMidnight": 67071,
+          "endSleepTimeSecondsFromMidnight": 18921
+        },
+        {
+          "sleepWindowFrequency": "sample",
+          "startSleepTimeSecondsFromMidnight": 62222,
+          "endSleepTimeSecondsFromMidnight": 18271
+        },
+        {
+          "sleepWindowFrequency": "sample",
+          "startSleepTimeSecondsFromMidnight": 60862,
+          "endSleepTimeSecondsFromMidnight": 18495
+        },
+        {
+          "sleepWindowFrequency": "sample",
+          "startSleepTimeSecondsFromMidnight": 68081,
+          "endSleepTimeSecondsFromMidnight": 19340
+        },
+        {
+          "sleepWindowFrequency": "sample",
+          "startSleepTimeSecondsFromMidnight": 67661,
+          "endSleepTimeSecondsFromMidnight": 17614
+        }
+      ]
+    }
+  }
+]

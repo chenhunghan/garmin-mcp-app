@@ -1,0 +1,225 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/wellness-service/wellness/bodyBattery/reports/daily?startDate=2026-09-26&endDate=2026-10-03",
+    "status": 200,
+    "body": [
+      {
+        "date": "2026-09-26",
+        "charged": 24,
+        "drained": 25,
+        "startTimestampGMT": "2026-09-29T18:56:01.0",
+        "endTimestampGMT": "2026-09-08T14:29:47.0",
+        "startTimestampLocal": "2026-09-13T04:22:34.0",
+        "endTimestampLocal": "2026-09-20T00:59:11.0",
+        "bodyBatteryValuesArray": [
+          [1790764969449, 1],
+          [1789608416480, 45],
+          [1790524356746, 45],
+          [1789501023654, 27],
+          [1790071293271, 24],
+          [1790099852544, 1]
+        ],
+        "bodyBatteryValueDescriptorDTOList": [
+          {
+            "bodyBatteryValueDescriptorIndex": 0,
+            "bodyBatteryValueDescriptorKey": "timestamp"
+          },
+          {
+            "bodyBatteryValueDescriptorIndex": 1,
+            "bodyBatteryValueDescriptorKey": "bodyBatteryLevel"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-27",
+        "charged": 29,
+        "drained": 32,
+        "startTimestampGMT": "2026-09-05T07:56:16.0",
+        "endTimestampGMT": "2026-09-15T06:07:05.0",
+        "startTimestampLocal": "2026-10-01T00:01:48.0",
+        "endTimestampLocal": "2026-09-20T01:39:51.0",
+        "bodyBatteryValuesArray": [
+          [1789240434095, 13],
+          [1790075667929, 68],
+          [1790596324955, 60],
+          [1788754945571, 45],
+          [1789578615480, 44],
+          [1790767329684, 9]
+        ],
+        "bodyBatteryValueDescriptorDTOList": [
+          {
+            "bodyBatteryValueDescriptorIndex": 0,
+            "bodyBatteryValueDescriptorKey": "timestamp"
+          },
+          {
+            "bodyBatteryValueDescriptorIndex": 1,
+            "bodyBatteryValueDescriptorKey": "bodyBatteryLevel"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-28",
+        "charged": 28,
+        "drained": 26,
+        "startTimestampGMT": "2026-09-26T18:46:35.0",
+        "endTimestampGMT": "2026-09-17T06:01:44.0",
+        "startTimestampLocal": "2026-09-10T12:25:04.0",
+        "endTimestampLocal": "2026-09-17T23:32:22.0",
+        "bodyBatteryValuesArray": [
+          [1789258943413, 8],
+          [1789625179322, 55],
+          [1789790924563, 64],
+          [1790796486126, 41],
+          [1789965761693, 35],
+          [1788549762397, 23]
+        ],
+        "bodyBatteryValueDescriptorDTOList": [
+          {
+            "bodyBatteryValueDescriptorIndex": 0,
+            "bodyBatteryValueDescriptorKey": "timestamp"
+          },
+          {
+            "bodyBatteryValueDescriptorIndex": 1,
+            "bodyBatteryValueDescriptorKey": "bodyBatteryLevel"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-29",
+        "charged": 48,
+        "drained": 54,
+        "startTimestampGMT": "2026-09-30T23:33:39.0",
+        "endTimestampGMT": "2026-09-11T22:55:41.0",
+        "startTimestampLocal": "2026-09-20T13:15:19.0",
+        "endTimestampLocal": "2026-09-24T09:48:49.0",
+        "bodyBatteryValuesArray": [
+          [1788840887686, 34],
+          [1789752878775, 112],
+          [1788540209649, 114],
+          [1790648753265, 53],
+          [1790857965725, 47],
+          [1790234931953, 22]
+        ],
+        "bodyBatteryValueDescriptorDTOList": [
+          {
+            "bodyBatteryValueDescriptorIndex": 0,
+            "bodyBatteryValueDescriptorKey": "timestamp"
+          },
+          {
+            "bodyBatteryValueDescriptorIndex": 1,
+            "bodyBatteryValueDescriptorKey": "bodyBatteryLevel"
+          }
+        ]
+      },
+      {
+        "date": "2026-09-30",
+        "charged": 33,
+        "drained": 50,
+        "startTimestampGMT": "2026-10-02T22:09:24.0",
+        "endTimestampGMT": "2026-09-13T09:04:47.0",
+        "startTimestampLocal": "2026-09-10T03:49:03.0",
+        "endTimestampLocal": "2026-10-03T14:16:08.0",
+        "bodyBatteryValuesArray": [
+          [1790029888781, 33],
+          [1790793310356, 107],
+          [1789346731985, 104],
+          [1790504908365, 53],
+          [1790930536163, 53],
+          [1789768063863, 19]
+        ],
+        "bodyBatteryValueDescriptorDTOList": [
+          {
+            "bodyBatteryValueDescriptorIndex": 0,
+            "bodyBatteryValueDescriptorKey": "timestamp"
+          },
+          {
+            "bodyBatteryValueDescriptorIndex": 1,
+            "bodyBatteryValueDescriptorKey": "bodyBatteryLevel"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-01",
+        "charged": 39,
+        "drained": 48,
+        "startTimestampGMT": "2026-09-10T16:26:44.0",
+        "endTimestampGMT": "2026-09-04T01:27:03.0",
+        "startTimestampLocal": "2026-09-08T09:02:07.0",
+        "endTimestampLocal": "2026-09-09T01:57:29.0",
+        "bodyBatteryValuesArray": [
+          [1789982815269, 22],
+          [1790996523181, 91],
+          [1789441444080, 101],
+          [1788551022938, 47],
+          [1789469516523, 44],
+          [1789570440534, 22]
+        ],
+        "bodyBatteryValueDescriptorDTOList": [
+          {
+            "bodyBatteryValueDescriptorIndex": 0,
+            "bodyBatteryValueDescriptorKey": "timestamp"
+          },
+          {
+            "bodyBatteryValueDescriptorIndex": 1,
+            "bodyBatteryValueDescriptorKey": "bodyBatteryLevel"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-02",
+        "charged": 47,
+        "drained": 53,
+        "startTimestampGMT": "2026-09-12T13:46:54.0",
+        "endTimestampGMT": "2026-09-16T06:23:07.0",
+        "startTimestampLocal": "2026-09-03T10:11:29.0",
+        "endTimestampLocal": "2026-09-12T23:12:59.0",
+        "bodyBatteryValuesArray": [
+          [1790223480604, 30],
+          [1789390494620, 119],
+          [1789582510596, 108],
+          [1790628880156, 53],
+          [1788989636211, 62],
+          [1791064210627, 26]
+        ],
+        "bodyBatteryValueDescriptorDTOList": [
+          {
+            "bodyBatteryValueDescriptorIndex": 0,
+            "bodyBatteryValueDescriptorKey": "timestamp"
+          },
+          {
+            "bodyBatteryValueDescriptorIndex": 1,
+            "bodyBatteryValueDescriptorKey": "bodyBatteryLevel"
+          }
+        ]
+      },
+      {
+        "date": "2026-10-03",
+        "charged": 40,
+        "drained": 48,
+        "startTimestampGMT": "2026-09-09T02:24:46.0",
+        "endTimestampGMT": "2026-09-10T18:48:52.0",
+        "startTimestampLocal": "2026-10-02T19:20:12.0",
+        "endTimestampLocal": "2026-09-19T13:06:59.0",
+        "bodyBatteryValuesArray": [
+          [1790308914889, 40],
+          [1790805389747, 120],
+          [1790409615520, 116],
+          [1788904552290, 68],
+          [1788641257166, 63],
+          [1789242217386, 35]
+        ],
+        "bodyBatteryValueDescriptorDTOList": [
+          {
+            "bodyBatteryValueDescriptorIndex": 0,
+            "bodyBatteryValueDescriptorKey": "timestamp"
+          },
+          {
+            "bodyBatteryValueDescriptorIndex": 1,
+            "bodyBatteryValueDescriptorKey": "bodyBatteryLevel"
+          }
+        ]
+      }
+    ]
+  }
+]

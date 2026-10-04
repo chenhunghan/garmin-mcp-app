@@ -1,0 +1,8 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/goal-service/goal/goals?status=active&start=1&limit=30&sortOrder=asc",
+    "status": 200,
+    "body": []
+  }
+]

@@ -1,0 +1,57 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/usersummary-service/stats/steps/daily/2026-09-26/2026-10-03",
+    "status": 200,
+    "body": [
+      {
+        "calendarDate": "2026-09-26",
+        "totalSteps": 16448,
+        "totalDistance": 10368,
+        "stepGoal": 8758
+      },
+      {
+        "calendarDate": "2026-09-27",
+        "totalSteps": 29137,
+        "totalDistance": 17005,
+        "stepGoal": 9088
+      },
+      {
+        "calendarDate": "2026-09-28",
+        "totalSteps": 6043,
+        "totalDistance": 3540,
+        "stepGoal": 8129
+      },
+      {
+        "calendarDate": "2026-09-29",
+        "totalSteps": 19612,
+        "totalDistance": 10984,
+        "stepGoal": 7677
+      },
+      {
+        "calendarDate": "2026-09-30",
+        "totalSteps": 18430,
+        "totalDistance": 12622,
+        "stepGoal": 7986
+      },
+      {
+        "calendarDate": "2026-10-01",
+        "totalSteps": 15636,
+        "totalDistance": 10498,
+        "stepGoal": 8322
+      },
+      {
+        "calendarDate": "2026-10-02",
+        "totalSteps": 17786,
+        "totalDistance": 11287,
+        "stepGoal": 8506
+      },
+      {
+        "calendarDate": "2026-10-03",
+        "totalSteps": 8134,
+        "totalDistance": 5361,
+        "stepGoal": 8438
+      }
+    ]
+  }
+]

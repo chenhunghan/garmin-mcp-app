@@ -1,0 +1,22 @@
+{
+  "name": "garmin-mcp",
+  "interface": {
+    "displayName": "Run Coach"
+  },
+  "plugins": [
+    {
+      "name": "garmin",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/chenhunghan/garmin-mcp-app.git",
+        "ref": "chatgpt-plugin",
+        "path": "plugins/garmin"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

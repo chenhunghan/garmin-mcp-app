@@ -10,6 +10,7 @@ import {
   type Briefing,
   type BriefingSources,
 } from "../briefing-model.js";
+import { entrypointIcons, openaiEntrypoint } from "./openai.js";
 
 /** Local calendar day (YYYY-MM-DD) — toISOString() would print the UTC day. */
 function localToday(): string {
@@ -76,7 +77,8 @@ export function registerBriefingTools(server: McpServer, resourceUri: string) {
     server,
     "get-daily-briefing",
     {
-      title: "Get Daily Briefing",
+      title: "Daily Briefing",
+      ...entrypointIcons,
       description: [
         "Morning briefing: how the user is today, framed against their own baselines.",
         "Use for 'how am I today', 'morning briefing', 'daily check-in', 'should I train today', 'am I recovered'.",
@@ -91,7 +93,7 @@ export function registerBriefingTools(server: McpServer, resourceUri: string) {
           .optional()
           .describe("Day to brief on (YYYY-MM-DD), defaults to today in the user's time zone"),
       }),
-      _meta: { ui: { resourceUri } },
+      _meta: { ui: { resourceUri }, ...openaiEntrypoint("global") },
     },
     async ({ date }) => {
       const day = date || localToday();

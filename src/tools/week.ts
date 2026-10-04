@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { GarminClient } from "garmin-connect";
 import { getClient } from "../garmin.js";
 import { withAuth } from "./data.js";
+import { entrypointIcons, openaiEntrypoint } from "./openai.js";
 
 // ── Dates (local calendar days, YYYY-MM-DD) ──
 
@@ -286,7 +287,8 @@ export function registerWeekTools(server: McpServer, resourceUri: string) {
     server,
     "show-training-week",
     {
-      title: "Show Training Week",
+      title: "Training Week",
+      ...entrypointIcons,
       description:
         "Show a Monday-Sunday training week: workouts scheduled on the Garmin calendar (with their steps and estimated duration/distance), activities completed, and a weekly summary (planned vs done, planned and completed volume). Call it after creating/scheduling a week of workouts to show the user the plan, or to review how a week went.",
       inputSchema: z.object({
@@ -298,7 +300,7 @@ export function registerWeekTools(server: McpServer, resourceUri: string) {
             "Any day of the week to show (YYYY-MM-DD); the week starts on its Monday. Default: this week.",
           ),
       }),
-      _meta: { ui: { resourceUri } },
+      _meta: { ui: { resourceUri }, ...openaiEntrypoint("thread") },
     },
     async ({ startDate }) => {
       const start = mondayOf(startDate);

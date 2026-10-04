@@ -1,4 +1,4 @@
-# Garmin MCP App
+# Garmin MCP App (Run Coach)
 
 MCP App server with interactive React UI for Garmin Connect integration.
 
@@ -13,7 +13,7 @@ The host (e.g. Claude Desktop) brokers all communication: Server ←stdio→ Hos
 ## Key concepts
 
 - `ui://` URIs are opaque identifiers, not real URLs — the host fetches them as MCP resources
-- `vite-plugin-singlefile` inlines all app JS/CSS into `dist/app.html`; React + Recharts loaded from `esm.sh` CDN at runtime via import maps; `@modelcontextprotocol/ext-apps` is bundled (not CDN) to avoid Zod version mismatches
+- `vite-plugin-singlefile` inlines all app JS/CSS — including React, Recharts and `@modelcontextprotocol/ext-apps` — into one self-contained `dist/app.html` (no CDN, so it works in ChatGPT's stricter sandbox and offline)
 - Tools declare `_meta.ui.resourceUri` to link a UI to a tool invocation
 - App ↔ Server communication: `app.callServerTool()` (app-initiated) and `app.addEventListener("toolresult", …)` (server-pushed)
 - SDK: `@modelcontextprotocol/ext-apps` 2.x on the split MCP SDK 2.x packages — `McpServer` / `StdioServerTransport` from `@modelcontextprotocol/server`, `Client` / `InMemoryTransport` from `@modelcontextprotocol/client` (the old `@modelcontextprotocol/sdk` package is not used). Tool `inputSchema` / prompt `argsSchema` are `z.object(...)` (raw shapes are deprecated, removed in 3.0). Node 20+.
@@ -198,7 +198,7 @@ When a live schema check fails, decide whether Garmin changed (update the client
 
 - **[shadcn/ui](https://ui.shadcn.com)** — component source files in `src/components/ui/` (copied, not imported as a package)
 - **[Tailwind CSS v4](https://tailwindcss.com)** — styling via `@tailwindcss/vite`; theme configured inline in `src/app.css` using OKLCH CSS variables + `@theme` block
-- **[Recharts v3](https://recharts.org)** — charting library, externalized to esm.sh CDN
+- **[Recharts v3](https://recharts.org)** — charting library, bundled into `dist/app.html`
 - **[shadcn Chart component](https://ui.shadcn.com/docs/components/base/chart)** — `src/components/ui/chart.tsx`, adapted for Recharts v3 (official shadcn doesn't support v3 yet)
 
 ### Host theme integration
@@ -402,20 +402,33 @@ The `__DEV_UI__` compile-time flag (set in `vite.config.dev.ts`) controls the de
 
 **Client-side errors:** Enable Developer Mode (Help > Troubleshooting), then open DevTools (Cmd+Option+I). Check Console for:
 
-- CSP violations (`connect-src`, `script-src`) — indicates missing CSP domains
-- `Failed to resolve module specifier` — missing import map entry
-- Runtime errors from esm.sh dependencies — may need to bundle instead of externalize
+- CSP violations (`connect-src`, `script-src`) — the app must not load anything external; the resource declares no CSP domains
 
-### Build: Vite singlefile + esm.sh externals
+### Build: Vite singlefile, fully bundled
 
-The app uses `vite-plugin-singlefile` to inline JS/CSS into `dist/app.html`. Heavy dependencies (React, Recharts) are externalized and loaded from `esm.sh` CDN at runtime via import maps in `src/app.html`. The `flattenAppHtml` Vite plugin moves `dist/src/app.html` → `dist/app.html` after each build (including watch mode).
+`vite-plugin-singlefile` inlines all JS/CSS — React, Recharts and ext-apps included — into one self-contained `dist/app.html` (~1 MB). The `flattenAppHtml` Vite plugin moves `dist/src/app.html` → `dist/app.html` after each build (including watch mode).
 
 **Gotchas:**
 
-- `src/app.html` import map, `vite.config.ts` externals, and `vite.config.ts` output.paths must stay in sync
-- DO NOT externalize `@modelcontextprotocol/ext-apps/react` to esm.sh — it pulls in Zod which causes `z.custom is not a function` errors due to version mismatches. Bundle it instead.
-- Any CDN domain used in import maps must be declared in the resource `_meta.ui.csp` with both `resourceDomains` and `connectDomains` (see `src/server.ts`)
+- Don't externalize dependencies to a CDN (esm.sh etc.): ChatGPT's sandbox is stricter, and the old esm.sh setup also caused `z.custom is not a function` Zod mismatches for ext-apps. If something external is ever unavoidable, declare its domain in the resource `_meta.ui.csp` (`resourceDomains` + `connectDomains`, see `src/server.ts`).
+
+## Naming and trademarks
+
+The user-facing product name is **Run Coach** (Claude extension `display_name`, ChatGPT marketplace name, MCP server `title`); the ChatGPT plugin itself is **Coach**, because its `displayName` is also the composer @-mention (`@Coach`) — never "Garmin" alone, which would imply an official Garmin product. Describing compatibility is fine ("Connected to Garmin", "for Garmin users"). Don't use Garmin's logo or artwork (the icon is an original generic watch). Keep the disclaimer in the README and plugin/extension descriptions: "Unofficial. Not affiliated with or endorsed by Garmin. Garmin is a trademark of Garmin Ltd." Internal IDs (`garmin-mcp`, plugin `garmin`, repo name) stay for compatibility.
+
+## ChatGPT plugin (openai/mcp-extensions)
+
+The same server and UI also run as a **local ChatGPT desktop plugin** (Codex plugin format). ChatGPT-specific metadata is additive and ignored by Claude Desktop; it lives in `src/tools/openai.ts`:
+
+- **Entrypoints** (`_meta["openai/ui"].entrypoints`): `get-daily-briefing` and `show-performance-dashboard` are sidebar items (`global`, open fullscreen), `show-training-week` is a thread tab (`thread`). Entrypoint tools MUST accept `{}`, have a `title` (shown as the label) and `icons` (monochrome `currentColor` SVG, 20×20). `registerAppTool`'s config type lacks `icons`, but it forwards the config — spread `entrypointIcons`.
+- **Display modes**: the UI resource declares `_meta["openai/ui"].availableDisplayModes: ["inline", "fullscreen"]`.
+- **Host-neutral UI**: never hardcode "Claude" in user-visible text. `useAppActions().assistantName` comes from the host (`app.getHostVersion()`): "Claude", "ChatGPT", or null → plain "Ask". Preview in the dev UI with `?host=ChatGPT`.
+- **Packaging**: `npm run pack:chatgpt` builds, assembles `build/chatgpt-plugin/` and validates it — a marketplace (`.agents/plugins/marketplace.json`, name `garmin-mcp`) with plugin `garmin` in the **root Agent Plugins format**: `plugin.json` (identity at the top level, ChatGPT presentation and `onboardingSkill` under `extensions["com.openai"]`), `mcp.json` (stdio server `node ./dist/index.js`, `cwd` must start with `./` or `${PLUGIN_ROOT}`), skills auto-discovered from `skills/`, icons from `plugin/assets`. `scripts/validate-chatgpt-plugin.mjs` checks both manifests against the vendored schemas in `scripts/schemas/` (also in CI). The older `.codex-plugin/plugin.json` layout is only a fallback — don't reintroduce it. Local MCP servers make it **Desktop only**. Users need Node 20+ on PATH (ChatGPT, unlike Claude Desktop's `.mcpb`, doesn't bundle Node).
+- **Release**: the `chatgpt-plugin` job in `release-please.yml` publishes the packed folder to the `chatgpt-plugin` branch on each release.
+- **Marketplace pointer on main**: `.agents/plugins/marketplace.json` (committed) lists plugin `garmin` with a git `url` source — `ref: "chatgpt-plugin"`, `path: "plugins/garmin"` — so users add just the repo (no ref) and get the latest _released_ build, while `main` holds no built files. (Verified with the Codex CLI: `url` sources honour `path` and `ref`; `github`/`git` source types list nothing.) `validate-chatgpt-plugin.mjs` fails if the pointer drifts from the packed layout. Until the first release publishes the branch, installing from the repo fails.
+- **Install**: ChatGPT desktop → Settings → Plugins → **Add marketplace** (source `chenhunghan/garmin-mcp-app`, no ref), restart, install **Coach**; or `codex plugin marketplace add chenhunghan/garmin-mcp-app` + `codex plugin add garmin@garmin-mcp`. To test a local build: same dialog with source = the absolute path of `build/chatgpt-plugin`. Don't add a source branch as the marketplace ref — only `chatgpt-plugin` has the built `dist/`.
+- Spec: https://github.com/openai/mcp-extensions/blob/main/docs/spec.md (v0.1, moving fast). We don't depend on `@openai/mcp-extensions` (it pins ext-apps 1.x / MCP SDK v1); the keys are hand-written.
 
 ### Reference implementation
 
-[excalidraw/excalidraw-mcp](https://github.com/excalidraw/excalidraw-mcp) — well-maintained MCP App with similar architecture (Vite singlefile + esm.sh externals). Useful to compare when debugging Claude Desktop rendering issues.
+[excalidraw/excalidraw-mcp](https://github.com/excalidraw/excalidraw-mcp) — well-maintained MCP App with a similar architecture (Vite singlefile). Useful to compare when debugging Claude Desktop rendering issues.

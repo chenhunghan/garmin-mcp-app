@@ -43,6 +43,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Pack and validate the ChatGPT plugin
+        run: node scripts/pack-chatgpt-plugin.mjs && node scripts/validate-chatgpt-plugin.mjs
+
   # Merge Dependabot patch/minor updates once CI passes. Majors need review.
   dependabot-automerge:
     needs: ci

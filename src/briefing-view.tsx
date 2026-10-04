@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 import { StatTile, StatusBadge, type StatDelta } from "@/components/stat-tile.tsx";
-import { AskClaude } from "@/components/ask-claude.tsx";
+import { AskAssistant } from "@/components/ask-assistant.tsx";
 import { useAppActions, type CallTool } from "@/lib/app-actions.tsx";
 import { formatDate, parseDate } from "@/lib/dates.ts";
 import type { ToolArgs } from "@/lib/tool-args.ts";
@@ -376,7 +376,7 @@ export function BriefingView({ callTool, args }: { callTool: CallTool; args?: To
                 Couldn't load: {briefing.failed.join(", ")}.
               </div>
             )}
-            <AskClaude questions={briefingQuestions(briefing)} />
+            <AskAssistant questions={briefingQuestions(briefing)} />
           </div>
         )}
       </CardContent>

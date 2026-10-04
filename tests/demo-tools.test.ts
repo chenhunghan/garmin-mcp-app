@@ -180,3 +180,33 @@ describe("demo mode: tools with a view", () => {
     expect(data.kmSplits).toBeUndefined();
   });
 });
+
+describe("ChatGPT (openai/mcp-extensions) metadata", () => {
+  it("entrypoint tools have a title and an icon, accept {} and open a view", async () => {
+    const { tools } = await client.listTools();
+    const entrypoints = tools.filter(
+      (t) =>
+        (t._meta as Record<string, { entrypoints?: unknown[] }> | undefined)?.["openai/ui"]
+          ?.entrypoints,
+    );
+    expect(entrypoints.map((t) => t.name).sort()).toEqual([
+      "get-daily-briefing",
+      "show-performance-dashboard",
+      "show-training-week",
+    ]);
+    for (const t of entrypoints) {
+      expect(t.title, t.name).toBeTruthy();
+      expect(t.icons?.[0]?.mimeType, t.name).toBe("image/svg+xml");
+      expect(t.inputSchema.required ?? [], t.name).toEqual([]);
+      const { result } = await call(t.name, {});
+      expect(result.structuredContent?.view, t.name).toBeTruthy();
+    }
+  });
+
+  it("the UI is self-contained and declares its display modes", async () => {
+    const { contents } = await client.readResource({ uri: "ui://garmin-mcp/app.html" });
+    const meta = contents[0]!._meta as Record<string, Record<string, unknown>>;
+    expect(meta["openai/ui"]).toEqual({ availableDisplayModes: ["inline", "fullscreen"] });
+    expect(meta.ui).toEqual({ csp: { resourceDomains: [], connectDomains: [] } });
+  });
+});

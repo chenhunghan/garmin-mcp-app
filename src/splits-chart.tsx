@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card.tsx";
 import type { ToolArgs } from "@/lib/tool-args.ts";
 import { resolveActivity } from "@/lib/activity.ts";
-import { AskClaude } from "@/components/ask-claude.tsx";
+import { AskAssistant } from "@/components/ask-assistant.tsx";
 
 /** A recorded lap (lapDTOs) or a computed per-km split (kmSplits). */
 interface RawSplit {
@@ -246,7 +246,7 @@ export function SplitsChart({
 
         {!loading && !error && rows.length > 1 && (
           <div className="mt-3">
-            <AskClaude
+            <AskAssistant
               questions={[
                 // Name the run: the question lands in the chat, away from this view
                 `Analyze my pacing in my run "${activityName ?? "latest run"}"`,

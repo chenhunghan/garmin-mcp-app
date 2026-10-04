@@ -13,3 +13,6 @@ scripts/
 .env
 *.mcpb
 docs/
+build/
+plugin/
+.agents/

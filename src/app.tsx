@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { type App, useApp, useHostStyles } from "@modelcontextprotocol/ext-apps/react";
 import { StepsChart } from "./steps-chart.tsx";
 import { ActivitiesChart } from "./activities-chart.tsx";
@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/input.tsx";
 import { encryptPassword } from "@/lib/encrypt-password.ts";
 import type { ToolArgs } from "@/lib/tool-args.ts";
+import { AppActionsContext, type AppActions } from "@/lib/app-actions.tsx";
 import { WorkoutsView } from "./workouts-view.tsx";
 import "./app.css";
 
@@ -299,6 +300,26 @@ export function GarminApp() {
 
   useHostStyles(app, app?.getHostContext());
 
+  // Ask Claude / share what's on screen, when the host supports it
+  const caps = isConnected ? app?.getHostCapabilities() : undefined;
+  const actions = useMemo<AppActions>(
+    () => ({
+      callTool,
+      canAsk: !!caps?.message,
+      ask: async (text) => {
+        await appRef.current?.sendMessage({ role: "user", content: [{ type: "text", text }] });
+      },
+      canShareContext: !!caps?.updateModelContext,
+      shareContext: async (text, data) => {
+        await appRef.current?.updateModelContext({
+          content: [{ type: "text", text }],
+          ...(data && { structuredContent: data }),
+        });
+      },
+    }),
+    [callTool, caps],
+  );
+
   useEffect(() => {
     if (isConnected) {
       checkAuth();
@@ -339,37 +360,41 @@ export function GarminApp() {
       );
     case "authenticated":
       return (
-        <div className="flex flex-col p-4 gap-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: "var(--success)" }}
-              />
-              Connected to Garmin
+        <AppActionsContext.Provider value={actions}>
+          <div className="flex flex-col p-4 gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: "var(--success)" }}
+                />
+                Connected to Garmin
+              </div>
+              <Button variant="outline" size="sm" onClick={handleLogout} disabled={loading}>
+                {loading ? "Logging out..." : "Log out"}
+              </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={handleLogout} disabled={loading}>
-              {loading ? "Logging out..." : "Log out"}
-            </Button>
+            {visibleCharts?.has("run-planner") && <RunPlanner callTool={callTool} />}
+            {visibleCharts?.has("steps") && <StepsChart callTool={callTool} args={toolArgs} />}
+            {visibleCharts?.has("activities") && (
+              <ActivitiesChart callTool={callTool} args={toolArgs} />
+            )}
+            {visibleCharts?.has("heart-rate") && (
+              <HeartRateChart callTool={callTool} args={toolArgs} />
+            )}
+            {visibleCharts?.has("sleep") && <SleepChart callTool={callTool} args={toolArgs} />}
+            {visibleCharts?.has("training") && (
+              <TrainingChart callTool={callTool} args={toolArgs} />
+            )}
+            {visibleCharts?.has("race-predictions") && (
+              <RacePredictionsChart callTool={callTool} args={toolArgs} />
+            )}
+            {visibleCharts?.has("hr-zones") && <HrZonesChart callTool={callTool} args={toolArgs} />}
+            {visibleCharts?.has("stress") && <StressChart callTool={callTool} args={toolArgs} />}
+            {visibleCharts?.has("splits") && <SplitsChart callTool={callTool} args={toolArgs} />}
+            {visibleCharts?.has("workouts") && <WorkoutsView callTool={callTool} args={toolArgs} />}
           </div>
-          {visibleCharts?.has("run-planner") && <RunPlanner callTool={callTool} />}
-          {visibleCharts?.has("steps") && <StepsChart callTool={callTool} args={toolArgs} />}
-          {visibleCharts?.has("activities") && (
-            <ActivitiesChart callTool={callTool} args={toolArgs} />
-          )}
-          {visibleCharts?.has("heart-rate") && (
-            <HeartRateChart callTool={callTool} args={toolArgs} />
-          )}
-          {visibleCharts?.has("sleep") && <SleepChart callTool={callTool} args={toolArgs} />}
-          {visibleCharts?.has("training") && <TrainingChart callTool={callTool} args={toolArgs} />}
-          {visibleCharts?.has("race-predictions") && (
-            <RacePredictionsChart callTool={callTool} args={toolArgs} />
-          )}
-          {visibleCharts?.has("hr-zones") && <HrZonesChart callTool={callTool} args={toolArgs} />}
-          {visibleCharts?.has("stress") && <StressChart callTool={callTool} args={toolArgs} />}
-          {visibleCharts?.has("splits") && <SplitsChart callTool={callTool} args={toolArgs} />}
-          {visibleCharts?.has("workouts") && <WorkoutsView callTool={callTool} args={toolArgs} />}
-        </div>
+        </AppActionsContext.Provider>
       );
   }
 }

@@ -287,6 +287,20 @@ Tailwind utilities like `bg-green-500` don't adapt to dark mode. Use CSS variabl
 | Chart palette     | `--chart-1` through `--chart-5` | `app.css` `:root` / `[data-theme="dark"]` | Global             |
 | ChartStyle scoped | `--color-restingHR`             | `chart.tsx` `<ChartStyle>`                | `[data-chart=...]` |
 
+### Insight UI building blocks
+
+Shared pieces for views that frame data and hand interpretation to Claude:
+
+- **`useAppActions()`** (`src/lib/app-actions.tsx`) — `callTool`, plus `ask(text)` (sends `text` as the user's next message via `ui/message`) and `shareContext(text, data?)` (tells Claude what's on screen via `ui/update-model-context`; overwrites the previous one, sent with the next user message). Check `canAsk` / `canShareContext` — hosts may not support them; hide the control rather than show a dead one.
+- **`<AskClaude questions={[...]} />`** (`src/components/ask-claude.tsx`) — suggested follow-up questions as chips. Questions land in the chat, away from the view, so make them self-contained (name the run/date/metric, not "this").
+- **`<StatTile>` / `<StatusBadge>` / `<Sparkline>`** (`src/components/stat-tile.tsx`) — the stat-tile contract: label · value (+unit) · delta vs a named baseline · status · sparkline.
+- **Status palette** — `--status-good` / `--status-warning` / `--status-critical` (Tailwind `bg-status-good` etc.), validated with the dataviz palette checks for light and dark. Only for marks (dots, meter fills), always with an icon + label; text uses text tokens.
+- **The app suggests, Claude interprets.** Views show data, baselines and status; recommendations come from Claude (via tool descriptions/prompts and `AskClaude`), not hardcoded advice.
+
+Dataviz rules for new charts (from the dataviz skill): pick the form before color; one y-axis per chart (two measures → small multiples, never dual axes); a single series needs no legend (the title names it); thin marks (2px lines, ≤24px bars with 4px rounded ends), solid hairline gridlines; text never wears the series color; a hover tooltip on every plotted chart and a table/values fallback; dark mode checked. The existing `--chart-1…5` palette fails the categorical checks for chart-3↔chart-4 and dark chart-1 contrast — for a single-series chart use `--chart-3` (passes contrast in both themes).
+
+Dev UI: the mock host advertises `message` and `updateModelContext`; what views send is recorded on `window.__devHost.messages` / `.contexts` and logged as `[dev host]`.
+
 ### Recharts v3 + shadcn compatibility
 
 shadcn's official chart component targets Recharts v2. Since we use Recharts v3, `chart.tsx` is a community-adapted version. Tracking issue and community patches:

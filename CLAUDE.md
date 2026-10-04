@@ -15,7 +15,8 @@ The host (e.g. Claude Desktop) brokers all communication: Server ←stdio→ Hos
 - `ui://` URIs are opaque identifiers, not real URLs — the host fetches them as MCP resources
 - `vite-plugin-singlefile` inlines all app JS/CSS into `dist/app.html`; React + Recharts loaded from `esm.sh` CDN at runtime via import maps; `@modelcontextprotocol/ext-apps` is bundled (not CDN) to avoid Zod version mismatches
 - Tools declare `_meta.ui.resourceUri` to link a UI to a tool invocation
-- App ↔ Server communication: `app.callServerTool()` (app-initiated) and `app.ontoolresult` (server-pushed)
+- App ↔ Server communication: `app.callServerTool()` (app-initiated) and `app.addEventListener("toolresult", …)` (server-pushed)
+- SDK: `@modelcontextprotocol/ext-apps` 2.x on the split MCP SDK 2.x packages — `McpServer` / `StdioServerTransport` from `@modelcontextprotocol/server`, `Client` / `InMemoryTransport` from `@modelcontextprotocol/client` (the old `@modelcontextprotocol/sdk` package is not used). Tool `inputSchema` / prompt `argsSchema` are `z.object(...)` (raw shapes are deprecated, removed in 3.0). Node 20+.
 - See: https://modelcontextprotocol.io/docs/extensions/apps
 
 ## Monorepo

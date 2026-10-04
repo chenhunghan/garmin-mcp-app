@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { GarminAuthError, GarminTokenExpiredError } from "garmin-connect";
@@ -92,14 +92,14 @@ export function registerWorkoutTools(server: McpServer, resourceUri: string) {
       title: "List Workouts",
       description:
         "List the user's saved/custom workouts (structured workouts they created, e.g. 'LT', 'Tempo 5K', '4x1km'). Use this whenever the user refers to a workout by name, then get-workout for its steps.",
-      inputSchema: {
+      inputSchema: z.object({
         name: z
           .string()
           .optional()
           .describe("Only workouts whose name contains this text (case-insensitive)"),
         start: z.number().optional().describe("Start index (default 0)"),
         limit: z.number().optional().describe("Max results (default 20)"),
-      },
+      }),
       _meta: { ui: { resourceUri } },
     },
     async ({ name, start, limit }) =>
@@ -120,7 +120,7 @@ export function registerWorkoutTools(server: McpServer, resourceUri: string) {
       title: "Get Workout",
       description:
         "Get a saved workout's steps (warm-up, intervals, targets) by ID. To find a workout by name, call list-workouts first.",
-      inputSchema: workoutIdSchema,
+      inputSchema: z.object(workoutIdSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ workoutId }) => withAuth(() => getClient().getWorkout(workoutId), { workoutId }),
@@ -149,7 +149,7 @@ Example - 5x1000m intervals:
   - Interval: 1000m (endCondition: distance, endConditionValue: 1000)
   - Recovery: 90s jog (endCondition: time, endConditionValue: 90)
 - Cooldown: 10min easy (endCondition: time, endConditionValue: 600)`,
-      inputSchema: workoutBodySchema,
+      inputSchema: z.object(workoutBodySchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ workout }) =>
@@ -166,7 +166,7 @@ Example - 5x1000m intervals:
     {
       title: "Update Workout",
       description: "Update an existing workout on Garmin Connect",
-      inputSchema: { ...workoutIdSchema, ...workoutBodySchema },
+      inputSchema: z.object({ ...workoutIdSchema, ...workoutBodySchema }),
       _meta: { ui: { resourceUri } },
     },
     async ({ workoutId, workout }) =>
@@ -182,7 +182,7 @@ Example - 5x1000m intervals:
     {
       title: "Delete Workout",
       description: "Delete a workout from Garmin Connect",
-      inputSchema: workoutIdSchema,
+      inputSchema: z.object(workoutIdSchema),
       _meta: { ui: { resourceUri } },
     },
     async ({ workoutId }) =>
@@ -195,10 +195,10 @@ Example - 5x1000m intervals:
     {
       title: "Schedule Workout",
       description: "Schedule a workout on a specific calendar date in Garmin Connect",
-      inputSchema: {
+      inputSchema: z.object({
         ...workoutIdSchema,
         date: z.string().describe("Date to schedule the workout (YYYY-MM-DD)"),
-      },
+      }),
       _meta: { ui: { resourceUri } },
     },
     async ({ workoutId, date }) =>

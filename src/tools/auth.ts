@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { getClient } from "../garmin.js";
@@ -48,12 +48,12 @@ export function registerAuthTools(server: McpServer, resourceUri: string) {
     {
       title: "Garmin Login",
       description: "Log in to Garmin Connect with email and an encrypted password",
-      inputSchema: {
+      inputSchema: z.object({
         email: z.string(),
         encryptedPassword: z
           .string()
           .describe("Password encrypted with the key from garmin-get-login-key"),
-      },
+      }),
       _meta: { ui: { resourceUri, visibility: ["app"] } },
     },
     async ({ email, encryptedPassword }) => {
@@ -77,7 +77,7 @@ export function registerAuthTools(server: McpServer, resourceUri: string) {
     {
       title: "Submit Garmin MFA",
       description: "Submit MFA verification code for Garmin Connect login",
-      inputSchema: { code: z.string() },
+      inputSchema: z.object({ code: z.string() }),
       _meta: { ui: { resourceUri, visibility: ["app"] } },
     },
     async ({ code }) => {

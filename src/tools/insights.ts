@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z, type ZodRawShape } from "zod";
 import type { GarminClient } from "garmin-connect";
 import { getClient } from "../garmin.js";
@@ -39,12 +39,12 @@ export function registerInsightTools(server: McpServer) {
     name: string,
     title: string,
     description: string,
-    inputSchema: S,
+    shape: S,
     run: (client: GarminClient, args: z.infer<z.ZodObject<S>>) => Promise<unknown>,
   ) {
-    server.registerTool(name, { title, description, inputSchema }, (async (
-      args: z.infer<z.ZodObject<S>>,
-    ) => plainResult((client) => run(client, args))) as never);
+    server.registerTool(name, { title, description, inputSchema: z.object(shape) }, (args) =>
+      plainResult((client) => run(client, args)),
+    );
   }
 
   // ── Daily wellness ──

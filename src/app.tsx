@@ -159,10 +159,12 @@ export function GarminApp() {
     if (!app) return null;
     const result = await app.callServerTool({ name, arguments: args });
     const text = result.content?.[0];
-    if (text && "text" in text) {
-      return JSON.parse(text.text) as Record<string, unknown>;
+    const message = text && "text" in text ? text.text : undefined;
+    // Error results carry a plain-text message, not JSON
+    if (result.isError) {
+      throw new Error(message || `${name} failed`);
     }
-    return null;
+    return message ? (JSON.parse(message) as Record<string, unknown>) : null;
   }, []);
 
   const checkAuth = useCallback(async () => {

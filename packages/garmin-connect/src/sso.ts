@@ -151,7 +151,7 @@ async function fetchWithCookies(
   try {
     resp = await fetch(url, { ...init, headers, redirect: init?.redirect ?? "follow" });
   } catch (err) {
-    throw new GarminNetworkError(err instanceof Error ? err.message : "Network request failed");
+    throw GarminNetworkError.fromFetchError(err, url);
   }
 
   // Store response cookies

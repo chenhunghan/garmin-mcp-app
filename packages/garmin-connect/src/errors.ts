@@ -31,6 +31,18 @@ export class GarminNetworkError extends GarminError {
     super(message);
     this.name = "GarminNetworkError";
   }
+
+  /**
+   * Wrap a fetch() rejection. Node reports every failure as "fetch failed" and
+   * hides the real reason (DNS, TLS, proxy, ...) in `cause`, so surface it.
+   */
+  static fromFetchError(err: unknown, url: string): GarminNetworkError {
+    const host = URL.canParse(url) ? new URL(url).host : url;
+    const cause = err instanceof Error ? err.cause : undefined;
+    const reason =
+      cause instanceof Error ? cause.message : err instanceof Error ? err.message : "unknown error";
+    return new GarminNetworkError(`Network request to ${host} failed: ${reason}`);
+  }
 }
 
 export class GarminTokenExpiredError extends GarminError {

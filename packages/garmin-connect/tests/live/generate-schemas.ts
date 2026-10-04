@@ -15,6 +15,7 @@ const OUT = join(import.meta.dirname, "../schemas.ts");
 const MAX_DEPTH = 4;
 const WIDE_OBJECT = 200; // device records carry 300+ capability flags
 const WIDE_KEEP = 20;
+const DATA_KEY = /^(\d{4}-\d{2}-\d{2}|\d+)$/;
 
 const ident = (k: string) => (/^[A-Za-z_$][\w$]*$/.test(k) ? k : JSON.stringify(k));
 const isObj = (v: unknown): v is Record<string, unknown> =>
@@ -35,6 +36,13 @@ function infer(samples: unknown[], depth: number): string {
     if (depth >= MAX_DEPTH) return "z.looseObject({}).nullable()";
     const objs = vals as Record<string, unknown>[];
     const keys = [...new Set(objs.flatMap((o) => Object.keys(o)))];
+    // Keyed by date or ID (e.g. weeks in a range): a record, not fixed keys
+    if (keys.length && keys.every((k) => DATA_KEY.test(k))) {
+      return `z.record(z.string(), ${infer(
+        objs.flatMap((o) => Object.values(o)),
+        depth + 1,
+      )}).nullable()`;
+    }
     const required = keys.filter((k) => objs.every((o) => o[k] !== null && o[k] !== undefined));
     const ordered = [...required, ...keys.filter((k) => !required.includes(k))];
     const chosen = ordered.length > WIDE_OBJECT ? ordered.slice(0, WIDE_KEEP) : ordered;

@@ -16,7 +16,7 @@ type ToolResult = {
  * `view` picks the chart; `args` are echoed so the chart shows what was asked
  * for (a specific date or activity) rather than today/latest.
  */
-async function withAuth(
+export async function withAuth(
   fn: () => Promise<unknown>,
   view?: string,
   args?: Record<string, unknown>,

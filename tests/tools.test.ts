@@ -38,6 +38,7 @@ const toolArgs: Record<string, Record<string, unknown>> = {
   "get-race-predictions": {},
   "get-user-settings": {},
   "get-training-context": { date: ctx.date },
+  "get-daily-briefing": { date: ctx.date },
   "list-workouts": { start: 0, limit: 5 },
   "get-workout": { workoutId: ctx.workoutId },
   "get-daily-summary": { date: ctx.date },
@@ -142,6 +143,26 @@ describe("MCP tools", () => {
     for (const [k, v] of Object.entries(data)) {
       expect(v, `training context section ${k}`).not.toBeNull();
     }
+  });
+
+  it("get-daily-briefing gets every source from the recordings", async () => {
+    const result = (await client.callTool({
+      name: "get-daily-briefing",
+      arguments: { date: ctx.date },
+    })) as {
+      content: { text: string }[];
+      structuredContent?: { view?: string; args?: Record<string, unknown> };
+    };
+    expect(result.structuredContent).toEqual({ view: "briefing", args: { date: ctx.date } });
+    const data = JSON.parse(result.content[0]!.text);
+    // allSettled turns failed requests into a "failed" entry, so none should be listed
+    expect(data.failed).toEqual([]);
+    expect(data.date).toBe(ctx.date);
+    for (const [k, m] of Object.entries(data.metrics as Record<string, { value: unknown }>)) {
+      expect(m.value, `briefing metric ${k}`).not.toBeNull();
+    }
+    expect(data.lastActivity).not.toBeNull();
+    expect(data.trainingStatus).not.toBeNull();
   });
 
   it("every tool that opens the app UI routes to a view (no empty panels)", async () => {

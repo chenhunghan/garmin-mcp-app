@@ -24,6 +24,7 @@ import { encryptPassword } from "@/lib/encrypt-password.ts";
 import type { ToolArgs } from "@/lib/tool-args.ts";
 import { AppActionsContext, type AppActions } from "@/lib/app-actions.tsx";
 import { WorkoutsView } from "./workouts-view.tsx";
+import { BriefingView } from "./briefing-view.tsx";
 import "./app.css";
 
 type AuthState = "checking" | "login" | "mfa" | "authenticated";
@@ -149,6 +150,7 @@ const VALID_VIEWS = new Set([
   "stress",
   "splits",
   "workouts",
+  "briefing",
 ]);
 
 export function GarminApp() {
@@ -265,6 +267,7 @@ export function GarminApp() {
             "stress",
             "splits",
             "workouts",
+            "briefing",
           ]),
         );
       }
@@ -393,6 +396,7 @@ export function GarminApp() {
             {visibleCharts?.has("stress") && <StressChart callTool={callTool} args={toolArgs} />}
             {visibleCharts?.has("splits") && <SplitsChart callTool={callTool} args={toolArgs} />}
             {visibleCharts?.has("workouts") && <WorkoutsView callTool={callTool} args={toolArgs} />}
+            {visibleCharts?.has("briefing") && <BriefingView callTool={callTool} args={toolArgs} />}
           </div>
         </AppActionsContext.Provider>
       );

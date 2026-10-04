@@ -8,6 +8,7 @@ import { registerAuthTools } from "./tools/auth.js";
 import { registerDataTools } from "./tools/data.js";
 import { registerWorkoutTools } from "./tools/workouts.js";
 import { registerInsightTools } from "./tools/insights.js";
+import { registerBriefingTools } from "./tools/briefing.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -47,6 +48,7 @@ export function createServer(version: string) {
   registerDataTools(server, resourceUri);
   registerWorkoutTools(server, resourceUri);
   registerInsightTools(server);
+  registerBriefingTools(server, resourceUri);
 
   // --- Prompts ---
 
@@ -126,6 +128,37 @@ After I confirm the plan:
         ],
       };
     },
+  );
+
+  server.registerPrompt(
+    "daily-briefing",
+    {
+      title: "Daily Briefing",
+      description:
+        "How am I today? A short morning briefing from your Garmin data, with suggestions",
+      argsSchema: z.object({
+        date: z.string().describe("Day to brief on (YYYY-MM-DD), defaults to today").optional(),
+      }),
+    },
+    ({ date }) => ({
+      description: "Morning briefing from Garmin data",
+      messages: [
+        {
+          role: "user" as const,
+          content: {
+            type: "text" as const,
+            text: `Give me my morning briefing${date ? ` for ${date}` : ""}.
+
+Call the "get-daily-briefing" tool${date ? ` with date "${date}"` : ""}, then reply in a few short, warm sentences — like a coach who knows my numbers:
+- Lead with how I am today in one line, using the 1–2 numbers that matter most (e.g. readiness and HRV vs my baseline).
+- Give 2–3 concrete suggestions for today grounded in my numbers (what kind of training, how long or how hard, sleep or recovery), referencing the specific values.
+- Name one thing to watch (a metric drifting from my baseline, or a factor holding readiness back).
+- Say briefly what you're unsure about if data is missing or a single night may be noise.
+The app already shows every number, so don't list them all.`,
+          },
+        },
+      ],
+    }),
   );
 
   return server;

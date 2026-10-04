@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.6.0...garmin-mcp-app-v0.7.0) (2026-10-04)
+
+
+### Features
+
+* ask Claude from the app, shared stat tiles and status colors ([#29](https://github.com/chenhunghan/garmin-mcp-app/issues/29)) ([3915fcf](https://github.com/chenhunghan/garmin-mcp-app/commit/3915fcff787687fea8f86ed375cfb256001ce7b4))
+* daily briefing with readiness, baselines and Ask Claude ([#31](https://github.com/chenhunghan/garmin-mcp-app/issues/31)) ([8928e7e](https://github.com/chenhunghan/garmin-mcp-app/commit/8928e7e0a674d53847f6d55c93fea695a24dc227))
+* demo mode with a fictional runner for screenshots ([#35](https://github.com/chenhunghan/garmin-mcp-app/issues/35)) ([e5ea11d](https://github.com/chenhunghan/garmin-mcp-app/commit/e5ea11d5287cbe978d0f4b15a22cbba99a3ffa4f))
+* performance dashboard with long-range metric series ([56da276](https://github.com/chenhunghan/garmin-mcp-app/commit/56da2768b7f21df6b3567a98ff043121610a5692))
+* performance dashboard with long-range metric series ([#33](https://github.com/chenhunghan/garmin-mcp-app/issues/33)) ([56da276](https://github.com/chenhunghan/garmin-mcp-app/commit/56da2768b7f21df6b3567a98ff043121610a5692))
+* weekly training plan with structured workouts and a week view ([#32](https://github.com/chenhunghan/garmin-mcp-app/issues/32)) ([693fb97](https://github.com/chenhunghan/garmin-mcp-app/commit/693fb9756027cd8b706217d151c71edf6a4dfa98))
+
+
+### Bug Fixes
+
+* dashboard compares the current level with the period average ([56da276](https://github.com/chenhunghan/garmin-mcp-app/commit/56da2768b7f21df6b3567a98ff043121610a5692))
+* run planner readiness and training status, smoother weekly trends ([#36](https://github.com/chenhunghan/garmin-mcp-app/issues/36)) ([1a6dba9](https://github.com/chenhunghan/garmin-mcp-app/commit/1a6dba96ae3665078253ff5b8237acfd7c7e8e0b))
+
 ## [0.6.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.5.1...garmin-mcp-app-v0.6.0) (2026-10-04)
 
 

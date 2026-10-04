@@ -4,3 +4,4 @@ dist/
 *.tsbuildinfo
 *.mcpb
 .live-capture/
+.DS_Store

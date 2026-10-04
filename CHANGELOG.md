@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.6.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.5.1...garmin-mcp-app-v0.6.0) (2026-10-04)
+
+
+### Features
+
+* 30 new Garmin endpoints, live API check, and offline tests ([#23](https://github.com/chenhunghan/garmin-mcp-app/issues/23)) ([954819e](https://github.com/chenhunghan/garmin-mcp-app/commit/954819edf1a84dbc45a7e570ab3f7d0f13a897c2))
+* add MCP tools for the new Garmin endpoints ([954819e](https://github.com/chenhunghan/garmin-mcp-app/commit/954819edf1a84dbc45a7e570ab3f7d0f13a897c2))
+* charts follow the request, per-km splits table, workouts view ([#26](https://github.com/chenhunghan/garmin-mcp-app/issues/26)) ([2fae00b](https://github.com/chenhunghan/garmin-mcp-app/commit/2fae00bc610b56a9e03d0f5cd30401a2a034c8e1))
+* charts show what Claude asked for, and no more empty panels ([2fae00b](https://github.com/chenhunghan/garmin-mcp-app/commit/2fae00bc610b56a9e03d0f5cd30401a2a034c8e1))
+* **garmin-connect:** add 30 read-only endpoints and fix last-used device ([954819e](https://github.com/chenhunghan/garmin-mcp-app/commit/954819edf1a84dbc45a7e570ab3f7d0f13a897c2))
+* per-km splits table for single-lap runs ([2fae00b](https://github.com/chenhunghan/garmin-mcp-app/commit/2fae00bc610b56a9e03d0f5cd30401a2a034c8e1))
+* sleep, stress and heart rate accept a date range in one call ([2fae00b](https://github.com/chenhunghan/garmin-mcp-app/commit/2fae00bc610b56a9e03d0f5cd30401a2a034c8e1))
+* workouts view, and find workouts by name ([2fae00b](https://github.com/chenhunghan/garmin-mcp-app/commit/2fae00bc610b56a9e03d0f5cd30401a2a034c8e1))
+
+
+### Bug Fixes
+
+* compute training context date windows in UTC ([954819e](https://github.com/chenhunghan/garmin-mcp-app/commit/954819edf1a84dbc45a7e570ab3f7d0f13a897c2))
+* **deps:** bump the npm_and_yarn group across 1 directory with 10 updates ([#25](https://github.com/chenhunghan/garmin-mcp-app/issues/25)) ([fbe2321](https://github.com/chenhunghan/garmin-mcp-app/commit/fbe2321cc69426f767cec96005b95ea155e28241))
+* use local calendar dates in charts ([2fae00b](https://github.com/chenhunghan/garmin-mcp-app/commit/2fae00bc610b56a9e03d0f5cd30401a2a034c8e1))
+
 ## [0.5.1](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.5.0...garmin-mcp-app-v0.5.1) (2026-10-04)
 
 

@@ -26,6 +26,11 @@
 import { createRoot } from "react-dom/client";
 import { GarminApp } from "./app.tsx";
 
+interface DevHostLog {
+  messages: unknown[];
+  contexts: unknown[];
+}
+
 function callServerTool(name: string, args: unknown) {
   return fetch("/api/tools/call", {
     method: "POST",
@@ -73,7 +78,12 @@ window.addEventListener("message", (e) => {
           protocolVersion: "2026-01-26",
           capabilities: {},
           hostInfo: { name: "dev-mock", version: "0.0.0" },
-          hostCapabilities: {},
+          // Like Claude Desktop: tools, messages and model context
+          hostCapabilities: {
+            serverTools: {},
+            message: { text: {} },
+            updateModelContext: { text: {}, structuredContent: {} },
+          },
           hostContext: { theme: "light" },
         },
       },
@@ -81,6 +91,17 @@ window.addEventListener("message", (e) => {
     );
   } else if (e.data.method === "ping") {
     e.stopImmediatePropagation();
+    window.postMessage({ jsonrpc: "2.0", id: e.data.id, result: {} }, "*");
+  } else if (e.data.method === "ui/message" || e.data.method === "ui/update-model-context") {
+    // "Ask Claude" / shared context: there's no Claude here, so record them
+    // (window.__devHost) and log, so they can be checked in the browser
+    e.stopImmediatePropagation();
+    const host = ((window as unknown as { __devHost?: DevHostLog }).__devHost ??= {
+      messages: [],
+      contexts: [],
+    });
+    (e.data.method === "ui/message" ? host.messages : host.contexts).push(e.data.params);
+    console.info(`[dev host] ${e.data.method}`, e.data.params);
     window.postMessage({ jsonrpc: "2.0", id: e.data.id, result: {} }, "*");
   } else if (e.data.method === "ui/notifications/initialized") {
     e.stopImmediatePropagation();

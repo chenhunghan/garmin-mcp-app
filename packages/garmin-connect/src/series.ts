@@ -658,6 +658,8 @@ export async function fetchMetricSeries(
       points = toWeekly(points, range.end, SPARSE.has(metric) ? 1 : 3);
     }
   }
-  points = roundPoints(points, info.decimals);
+  // Weekly points are averages of daily values: one more decimal, or e.g. a
+  // resting HR drifting 52 → 49 renders as a staircase of whole bpm
+  points = roundPoints(points, info.decimals + (range.granularity === "weekly" ? 1 : 0));
   return { ...base, points, summary: summarizeSeries(points, base.granularity, info.decimals) };
 }

@@ -1,0 +1,17 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/metrics-service/metrics/racepredictions/latest/test-user",
+    "status": 200,
+    "body": {
+      "userId": 10000001,
+      "fromCalendarDate": null,
+      "toCalendarDate": null,
+      "calendarDate": "2026-10-04",
+      "time5K": 1251,
+      "time10K": 2206,
+      "timeHalfMarathon": 5390,
+      "timeMarathon": 24527
+    }
+  }
+]

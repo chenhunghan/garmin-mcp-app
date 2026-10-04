@@ -1,0 +1,49 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/usersummary-service/stats/steps/weekly/2026-10-03/4",
+    "status": 200,
+    "body": [
+      {
+        "calendarDate": "2026-09-06",
+        "values": {
+          "totalSteps": 112401,
+          "averageSteps": 8797.0574,
+          "wellnessDataDaysCount": 9,
+          "averageDistance": 13381.1015,
+          "totalDistance": 59999
+        }
+      },
+      {
+        "calendarDate": "2026-09-13",
+        "values": {
+          "totalSteps": 102536,
+          "averageSteps": 8609.6142,
+          "wellnessDataDaysCount": 8,
+          "averageDistance": 12142.6711,
+          "totalDistance": 60713
+        }
+      },
+      {
+        "calendarDate": "2026-09-20",
+        "values": {
+          "totalSteps": 112028,
+          "averageSteps": 9364.1861,
+          "wellnessDataDaysCount": 8,
+          "averageDistance": 12955.5617,
+          "totalDistance": 73097
+        }
+      },
+      {
+        "calendarDate": "2026-09-27",
+        "values": {
+          "totalSteps": 109109,
+          "averageSteps": 11070,
+          "wellnessDataDaysCount": 8,
+          "averageDistance": 15407.7365,
+          "totalDistance": 66693
+        }
+      }
+    ]
+  }
+]

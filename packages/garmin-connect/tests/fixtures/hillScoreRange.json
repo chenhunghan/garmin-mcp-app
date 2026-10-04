@@ -1,0 +1,21 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/metrics-service/metrics/hillscore/stats?startDate=2026-09-03&endDate=2026-10-03&aggregation=weekly",
+    "status": 200,
+    "body": {
+      "userProfilePK": 10000001,
+      "startDate": "2026-09-03",
+      "endDate": "2026-10-03",
+      "periodAvgScore": {
+        "2026-08-30": null,
+        "2026-09-06": null,
+        "2026-09-13": null,
+        "2026-09-20": null,
+        "2026-09-27": null
+      },
+      "maxScore": null,
+      "hillScoreDTOList": []
+    }
+  }
+]

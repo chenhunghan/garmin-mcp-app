@@ -1,0 +1,35 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/wellness-service/wellness/daily/spo2/2026-10-03",
+    "status": 200,
+    "body": {
+      "userProfilePK": 10000001,
+      "calendarDate": "2026-10-03",
+      "startTimestampGMT": "2026-09-06T00:36:17.0",
+      "endTimestampGMT": "2026-09-04T03:27:44.0",
+      "startTimestampLocal": "2026-09-24T16:06:13.0",
+      "endTimestampLocal": "2026-09-25T19:29:38.0",
+      "sleepStartTimestampGMT": "2026-09-10T00:31:24.0",
+      "sleepEndTimestampGMT": "2026-09-18T20:32:53.0",
+      "sleepStartTimestampLocal": "2026-09-06T08:10:39.0",
+      "sleepEndTimestampLocal": "2026-09-15T09:01:43.0",
+      "tomorrowSleepStartTimestampGMT": "2026-09-24T10:43:12.0",
+      "tomorrowSleepEndTimestampGMT": "2026-09-10T01:23:46.0",
+      "tomorrowSleepStartTimestampLocal": "2026-09-06T09:37:14.0",
+      "tomorrowSleepEndTimestampLocal": "2026-09-13T17:53:17.0",
+      "averageSpO2": null,
+      "lowestSpO2": null,
+      "lastSevenDaysAvgSpO2": null,
+      "latestSpO2": null,
+      "latestSpO2TimestampGMT": null,
+      "latestSpO2TimestampLocal": null,
+      "avgSleepSpO2": null,
+      "avgTomorrowSleepSpO2": null,
+      "spO2ValueDescriptorsDTOList": null,
+      "spO2SingleValues": null,
+      "continuousReadingDTOList": null,
+      "spO2HourlyAverages": null
+    }
+  }
+]

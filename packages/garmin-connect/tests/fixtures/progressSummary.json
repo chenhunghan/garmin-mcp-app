@@ -1,0 +1,24 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/fitnessstats-service/activity?startDate=2026-09-03&endDate=2026-10-03&aggregation=lifetime&groupByParentActivityType=true&metric=distance",
+    "status": 200,
+    "body": [
+      {
+        "date": "2026-10-04",
+        "countOfActivities": 28,
+        "stats": {
+          "running": {
+            "distance": {
+              "count": 17,
+              "min": 152703,
+              "max": 1771738.1498,
+              "avg": 946283.2835,
+              "sum": 20693928.0809
+            }
+          }
+        }
+      }
+    ]
+  }
+]

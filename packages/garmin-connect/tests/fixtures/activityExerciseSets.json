@@ -1,0 +1,11 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/activity-service/activity/1000000001/exerciseSets",
+    "status": 200,
+    "body": {
+      "activityId": 1000000001,
+      "exerciseSets": null
+    }
+  }
+]

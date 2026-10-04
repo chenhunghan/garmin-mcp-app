@@ -1,0 +1,8 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/metrics-service/metrics/hillscore?calendarDate=2026-10-03",
+    "status": 204,
+    "body": null
+  }
+]

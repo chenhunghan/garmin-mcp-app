@@ -1,0 +1,56 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/workout-service/workouts?start=0&limit=5",
+    "status": 200,
+    "body": [
+      {
+        "workoutId": 2000000002,
+        "ownerId": 10000001,
+        "workoutName": "Sample workout",
+        "description": "Sample workout",
+        "updateDate": "2026-09-09T03:55:42.0",
+        "createdDate": "2026-09-06T07:45:17.0",
+        "sportType": {
+          "sportTypeId": 1,
+          "sportTypeKey": "running",
+          "displayOrder": 1
+        },
+        "trainingPlanId": null,
+        "author": {
+          "userProfilePk": null,
+          "displayName": null,
+          "fullName": "Test User",
+          "profileImgNameLarge": null,
+          "profileImgNameMedium": null,
+          "profileImgNameSmall": null,
+          "userPro": false,
+          "vivokidUser": false
+        },
+        "estimatedDurationInSecs": 3033,
+        "estimatedDistanceInMeters": 5648,
+        "estimateType": "SAMPLE",
+        "estimatedDistanceUnit": {
+          "unitId": 1000000001,
+          "unitKey": "kilometer",
+          "factor": 122085
+        },
+        "poolLength": 0,
+        "poolLengthUnit": {
+          "unitId": 1000000001,
+          "unitKey": "meter",
+          "factor": 128
+        },
+        "workoutProvider": null,
+        "workoutSourceId": null,
+        "consumer": null,
+        "atpPlanId": null,
+        "workoutNameI18nKey": null,
+        "descriptionI18nKey": null,
+        "workoutThumbnailUrl": null,
+        "shared": false,
+        "estimated": true
+      }
+    ]
+  }
+]

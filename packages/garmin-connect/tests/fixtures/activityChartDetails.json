@@ -1,0 +1,652 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/activity-service/activity/1000000001/details?maxChartSize=100&maxPolylineSize=0",
+    "status": 200,
+    "body": {
+      "activityId": 1000000001,
+      "measurementCount": 15,
+      "metricsCount": 141,
+      "totalMetricsCount": 1920,
+      "metricDescriptors": [
+        {
+          "metricsIndex": 0,
+          "key": "directSpeed",
+          "unit": {
+            "id": 26,
+            "key": "mps",
+            "factor": 0.116
+          }
+        },
+        {
+          "metricsIndex": 1,
+          "key": "directPower",
+          "unit": {
+            "id": 13,
+            "key": "watt",
+            "factor": 4
+          }
+        },
+        {
+          "metricsIndex": 2,
+          "key": "directAirTemperature",
+          "unit": {
+            "id": 130,
+            "key": "celcius",
+            "factor": 0
+          }
+        },
+        {
+          "metricsIndex": 3,
+          "key": "sumMovingDuration",
+          "unit": {
+            "id": 52,
+            "key": "second",
+            "factor": 1354
+          }
+        },
+        {
+          "metricsIndex": 4,
+          "key": "directTimestamp",
+          "unit": {
+            "id": 531,
+            "key": "gmt",
+            "factor": 0
+          }
+        },
+        {
+          "metricsIndex": 5,
+          "key": "directLongitude",
+          "unit": {
+            "id": 68,
+            "key": "dd",
+            "factor": 0
+          }
+        },
+        {
+          "metricsIndex": 6,
+          "key": "directFractionalCadence",
+          "unit": {
+            "id": 104,
+            "key": "stepsPerMinute",
+            "factor": 0
+          }
+        },
+        {
+          "metricsIndex": 7,
+          "key": "directGradeAdjustedSpeed",
+          "unit": {
+            "id": 24,
+            "key": "mps",
+            "factor": 0.13
+          }
+        },
+        {
+          "metricsIndex": 8,
+          "key": "sumElapsedDuration",
+          "unit": {
+            "id": 50,
+            "key": "second",
+            "factor": 1156
+          }
+        },
+        {
+          "metricsIndex": 9,
+          "key": "sumDuration",
+          "unit": {
+            "id": 50,
+            "key": "second",
+            "factor": 1172
+          }
+        },
+        {
+          "metricsIndex": 10,
+          "key": "directHeartRate",
+          "unit": {
+            "id": 771,
+            "key": "bpm",
+            "factor": 4
+          }
+        },
+        {
+          "metricsIndex": 11,
+          "key": "directDoubleCadence",
+          "unit": {
+            "id": 108,
+            "key": "stepsPerMinute",
+            "factor": 1
+          }
+        },
+        {
+          "metricsIndex": 12,
+          "key": "sumDistance",
+          "unit": {
+            "id": 2,
+            "key": "meter",
+            "factor": 118
+          }
+        },
+        {
+          "metricsIndex": 13,
+          "key": "directLatitude",
+          "unit": {
+            "id": 67,
+            "key": "dd",
+            "factor": 2
+          }
+        },
+        {
+          "metricsIndex": 14,
+          "key": "sumAccumulatedPower",
+          "unit": {
+            "id": 11,
+            "key": "watt",
+            "factor": 4
+          }
+        },
+        {
+          "metricsIndex": 15,
+          "key": "directRunCadence",
+          "unit": {
+            "id": 116,
+            "key": "stepsPerMinute",
+            "factor": 2
+          }
+        },
+        {
+          "metricsIndex": 16,
+          "key": "directElevation",
+          "unit": {
+            "id": 3,
+            "key": "meter",
+            "factor": 137
+          }
+        },
+        {
+          "metricsIndex": 17,
+          "key": "directVerticalSpeed",
+          "unit": {
+            "id": 23,
+            "key": "mps",
+            "factor": 0.1338
+          }
+        },
+        {
+          "metricsIndex": 18,
+          "key": "directPerformanceCondition",
+          "unit": {
+            "id": 8,
+            "key": "dimensionless",
+            "factor": 4
+          }
+        }
+      ],
+      "activityDetailMetrics": [
+        {
+          "metrics": [
+            1.8231,
+            150,
+            24,
+            0,
+            1790028563479,
+            0,
+            0.3913,
+            1.077,
+            0,
+            0,
+            105,
+            132,
+            1.1749,
+            0,
+            144,
+            68,
+            14.3596,
+            null,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            1.6099,
+            158,
+            24,
+            0,
+            1790435859345,
+            0,
+            0.3892,
+            0.9857,
+            1,
+            2,
+            111,
+            136,
+            2.89,
+            0,
+            323,
+            69,
+            14.4746,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            2.8018,
+            450,
+            24,
+            6,
+            1788460590424,
+            0,
+            0.3631,
+            1.697,
+            9,
+            7,
+            110,
+            206,
+            18.2983,
+            0,
+            2537,
+            97,
+            16.3523,
+            0.1575,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            3.187,
+            412,
+            21,
+            18,
+            1789271880960,
+            0,
+            0.4012,
+            1.6612,
+            27,
+            20,
+            145,
+            218,
+            62.4422,
+            0,
+            9407,
+            100,
+            17.1895,
+            0.1543,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            3.1692,
+            381,
+            25,
+            25,
+            1788438126666,
+            0,
+            0.3569,
+            1.892,
+            41,
+            26,
+            143,
+            208,
+            78.6886,
+            0,
+            11392,
+            93,
+            16,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            3.3752,
+            430,
+            26,
+            27,
+            1789852205003,
+            0,
+            0.383,
+            1.849,
+            45,
+            27,
+            139,
+            193,
+            98.8557,
+            0,
+            12746,
+            102,
+            17,
+            0.1473,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            3.2334,
+            342,
+            23,
+            45,
+            1789099792911,
+            0,
+            0.3556,
+            1.9255,
+            67,
+            46,
+            151,
+            188,
+            141.5363,
+            0,
+            24795,
+            108,
+            17.1478,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            3.0754,
+            368,
+            25,
+            64,
+            1790319057138,
+            0,
+            0.3746,
+            1.6167,
+            122,
+            80,
+            166,
+            207,
+            237.2917,
+            0,
+            30930,
+            89,
+            14.855,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            2.3479,
+            330,
+            25,
+            87,
+            1790740986607,
+            0,
+            0.3711,
+            1.3659,
+            143,
+            105,
+            138,
+            187,
+            303.3703,
+            0,
+            40677,
+            93,
+            14.5312,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            2.5983,
+            299,
+            23,
+            89,
+            1788758849090,
+            0,
+            0.3525,
+            1.3753,
+            148,
+            103,
+            154,
+            194,
+            287.1089,
+            0,
+            43369,
+            100,
+            16.9067,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            2.7383,
+            300,
+            26,
+            104,
+            1789588072734,
+            0,
+            0.3831,
+            1.7772,
+            170,
+            118,
+            159,
+            184,
+            347.5356,
+            0,
+            45968,
+            93,
+            15.4812,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            2.6423,
+            357,
+            24,
+            117,
+            1789806044228,
+            0,
+            0.3699,
+            1.7681,
+            188,
+            115,
+            150,
+            183,
+            353.9987,
+            0,
+            52287,
+            99,
+            15.4279,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            2.9498,
+            308,
+            24,
+            138,
+            1790973101828,
+            0,
+            0.4106,
+            1.4659,
+            217,
+            150,
+            150,
+            180,
+            402.2103,
+            0,
+            64377,
+            101,
+            17,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            2.6509,
+            338,
+            25,
+            145,
+            1790725529149,
+            0,
+            0.4027,
+            1.6485,
+            241,
+            175,
+            146,
+            201,
+            512.3433,
+            0,
+            79250,
+            101,
+            16.5876,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            2.9003,
+            353,
+            23,
+            191,
+            1789613933169,
+            0,
+            0.4139,
+            1.6536,
+            269,
+            197,
+            146,
+            183,
+            609.1402,
+            0,
+            82289,
+            92,
+            16.8075,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            2.8875,
+            361,
+            25,
+            212,
+            1788684226809,
+            0,
+            0.4125,
+            1.8271,
+            356,
+            199,
+            165,
+            210,
+            699.8064,
+            0,
+            86167,
+            103,
+            14.9642,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            3.3129,
+            396,
+            25,
+            225,
+            1788927167969,
+            0,
+            0.4216,
+            1.9106,
+            366,
+            228,
+            152,
+            202,
+            794.3956,
+            0,
+            106638,
+            96,
+            15,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            2.6813,
+            331,
+            22,
+            229,
+            1788425421754,
+            0,
+            0.3849,
+            1.6786,
+            403,
+            252,
+            150,
+            199,
+            865.2273,
+            0,
+            121409,
+            107,
+            15,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            2.7524,
+            364,
+            23,
+            268,
+            1788563750331,
+            0,
+            0.3702,
+            1.659,
+            474,
+            300,
+            146,
+            189,
+            854.6516,
+            0,
+            138648,
+            101,
+            16.8255,
+            0,
+            null
+          ]
+        },
+        {
+          "metrics": [
+            3.2281,
+            320,
+            23,
+            299,
+            1790325970253,
+            0,
+            0.3609,
+            1.9248,
+            483,
+            294,
+            167,
+            199,
+            969.4928,
+            0,
+            128780,
+            97,
+            15.1261,
+            0,
+            null
+          ]
+        }
+      ],
+      "geoPolylineDTO": null,
+      "heartRateDTOs": null,
+      "pendingData": null,
+      "detailsAvailable": true
+    }
+  }
+]

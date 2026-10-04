@@ -37,6 +37,9 @@ jobs:
       - name: Test garmin-connect
         run: npm run test:lib
 
+      - name: Test MCP tools
+        run: npm test
+
       - name: Build
         run: npm run build
 

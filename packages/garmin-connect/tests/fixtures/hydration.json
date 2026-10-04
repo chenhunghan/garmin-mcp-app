@@ -1,0 +1,17 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/usersummary-service/usersummary/hydration/daily/2026-10-03",
+    "status": 200,
+    "body": {
+      "userId": 10000001,
+      "calendarDate": "2026-10-03",
+      "valueInML": null,
+      "goalInML": 3624,
+      "dailyAverageinML": null,
+      "lastEntryTimestampLocal": null,
+      "sweatLossInML": null,
+      "activityIntakeInML": null
+    }
+  }
+]

@@ -19,6 +19,16 @@ export class GarminMfaRequiredError extends GarminError {
   }
 }
 
+/** Non-2xx response from the Garmin Connect API. */
+export class GarminApiError extends GarminError {
+  readonly status: number;
+  constructor(status: number, statusText: string) {
+    super(`API error: ${status} ${statusText}`);
+    this.name = "GarminApiError";
+    this.status = status;
+  }
+}
+
 export class GarminRateLimitError extends GarminError {
   constructor(message: string = "Rate limit exceeded") {
     super(message);

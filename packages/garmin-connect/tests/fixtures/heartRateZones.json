@@ -1,0 +1,37 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/biometric-service/heartRateZones",
+    "status": 200,
+    "body": [
+      {
+        "trainingMethod": "HR_RESERVE",
+        "restingHeartRateUsed": 42,
+        "lactateThresholdHeartRateUsed": null,
+        "zone1Floor": 161,
+        "zone2Floor": 208,
+        "zone3Floor": 147,
+        "zone4Floor": 217,
+        "zone5Floor": 118,
+        "maxHeartRateUsed": 240,
+        "restingHrAutoUpdateUsed": true,
+        "sport": "DEFAULT",
+        "changeState": "UNCHANGED"
+      },
+      {
+        "trainingMethod": "HR_RESERVE",
+        "restingHeartRateUsed": 46,
+        "lactateThresholdHeartRateUsed": null,
+        "zone1Floor": 160,
+        "zone2Floor": 190,
+        "zone3Floor": 146,
+        "zone4Floor": 193,
+        "zone5Floor": 115,
+        "maxHeartRateUsed": 215,
+        "restingHrAutoUpdateUsed": true,
+        "sport": "RUNNING",
+        "changeState": "UNCHANGED"
+      }
+    ]
+  }
+]

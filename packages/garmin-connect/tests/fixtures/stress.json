@@ -1,0 +1,91 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/wellness-service/wellness/dailyStress/2026-10-03",
+    "status": 200,
+    "body": {
+      "userProfilePK": 10000001,
+      "calendarDate": "2026-10-03",
+      "startTimestampGMT": "2026-09-03T17:19:42.0",
+      "endTimestampGMT": "2026-09-26T22:09:15.0",
+      "startTimestampLocal": "2026-09-09T18:43:23.0",
+      "endTimestampLocal": "2026-09-15T22:26:05.0",
+      "maxStressLevel": 123,
+      "avgStressLevel": 16,
+      "stressChartValueOffset": 3,
+      "stressChartYAxisOrigin": 0,
+      "stressValueDescriptorsDTOList": [
+        {
+          "index": 0,
+          "key": "timestamp"
+        },
+        {
+          "index": 1,
+          "key": "stressLevel"
+        }
+      ],
+      "stressValuesArray": [
+        [1789023260246, 18],
+        [1790475306066, 25],
+        [1788922020232, 18],
+        [1789208927974, 17],
+        [1790768387918, 19],
+        [1790986704080, 20],
+        [1790726002557, 16],
+        [1789778420006, 17],
+        [1790466782313, 17],
+        [1788830750375, 17],
+        [1790481423343, 12],
+        [1791014019493, 16],
+        [1788895697877, 13],
+        [1790311259816, 15],
+        [1789637166133, 14],
+        [1790959154150, 16],
+        [1788713201724, 15],
+        [1791068877075, 14],
+        [1789495408106, 13],
+        [1789924030856, 13]
+      ],
+      "bodyBatteryValueDescriptorsDTOList": [
+        {
+          "bodyBatteryValueDescriptorIndex": 0,
+          "bodyBatteryValueDescriptorKey": "timestamp"
+        },
+        {
+          "bodyBatteryValueDescriptorIndex": 1,
+          "bodyBatteryValueDescriptorKey": "bodyBatteryStatus"
+        },
+        {
+          "bodyBatteryValueDescriptorIndex": 2,
+          "bodyBatteryValueDescriptorKey": "bodyBatteryLevel"
+        },
+        {
+          "bodyBatteryValueDescriptorIndex": 3,
+          "bodyBatteryValueDescriptorKey": "bodyBatteryVersion"
+        }
+      ],
+      "bodyBatteryValuesArray": [
+        [1788897248723, "MEASURED", 35, 2],
+        [1790969617338, "MEASURED", 36, 4],
+        [1790251174575, "MEASURED", 36, 1],
+        [1789328162210, "MEASURED", 38, 2],
+        [1788981701901, "MEASURED", 34, 4],
+        [1790760435532, "MEASURED", 41, 3],
+        [1790039887473, "MEASURED", 38, 1],
+        [1790941923246, "MEASURED", 36, 3],
+        [1790806920602, "MEASURED", 38, 3],
+        [1790886166724, "MEASURED", 37, 2],
+        [1790686914426, "MEASURED", 43, 0],
+        [1789179311686, "MEASURED", 39, 3],
+        [1789495345045, "MEASURED", 39, 0],
+        [1790989770559, "MEASURED", 43, 4],
+        [1789178800730, "MEASURED", 40, 0],
+        [1788866304235, "MEASURED", 37, 1],
+        [1788972520866, "MEASURED", 44, 4],
+        [1789952423025, "MEASURED", 41, 2],
+        [1788520959697, "MEASURED", 39, 4],
+        [1789276101903, "MEASURED", 46, 0]
+      ]
+    }
+  }
+]

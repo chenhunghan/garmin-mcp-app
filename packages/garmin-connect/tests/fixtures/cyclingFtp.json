@@ -1,0 +1,17 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/biometric-service/biometric/latestFunctionalThresholdPower/CYCLING",
+    "status": 200,
+    "body": {
+      "userProfilePK": 10000001,
+      "version": 1789201579340,
+      "calendarDate": "2026-09-19T10:32:08.0",
+      "isStale": false,
+      "sequence": 1790340577495,
+      "sport": "CYCLING",
+      "functionalThresholdPower": 298,
+      "biometricSourceType": "SAMPLE"
+    }
+  }
+]

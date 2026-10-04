@@ -1,0 +1,45 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/fitnessage-service/fitnessage/2026-10-03",
+    "status": 200,
+    "body": {
+      "chronologicalAge": 55,
+      "fitnessAge": 49.7342,
+      "achievableFitnessAge": 22.8407,
+      "previousFitnessAge": 23.9992,
+      "components": {
+        "vigorousDaysAvg": {
+          "value": 0,
+          "targetValue": 3,
+          "potentialAge": 48.8398,
+          "priority": 3,
+          "stale": false,
+          "numOfWeeksForIm": 4
+        },
+        "rhr": {
+          "value": 63,
+          "stale": false
+        },
+        "vigorousMinutesAvg": {
+          "value": 2.8477,
+          "targetValue": 56,
+          "potentialAge": 48.4366,
+          "priority": 2,
+          "stale": false,
+          "numOfWeeksForIm": 5
+        },
+        "bmi": {
+          "value": 31.2561,
+          "targetValue": 15.3522,
+          "improvementValue": 5.458,
+          "potentialAge": 43.4582,
+          "priority": 1,
+          "stale": false,
+          "lastMeasurementDate": "2026-08-09"
+        }
+      },
+      "lastUpdated": "2026-09-17T13:37:52.0"
+    }
+  }
+]

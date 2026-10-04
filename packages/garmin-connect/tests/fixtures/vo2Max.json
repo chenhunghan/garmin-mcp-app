@@ -1,0 +1,609 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/metrics-service/metrics/maxmet/daily/2026-09-03/2026-10-03",
+    "status": 200,
+    "body": [
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-03",
+          "vo2MaxPreciseValue": 50.5674,
+          "vo2MaxValue": 31,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-03",
+          "altitudeAcclimationDate": "2026-09-03",
+          "previousAltitudeAcclimationDate": "2026-09-03",
+          "heatAcclimationDate": "2026-09-03",
+          "previousHeatAcclimationDate": "2026-09-02",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 2,
+          "previousHeatAcclimationPercentage": 1,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-14T12:54:37.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-05",
+          "vo2MaxPreciseValue": 52.6985,
+          "vo2MaxValue": 30,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-05",
+          "altitudeAcclimationDate": "2026-09-05",
+          "previousAltitudeAcclimationDate": "2026-09-05",
+          "heatAcclimationDate": "2026-09-05",
+          "previousHeatAcclimationDate": "2026-09-03",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 3,
+          "previousHeatAcclimationPercentage": 2,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-10T19:48:05.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-06",
+          "vo2MaxPreciseValue": 51.0018,
+          "vo2MaxValue": 28,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-06",
+          "altitudeAcclimationDate": "2026-09-06",
+          "previousAltitudeAcclimationDate": "2026-09-06",
+          "heatAcclimationDate": "2026-09-06",
+          "previousHeatAcclimationDate": "2026-09-05",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 2,
+          "previousHeatAcclimationPercentage": 1,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-26T03:08:19.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-08",
+          "vo2MaxPreciseValue": 50.7283,
+          "vo2MaxValue": 32,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-08",
+          "altitudeAcclimationDate": "2026-09-08",
+          "previousAltitudeAcclimationDate": "2026-09-08",
+          "heatAcclimationDate": "2026-09-08",
+          "previousHeatAcclimationDate": "2026-09-06",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 0,
+          "previousHeatAcclimationPercentage": 2,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-08T08:54:00.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-10",
+          "vo2MaxPreciseValue": 51.9564,
+          "vo2MaxValue": 29,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-10",
+          "altitudeAcclimationDate": "2026-09-10",
+          "previousAltitudeAcclimationDate": "2026-09-10",
+          "heatAcclimationDate": "2026-09-10",
+          "previousHeatAcclimationDate": "2026-09-10",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 0,
+          "previousHeatAcclimationPercentage": 0,
+          "heatTrend": null,
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-10-03T01:04:49.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-11",
+          "vo2MaxPreciseValue": 55.5776,
+          "vo2MaxValue": 32,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-11",
+          "altitudeAcclimationDate": "2026-09-11",
+          "previousAltitudeAcclimationDate": "2026-09-11",
+          "heatAcclimationDate": "2026-09-11",
+          "previousHeatAcclimationDate": "2026-09-11",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 0,
+          "previousHeatAcclimationPercentage": 0,
+          "heatTrend": null,
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-10-01T16:36:36.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-12",
+          "vo2MaxPreciseValue": 54.5245,
+          "vo2MaxValue": 30,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-12",
+          "altitudeAcclimationDate": "2026-09-12",
+          "previousAltitudeAcclimationDate": "2026-09-12",
+          "heatAcclimationDate": "2026-09-12",
+          "previousHeatAcclimationDate": "2026-09-12",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 0,
+          "previousHeatAcclimationPercentage": 0,
+          "heatTrend": null,
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-20T13:56:08.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-13",
+          "vo2MaxPreciseValue": 60.7225,
+          "vo2MaxValue": 28,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-13",
+          "altitudeAcclimationDate": "2026-09-13",
+          "previousAltitudeAcclimationDate": "2026-09-13",
+          "heatAcclimationDate": "2026-09-13",
+          "previousHeatAcclimationDate": "2026-09-13",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 0,
+          "previousHeatAcclimationPercentage": 0,
+          "heatTrend": null,
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-25T08:59:49.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-15",
+          "vo2MaxPreciseValue": 51.9982,
+          "vo2MaxValue": 29,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-15",
+          "altitudeAcclimationDate": "2026-09-15",
+          "previousAltitudeAcclimationDate": "2026-09-15",
+          "heatAcclimationDate": "2026-09-15",
+          "previousHeatAcclimationDate": "2026-09-15",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 0,
+          "previousHeatAcclimationPercentage": 0,
+          "heatTrend": null,
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-04T05:53:20.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-18",
+          "vo2MaxPreciseValue": 52.1209,
+          "vo2MaxValue": 33,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-18",
+          "altitudeAcclimationDate": "2026-09-18",
+          "previousAltitudeAcclimationDate": "2026-09-18",
+          "heatAcclimationDate": "2026-09-18",
+          "previousHeatAcclimationDate": "2026-09-18",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 9,
+          "previousHeatAcclimationPercentage": 0,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-19T00:41:36.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-19",
+          "vo2MaxPreciseValue": 59.4507,
+          "vo2MaxValue": 30,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-19",
+          "altitudeAcclimationDate": "2026-09-19",
+          "previousAltitudeAcclimationDate": "2026-09-19",
+          "heatAcclimationDate": "2026-09-19",
+          "previousHeatAcclimationDate": "2026-09-18",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 18,
+          "previousHeatAcclimationPercentage": 9,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-10-02T01:12:23.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-20",
+          "vo2MaxPreciseValue": 50,
+          "vo2MaxValue": 31,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-20",
+          "altitudeAcclimationDate": "2026-09-20",
+          "previousAltitudeAcclimationDate": "2026-09-20",
+          "heatAcclimationDate": "2026-09-20",
+          "previousHeatAcclimationDate": "2026-09-19",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 28,
+          "previousHeatAcclimationPercentage": 17,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-29T00:01:02.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-22",
+          "vo2MaxPreciseValue": 58.2119,
+          "vo2MaxValue": 33,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-22",
+          "altitudeAcclimationDate": "2026-09-22",
+          "previousAltitudeAcclimationDate": "2026-09-22",
+          "heatAcclimationDate": "2026-09-22",
+          "previousHeatAcclimationDate": "2026-09-20",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 33,
+          "previousHeatAcclimationPercentage": 22,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-04T11:10:43.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-23",
+          "vo2MaxPreciseValue": 55.5952,
+          "vo2MaxValue": 30,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-23",
+          "altitudeAcclimationDate": "2026-09-23",
+          "previousAltitudeAcclimationDate": "2026-09-23",
+          "heatAcclimationDate": "2026-09-23",
+          "previousHeatAcclimationDate": "2026-09-22",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 44,
+          "previousHeatAcclimationPercentage": 30,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-10-03T12:33:58.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-25",
+          "vo2MaxPreciseValue": 54.8251,
+          "vo2MaxValue": 32,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-25",
+          "altitudeAcclimationDate": "2026-09-25",
+          "previousAltitudeAcclimationDate": "2026-09-25",
+          "heatAcclimationDate": "2026-09-25",
+          "previousHeatAcclimationDate": "2026-09-23",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 59,
+          "previousHeatAcclimationPercentage": 40,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-30T23:20:53.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-26",
+          "vo2MaxPreciseValue": 55.0897,
+          "vo2MaxValue": 31,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-26",
+          "altitudeAcclimationDate": "2026-09-26",
+          "previousAltitudeAcclimationDate": "2026-09-26",
+          "heatAcclimationDate": "2026-09-26",
+          "previousHeatAcclimationDate": "2026-09-26",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 75,
+          "previousHeatAcclimationPercentage": 56,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-06T10:52:02.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-27",
+          "vo2MaxPreciseValue": 51.8321,
+          "vo2MaxValue": 31,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-27",
+          "altitudeAcclimationDate": "2026-09-27",
+          "previousAltitudeAcclimationDate": "2026-09-27",
+          "heatAcclimationDate": "2026-09-27",
+          "previousHeatAcclimationDate": "2026-09-26",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 74,
+          "previousHeatAcclimationPercentage": 70,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-11T11:07:09.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-29",
+          "vo2MaxPreciseValue": 56.6857,
+          "vo2MaxValue": 33,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-29",
+          "altitudeAcclimationDate": "2026-09-29",
+          "previousAltitudeAcclimationDate": "2026-09-29",
+          "heatAcclimationDate": "2026-09-29",
+          "previousHeatAcclimationDate": "2026-09-26",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 77,
+          "previousHeatAcclimationPercentage": 71,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-21T00:03:46.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-09-30",
+          "vo2MaxPreciseValue": 51.9756,
+          "vo2MaxValue": 30,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-09-30",
+          "altitudeAcclimationDate": "2026-09-30",
+          "previousAltitudeAcclimationDate": "2026-09-30",
+          "heatAcclimationDate": "2026-09-30",
+          "previousHeatAcclimationDate": "2026-09-26",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 74,
+          "previousHeatAcclimationPercentage": 73,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-10-01T05:33:50.0"
+        }
+      },
+      {
+        "userId": 10000001,
+        "generic": {
+          "calendarDate": "2026-10-01",
+          "vo2MaxPreciseValue": 54.41,
+          "vo2MaxValue": 28,
+          "fitnessAge": null,
+          "fitnessAgeDescription": null,
+          "maxMetCategory": 0
+        },
+        "cycling": null,
+        "heatAltitudeAcclimation": {
+          "calendarDate": "2026-10-01",
+          "altitudeAcclimationDate": "2026-10-01",
+          "previousAltitudeAcclimationDate": "2026-10-01",
+          "heatAcclimationDate": "2026-10-01",
+          "previousHeatAcclimationDate": "2026-09-26",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 72,
+          "previousHeatAcclimationPercentage": 66,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 0,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-22T22:21:47.0"
+        }
+      }
+    ]
+  }
+]

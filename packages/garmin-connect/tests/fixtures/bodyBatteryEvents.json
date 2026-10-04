@@ -1,0 +1,8 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/wellness-service/wellness/bodyBattery/events/2026-10-03",
+    "status": 200,
+    "body": []
+  }
+]

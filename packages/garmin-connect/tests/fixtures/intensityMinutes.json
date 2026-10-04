@@ -1,0 +1,26 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/wellness-service/wellness/daily/im/2026-10-03",
+    "status": 200,
+    "body": {
+      "userProfilePK": 10000001,
+      "calendarDate": "2026-10-03",
+      "startTimestampGMT": "2026-09-11T21:24:38.0",
+      "endTimestampGMT": "2026-10-02T15:12:24.0",
+      "startTimestampLocal": "2026-09-30T21:31:12.0",
+      "endTimestampLocal": "2026-09-17T01:35:30.0",
+      "weeklyModerate": 0,
+      "weeklyVigorous": 0,
+      "weeklyTotal": 0,
+      "weekGoal": 116,
+      "dayOfGoalMet": null,
+      "startDayMinutes": 0,
+      "endDayMinutes": 0,
+      "moderateMinutes": 0,
+      "vigorousMinutes": 0,
+      "imValueDescriptorsDTOList": null,
+      "imValuesArray": null
+    }
+  }
+]

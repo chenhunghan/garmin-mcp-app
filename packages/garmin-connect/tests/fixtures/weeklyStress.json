@@ -1,0 +1,25 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/usersummary-service/stats/stress/weekly/2026-10-03/4",
+    "status": 200,
+    "body": [
+      {
+        "calendarDate": "2026-09-06",
+        "value": 49
+      },
+      {
+        "calendarDate": "2026-09-13",
+        "value": 49
+      },
+      {
+        "calendarDate": "2026-09-20",
+        "value": 48
+      },
+      {
+        "calendarDate": "2026-09-27",
+        "value": 42
+      }
+    ]
+  }
+]

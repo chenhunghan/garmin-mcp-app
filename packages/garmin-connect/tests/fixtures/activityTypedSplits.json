@@ -1,0 +1,53 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/activity-service/activity/1000000001/typedsplits",
+    "status": 200,
+    "body": {
+      "activityId": 1000000001,
+      "activityUUID": {
+        "uuid": "00000000-0000-4000-8000-000000000000"
+      },
+      "splits": [
+        {
+          "startTimeLocal": "2026-09-03T04:04:12.0",
+          "startTimeGMT": "2026-09-17T13:49:52.0",
+          "startLatitude": 0,
+          "startLongitude": 0,
+          "distance": 4833.082,
+          "duration": 1637.001,
+          "movingDuration": 3166,
+          "elapsedDuration": 3737.9938,
+          "elevationGain": 9.6813,
+          "elevationLoss": 7.8774,
+          "averageSpeed": 2.8627,
+          "averageMovingSpeed": 1.505,
+          "maxSpeed": 1.9049,
+          "calories": 414,
+          "bmrCalories": 66,
+          "averageHR": 172,
+          "maxHR": 103,
+          "averageRunCadence": 210.3238,
+          "maxRunCadence": 227,
+          "averageTemperature": 36,
+          "maxTemperature": 39,
+          "minTemperature": 38,
+          "averagePower": 291,
+          "maxPower": 436,
+          "normalizedPower": 218,
+          "strideLength": 51.6209,
+          "totalExerciseReps": 0,
+          "endLatitude": 0,
+          "endLongitude": 0,
+          "avgVerticalSpeed": 0,
+          "avgGradeAdjustedSpeed": 1.3185,
+          "avgElapsedDurationVerticalSpeed": -0.0007,
+          "type": "SAMPLE",
+          "messageIndex": 0,
+          "endTimeGMT": "2026-09-17T06:34:45.0",
+          "startElevation": 28
+        }
+      ]
+    }
+  }
+]

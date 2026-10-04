@@ -1,0 +1,143 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/userprofile-service/socialProfile",
+    "status": 200,
+    "body": {
+      "id": 10000001,
+      "profileId": 10000001,
+      "garminGUID": "00000000-0000-4000-8000-000000000000",
+      "displayName": "test-user",
+      "fullName": "Test User",
+      "userName": "user@example.com",
+      "profileImageType": "SAMPLE",
+      "profileImageUrlLarge": null,
+      "profileImageUrlMedium": null,
+      "profileImageUrlSmall": null,
+      "hasPremiumSocialIcon": false,
+      "location": null,
+      "facebookUrl": null,
+      "twitterUrl": null,
+      "personalWebsite": null,
+      "motivation": null,
+      "bio": null,
+      "primaryActivity": null,
+      "favoriteActivityTypes": ["running"],
+      "runningTrainingSpeed": 0,
+      "cyclingTrainingSpeed": 0,
+      "favoriteCyclingActivityTypes": [],
+      "cyclingClassification": null,
+      "cyclingMaxAvgPower": 0,
+      "swimmingTrainingSpeed": 0,
+      "profileVisibility": "private",
+      "activityStartVisibility": "public",
+      "activityMapVisibility": "public",
+      "courseVisibility": "public",
+      "activityHeartRateVisibility": "public",
+      "activityPowerVisibility": "public",
+      "badgeVisibility": "following",
+      "showAge": false,
+      "showWeight": false,
+      "showHeight": false,
+      "showWeightClass": false,
+      "showAgeRange": false,
+      "showGender": false,
+      "showActivityClass": false,
+      "showVO2Max": false,
+      "showPersonalRecords": true,
+      "showLast12Months": true,
+      "showLifetimeTotals": true,
+      "showUpcomingEvents": true,
+      "showRecentFavorites": true,
+      "showRecentDevice": true,
+      "showRecentGear": false,
+      "showBadges": true,
+      "otherActivity": null,
+      "otherPrimaryActivity": null,
+      "otherMotivation": null,
+      "userRoles": [
+        "SCOPE_ATP_READ",
+        "SCOPE_ATP_WRITE",
+        "SCOPE_CIQ_APPSTORE_SERVICES_CREATE",
+        "SCOPE_CIQ_APPSTORE_SERVICES_DELETE",
+        "SCOPE_CIQ_APPSTORE_SERVICES_READ",
+        "SCOPE_CIQ_APPSTORE_SERVICES_UPDATE",
+        "SCOPE_COMMUNITY_COURSE_READ",
+        "SCOPE_COMMUNITY_COURSE_WRITE",
+        "SCOPE_CONNECT_MCT_DAILY_LOG_READ",
+        "SCOPE_CONNECT_READ",
+        "SCOPE_CONNECT_WRITE",
+        "SCOPE_DIVE_API_READ",
+        "SCOPE_DI_API_READ",
+        "SCOPE_DI_COACHING_READ",
+        "SCOPE_DI_COACHING_WRITE",
+        "SCOPE_DI_OAUTH_2_AUTHORIZATION_CODE_CREATE",
+        "SCOPE_DI_TOUM_NATIVE_REPORTED_DETAIL_WRITE",
+        "SCOPE_DT_CLIENT_ANALYTICS_WRITE",
+        "SCOPE_GARMINPAY_READ",
+        "SCOPE_GARMINPAY_WRITE"
+      ],
+      "nameApproved": true,
+      "userProfileFullName": "Test User",
+      "makeGolfScorecardsPrivate": true,
+      "allowGolfLiveScoring": false,
+      "allowGolfScoringByConnections": true,
+      "userLevel": 1,
+      "userPoint": 220,
+      "levelUpdateDate": "2026-10-03T13:05:50.0",
+      "levelIsViewed": false,
+      "levelPointThreshold": 400,
+      "userPointOffset": 0,
+      "userPro": false
+    }
+  },
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/userstats-service/wellness/daily/test-user?fromDate=2026-09-26&untilDate=2026-10-03&metricId=60",
+    "status": 200,
+    "body": {
+      "userProfileId": 10000001,
+      "statisticsStartDate": "2026-09-26",
+      "statisticsEndDate": "2026-10-03",
+      "allMetrics": {
+        "metricsMap": {
+          "WELLNESS_RESTING_HEART_RATE": [
+            {
+              "value": 73,
+              "calendarDate": "2026-09-26"
+            },
+            {
+              "value": 62,
+              "calendarDate": "2026-09-27"
+            },
+            {
+              "value": 75,
+              "calendarDate": "2026-09-28"
+            },
+            {
+              "value": 62,
+              "calendarDate": "2026-09-29"
+            },
+            {
+              "value": 63,
+              "calendarDate": "2026-09-30"
+            },
+            {
+              "value": 73,
+              "calendarDate": "2026-10-01"
+            },
+            {
+              "value": 64,
+              "calendarDate": "2026-10-02"
+            },
+            {
+              "value": 68,
+              "calendarDate": "2026-10-03"
+            }
+          ]
+        }
+      },
+      "groupedMetrics": null
+    }
+  }
+]

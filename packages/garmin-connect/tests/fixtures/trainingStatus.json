@@ -1,0 +1,156 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/mobile-gateway/usersummary/trainingstatus/latest/2026-10-03",
+    "status": 200,
+    "body": {
+      "mostRecentHeatAltitudeAcclimation": {
+        "requestUrl": "/metrics-service/metrics/heataltitudeacclimation/latest/2026-10-03",
+        "statusCode": 220,
+        "headers": {},
+        "errorMessage": null,
+        "payload": {
+          "calendarDate": "2026-10-03",
+          "altitudeAcclimationDate": "2026-10-03",
+          "previousAltitudeAcclimationDate": "2026-10-03",
+          "heatAcclimationDate": "2026-10-03",
+          "previousHeatAcclimationDate": "2026-09-26",
+          "altitudeAcclimation": 0,
+          "previousAltitudeAcclimation": 0,
+          "heatAcclimationPercentage": 81,
+          "previousHeatAcclimationPercentage": 79,
+          "heatTrend": "SAMPLE",
+          "altitudeTrend": null,
+          "currentAltitude": 31,
+          "previousAltitude": 0,
+          "acclimationPercentage": 0,
+          "previousAcclimationPercentage": 0,
+          "altitudeAcclimationLocalTimestamp": "2026-09-03T03:55:34.0"
+        },
+        "successful": true
+      },
+      "mostRecentVO2Max": {
+        "requestUrl": "/metrics-service/metrics/maxmet/latest/2026-10-03",
+        "statusCode": 229,
+        "headers": {},
+        "errorMessage": null,
+        "payload": {
+          "userId": 10000001,
+          "generic": {
+            "calendarDate": "2026-10-02",
+            "vo2MaxPreciseValue": 53.7664,
+            "vo2MaxValue": 32,
+            "fitnessAge": null,
+            "fitnessAgeDescription": null,
+            "maxMetCategory": 0
+          },
+          "cycling": null,
+          "heatAltitudeAcclimation": {
+            "calendarDate": "2026-10-03",
+            "altitudeAcclimationDate": "2026-10-03",
+            "previousAltitudeAcclimationDate": "2026-10-03",
+            "heatAcclimationDate": "2026-10-03",
+            "previousHeatAcclimationDate": "2026-09-26",
+            "altitudeAcclimation": 0,
+            "previousAltitudeAcclimation": 0,
+            "heatAcclimationPercentage": 74,
+            "previousHeatAcclimationPercentage": 73,
+            "heatTrend": "SAMPLE",
+            "altitudeTrend": null,
+            "currentAltitude": 30,
+            "previousAltitude": 0,
+            "acclimationPercentage": 0,
+            "previousAcclimationPercentage": 0,
+            "altitudeAcclimationLocalTimestamp": "2026-09-30T06:57:37.0"
+          }
+        },
+        "successful": true
+      },
+      "mostRecentTrainingLoadBalance": {
+        "requestUrl": "/metrics-service/metrics/trainingloadbalance/latest/2026-10-03",
+        "statusCode": 245,
+        "headers": {},
+        "errorMessage": null,
+        "payload": {
+          "userId": 10000001,
+          "metricsTrainingLoadBalanceDTOMap": {
+            "3000000001": {
+              "calendarDate": "2026-10-03",
+              "deviceId": 1000000001,
+              "monthlyLoadAerobicLow": 663.1283,
+              "monthlyLoadAerobicHigh": 293.1885,
+              "monthlyLoadAnaerobic": 32.4172,
+              "monthlyLoadAerobicLowTargetMin": 180,
+              "monthlyLoadAerobicLowTargetMax": 454,
+              "monthlyLoadAerobicHighTargetMin": 278,
+              "monthlyLoadAerobicHighTargetMax": 434,
+              "monthlyLoadAnaerobicTargetMin": 128,
+              "monthlyLoadAnaerobicTargetMax": 243,
+              "trainingBalanceFeedbackPhrase": "SAMPLE",
+              "primaryTrainingDevice": true
+            }
+          },
+          "recordedDevices": [
+            {
+              "deviceId": 1000000001,
+              "imageURL": "Garmin Watch",
+              "deviceName": "Garmin Watch",
+              "category": 0
+            }
+          ]
+        },
+        "successful": true
+      },
+      "mostRecentTrainingStatus": {
+        "requestUrl": "/metrics-service/metrics/trainingstatus/daily/2026-10-03",
+        "statusCode": 226,
+        "headers": {},
+        "errorMessage": null,
+        "payload": {
+          "userId": 10000001,
+          "latestTrainingStatusData": {
+            "3000000001": {
+              "calendarDate": "2026-10-03",
+              "sinceDate": "2026-10-02",
+              "weeklyTrainingLoad": null,
+              "trainingStatus": 4,
+              "timestamp": 1790942204459,
+              "deviceId": 1000000001,
+              "loadTunnelMin": null,
+              "loadTunnelMax": null,
+              "loadLevelTrend": null,
+              "sport": "RUNNING",
+              "subSport": "GENERIC",
+              "fitnessTrendSport": "SAMPLE",
+              "fitnessTrend": 3,
+              "trainingStatusFeedbackPhrase": "SAMPLE",
+              "trainingPaused": false,
+              "acuteTrainingLoadDTO": {
+                "acwrPercent": 43,
+                "acwrStatus": "SAMPLE",
+                "acwrStatusFeedback": "SAMPLE",
+                "dailyTrainingLoadAcute": 252,
+                "maxTrainingLoadChronic": 677,
+                "minTrainingLoadChronic": 333,
+                "dailyTrainingLoadChronic": 221,
+                "dailyAcuteChronicWorkloadRatio": 0.6187
+              },
+              "primaryTrainingDevice": true
+            }
+          },
+          "recordedDevices": [
+            {
+              "deviceId": 1000000001,
+              "imageURL": "Garmin Watch",
+              "deviceName": "Garmin Watch",
+              "category": 0
+            }
+          ],
+          "showSelector": false,
+          "lastPrimarySyncDate": "2026-10-03"
+        },
+        "successful": true
+      }
+    }
+  }
+]

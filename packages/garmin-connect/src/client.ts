@@ -8,9 +8,10 @@ import type {
 import type { TokenStorage } from "./storage.ts";
 import { FileTokenStorage } from "./storage.ts";
 import {
+  GarminApiError,
   GarminAuthError,
-  GarminError,
   GarminNetworkError,
+  GarminRateLimitError,
   GarminTokenExpiredError,
 } from "./errors.ts";
 import * as sso from "./sso.ts";
@@ -99,6 +100,7 @@ export class GarminClient {
   }
 
   async logout(): Promise<void> {
+    this.profileIds = null;
     this.oauth1Token = null;
     this.oauth2Token = null;
     await this.storage.clear();
@@ -122,8 +124,11 @@ export class GarminClient {
       }
     }
 
+    if (resp.status === 429) {
+      throw new GarminRateLimitError();
+    }
     if (!resp.ok) {
-      throw new GarminError(`API error: ${resp.status} ${resp.statusText}`);
+      throw new GarminApiError(resp.status, resp.statusText);
     }
 
     if (resp.status === 204 || resp.headers.get("content-length") === "0") {
@@ -217,11 +222,7 @@ export class GarminClient {
   }
 
   async getRacePredictions(): Promise<unknown> {
-    const profile = (await this.connectapi("/userprofile-service/socialProfile")) as Record<
-      string,
-      unknown
-    >;
-    const displayName = profile.displayName as string;
+    const { displayName } = await this.getProfileIds();
     return this.connectapi(`/metrics-service/metrics/racepredictions/latest/${displayName}`);
   }
 
@@ -234,7 +235,193 @@ export class GarminClient {
   }
 
   async getDeviceLastUsed(): Promise<unknown> {
-    return this.connectapi("/device-service/deviceregistration/devices/usage");
+    return this.connectapi("/device-service/deviceservice/mylastused");
+  }
+
+  // ── Daily Wellness ──────────────────────────────────
+
+  async getRespiration(date: string): Promise<unknown> {
+    return this.connectapi(`/wellness-service/wellness/daily/respiration/${date}`);
+  }
+
+  async getSpo2(date: string): Promise<unknown> {
+    return this.connectapi(`/wellness-service/wellness/daily/spo2/${date}`);
+  }
+
+  async getIntensityMinutes(date: string): Promise<unknown> {
+    return this.connectapi(`/wellness-service/wellness/daily/im/${date}`);
+  }
+
+  async getFloors(date: string): Promise<unknown> {
+    return this.connectapi(`/wellness-service/wellness/floorsChartData/daily/${date}`);
+  }
+
+  async getRestingHeartRate(startDate: string, endDate?: string): Promise<unknown> {
+    const { displayName } = await this.getProfileIds();
+    return this.connectapi(
+      `/userstats-service/wellness/daily/${displayName}?fromDate=${startDate}&untilDate=${endDate ?? startDate}&metricId=60`,
+    );
+  }
+
+  async getBodyBatteryEvents(date: string): Promise<unknown> {
+    return this.connectapi(`/wellness-service/wellness/bodyBattery/events/${date}`);
+  }
+
+  async getWeighIns(startDate: string, endDate: string): Promise<unknown> {
+    return this.connectapi(`/weight-service/weight/range/${startDate}/${endDate}?includeAll=true`);
+  }
+
+  // ── Weekly Trends ───────────────────────────────────
+
+  async getWeeklySteps(endDate: string, weeks = 12): Promise<unknown> {
+    return this.connectapi(`/usersummary-service/stats/steps/weekly/${endDate}/${weeks}`);
+  }
+
+  async getWeeklyStress(endDate: string, weeks = 12): Promise<unknown> {
+    return this.connectapi(`/usersummary-service/stats/stress/weekly/${endDate}/${weeks}`);
+  }
+
+  async getWeeklyIntensityMinutes(startDate: string, endDate: string): Promise<unknown> {
+    return this.connectapi(`/usersummary-service/stats/im/weekly/${startDate}/${endDate}`);
+  }
+
+  // ── Performance Metrics ─────────────────────────────
+
+  async getEnduranceScore(startDate: string, endDate?: string): Promise<unknown> {
+    if (!endDate) {
+      return this.connectapi(`/metrics-service/metrics/endurancescore?calendarDate=${startDate}`);
+    }
+    return this.connectapi(
+      `/metrics-service/metrics/endurancescore/stats?startDate=${startDate}&endDate=${endDate}&aggregation=weekly`,
+    );
+  }
+
+  async getHillScore(startDate: string, endDate?: string): Promise<unknown> {
+    if (!endDate) {
+      return this.connectapi(`/metrics-service/metrics/hillscore?calendarDate=${startDate}`);
+    }
+    return this.connectapi(
+      `/metrics-service/metrics/hillscore/stats?startDate=${startDate}&endDate=${endDate}&aggregation=weekly`,
+    );
+  }
+
+  async getRunningTolerance(
+    startDate: string,
+    endDate: string,
+    aggregation: "daily" | "weekly" = "weekly",
+  ): Promise<unknown> {
+    return this.connectapi(
+      `/metrics-service/metrics/runningtolerance/stats?startDate=${startDate}&endDate=${endDate}&aggregation=${aggregation}`,
+    );
+  }
+
+  async getLactateThreshold(): Promise<unknown> {
+    return this.connectapi("/biometric-service/biometric/latestLactateThreshold");
+  }
+
+  async getCyclingFtp(): Promise<unknown> {
+    return this.connectapi("/biometric-service/biometric/latestFunctionalThresholdPower/CYCLING");
+  }
+
+  async getHeartRateZones(): Promise<unknown> {
+    return this.connectapi("/biometric-service/heartRateZones");
+  }
+
+  async getFitnessAge(date: string): Promise<unknown> {
+    return this.connectapi(`/fitnessage-service/fitnessage/${date}`);
+  }
+
+  async getPersonalRecords(): Promise<unknown> {
+    const { displayName } = await this.getProfileIds();
+    return this.connectapi(`/personalrecord-service/personalrecord/prs/${displayName}`);
+  }
+
+  async getProgressSummary(
+    startDate: string,
+    endDate: string,
+    metric = "distance",
+  ): Promise<unknown> {
+    return this.connectapi(
+      `/fitnessstats-service/activity?startDate=${startDate}&endDate=${endDate}&aggregation=lifetime&groupByParentActivityType=true&metric=${metric}`,
+    );
+  }
+
+  // ── Activities (extended) ───────────────────────────
+
+  async getActivitiesByDate(
+    startDate: string,
+    endDate?: string,
+    activityType?: string,
+    start = 0,
+    limit = 20,
+  ): Promise<unknown> {
+    const params = new URLSearchParams({
+      startDate,
+      start: String(start),
+      limit: String(limit),
+    });
+    if (endDate) params.set("endDate", endDate);
+    if (activityType) params.set("activityType", activityType);
+    return this.connectapi(`/activitylist-service/activities/search/activities?${params}`);
+  }
+
+  async getActivityChartDetails(
+    activityId: string | number,
+    maxChartSize = 2000,
+  ): Promise<unknown> {
+    return this.connectapi(
+      `/activity-service/activity/${activityId}/details?maxChartSize=${maxChartSize}&maxPolylineSize=0`,
+    );
+  }
+
+  async getActivityTypedSplits(activityId: string | number): Promise<unknown> {
+    return this.connectapi(`/activity-service/activity/${activityId}/typedsplits`);
+  }
+
+  async getActivityWeather(activityId: string | number): Promise<unknown> {
+    return this.connectapi(`/activity-service/activity/${activityId}/weather`);
+  }
+
+  async getActivityExerciseSets(activityId: string | number): Promise<unknown> {
+    return this.connectapi(`/activity-service/activity/${activityId}/exerciseSets`);
+  }
+
+  async getActivityGear(activityId: string | number): Promise<unknown> {
+    return this.connectapi(`/gear-service/gear/filterGear?activityId=${activityId}`);
+  }
+
+  async getActivityTypes(): Promise<unknown> {
+    return this.connectapi("/activity-service/activity/activityTypes");
+  }
+
+  // ── Devices, Gear, Goals & Plans ────────────────────
+
+  async getDevices(): Promise<unknown> {
+    return this.connectapi("/device-service/deviceregistration/devices");
+  }
+
+  async getPrimaryTrainingDevice(): Promise<unknown> {
+    return this.connectapi("/web-gateway/device-info/primary-training-device");
+  }
+
+  async getGear(): Promise<unknown> {
+    const { profileId } = await this.getProfileIds();
+    return this.connectapi(`/gear-service/gear/filterGear?userProfilePk=${profileId}`);
+  }
+
+  async getGoals(status: "active" | "future" | "past" = "active"): Promise<unknown> {
+    return this.connectapi(
+      `/goal-service/goal/goals?status=${status}&start=1&limit=30&sortOrder=asc`,
+    );
+  }
+
+  async getTrainingPlans(): Promise<unknown> {
+    return this.connectapi("/trainingplan-service/trainingplan/plans");
+  }
+
+  /** Calendar for a month (1-12), including scheduled workouts. */
+  async getCalendar(year: number, month: number): Promise<unknown> {
+    return this.connectapi(`/calendar-service/year/${year}/month/${month - 1}`);
   }
 
   // ── Workouts ──────────────────────────────────────────
@@ -268,7 +455,25 @@ export class GarminClient {
 
   // ── Private ───────────────────────────────────────────
 
+  private profileIds: { displayName: string; profileId: number } | null = null;
+
+  /** displayName and numeric profile ID, needed in some endpoint paths. */
+  private async getProfileIds(): Promise<{ displayName: string; profileId: number }> {
+    if (!this.profileIds) {
+      const profile = (await this.connectapi("/userprofile-service/socialProfile")) as Record<
+        string,
+        unknown
+      >;
+      this.profileIds = {
+        displayName: profile.displayName as string,
+        profileId: profile.profileId as number,
+      };
+    }
+    return this.profileIds;
+  }
+
   private async exchangeAndSave(ticket: string): Promise<void> {
+    this.profileIds = null;
     const consumer = await oauth.getConsumer(this.oauthConsumerOverride);
     this.oauth1Token = await oauth.getOAuth1Token(ticket, this.domain, consumer);
     this.oauth2Token = await oauth.exchangeOAuth2(this.oauth1Token, consumer);

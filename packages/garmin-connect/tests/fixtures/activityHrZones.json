@@ -1,0 +1,34 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/activity-service/activity/1000000001/hrTimeInZones",
+    "status": 200,
+    "body": [
+      {
+        "zoneNumber": 1,
+        "secsInZone": 988.0032,
+        "zoneLowBoundary": 80
+      },
+      {
+        "zoneNumber": 2,
+        "secsInZone": 0,
+        "zoneLowBoundary": 94
+      },
+      {
+        "zoneNumber": 3,
+        "secsInZone": 0,
+        "zoneLowBoundary": 107
+      },
+      {
+        "zoneNumber": 4,
+        "secsInZone": 0,
+        "zoneLowBoundary": 120
+      },
+      {
+        "zoneNumber": 5,
+        "secsInZone": 0,
+        "zoneLowBoundary": 119
+      }
+    ]
+  }
+]

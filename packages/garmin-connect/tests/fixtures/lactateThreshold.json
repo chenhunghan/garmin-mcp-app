@@ -1,0 +1,20 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/biometric-service/biometric/latestLactateThreshold",
+    "status": 200,
+    "body": [
+      {
+        "userProfilePK": 10000001,
+        "version": 1788610628317,
+        "calendarDate": "2026-09-13T01:20:21.832",
+        "sequence": 1790842136888,
+        "speed": null,
+        "hearRate": 0,
+        "heartRateCycling": null,
+        "rowSpeed": null,
+        "heartRateRowing": null
+      }
+    ]
+  }
+]

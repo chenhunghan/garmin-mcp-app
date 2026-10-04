@@ -1,0 +1,24 @@
+[
+  {
+    "method": "GET",
+    "url": "https://connectapi.garmin.com/trainingplan-service/trainingplan/plans",
+    "status": 200,
+    "body": {
+      "trainingPlanList": [],
+      "searchFilter": {
+        "ownerId": 10000001,
+        "ownerDisplayName": null,
+        "trainingLevels": null,
+        "trainingStatusList": [],
+        "trainingTypes": null,
+        "trainingSubTypes": null,
+        "trainingVersions": null,
+        "allowedPrivacyList": null,
+        "locale": null,
+        "start": 3,
+        "limit": 25,
+        "planKey": false
+      }
+    }
+  }
+]

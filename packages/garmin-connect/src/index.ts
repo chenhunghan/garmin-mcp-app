@@ -15,6 +15,7 @@ export type {
 export {
   GarminError,
   GarminAuthError,
+  GarminApiError,
   GarminMfaRequiredError,
   GarminRateLimitError,
   GarminNetworkError,

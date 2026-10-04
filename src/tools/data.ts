@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import { GarminAuthError, GarminTokenExpiredError } from "garmin-connect";
+import { GarminAuthError, GarminTokenExpiredError, computeKmSplits } from "garmin-connect";
 import { getClient } from "../garmin.js";
 import { waitForAuth } from "../auth-gate.js";
 
@@ -52,6 +52,72 @@ async function withAuth(
   }
 }
 
+/**
+ * Recorded laps, plus per-km splits computed from the time series when the
+ * activity has a single lap (auto-lap off) — like Garmin Connect shows. Falls
+ * back to the laps alone if the time series isn't available.
+ */
+async function splitsWithKmFallback(activityId: string | number) {
+  const client = getClient();
+  const splits = (await client.getActivitySplits(activityId)) as { lapDTOs?: unknown[] } | null;
+  if ((splits?.lapDTOs?.length ?? 0) >= 2) return splits;
+  try {
+    const kmSplits = computeKmSplits(
+      (await client.getActivityChartDetails(activityId, 2000)) as Parameters<
+        typeof computeKmSplits
+      >[0],
+    );
+    if (kmSplits.length >= 2) return { ...splits, kmSplits };
+  } catch {
+    // Laps alone are still a valid answer
+  }
+  return splits;
+}
+
+const MAX_RANGE_DAYS = 14;
+
+/** Calendar days from start to end inclusive (YYYY-MM-DD), capped at MAX_RANGE_DAYS. */
+function daysBetween(start: string, end: string): string[] {
+  const days: string[] = [];
+  const t0 = Date.parse(`${start}T00:00:00Z`);
+  const t1 = Date.parse(`${end}T00:00:00Z`);
+  for (let t = t0; t <= t1 && days.length < MAX_RANGE_DAYS; t += 86_400_000) {
+    days.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+/**
+ * One day's data, or every day in [date, endDate] from a single tool call
+ * (fetched a few at a time to stay gentle on Garmin). Each tool call opens a
+ * chart, so one ranged call beats several single-day calls.
+ */
+async function perDay(
+  fetchDay: (day: string) => Promise<unknown>,
+  date: string,
+  endDate?: string,
+): Promise<unknown> {
+  if (!endDate || endDate === date) return fetchDay(date);
+  const days = daysBetween(date, endDate);
+  const results: { date: string; data: unknown }[] = [];
+  for (let i = 0; i < days.length; i += 4) {
+    const batch = days.slice(i, i + 4);
+    const data = await Promise.all(batch.map(fetchDay));
+    batch.forEach((d, j) => results.push({ date: d, data: data[j] }));
+  }
+  return results;
+}
+
+const dayOrRangeSchema = {
+  date: z.string().describe("Date in YYYY-MM-DD format (the first day when endDate is given)"),
+  endDate: z
+    .string()
+    .optional()
+    .describe(
+      `Optional last day (YYYY-MM-DD, max ${MAX_RANGE_DAYS} days) to get every day in the range in ONE call. Prefer this over calling the tool once per day: each call shows its own chart.`,
+    ),
+};
+
 const dateSchema = { date: z.string().describe("Date in YYYY-MM-DD format") };
 const dateRangeSchema = {
   startDate: z.string().describe("Start date in YYYY-MM-DD format"),
@@ -84,11 +150,16 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     "get-heart-rates",
     {
       title: "Get Heart Rates",
-      description: "Get heart rate data for a given date from Garmin Connect",
-      inputSchema: dateSchema,
+      description:
+        "Get heart rate data (resting, min/max, intraday samples) for a day, or for each day from date to endDate in one call. The chart shows the days ending at the last requested date.",
+      inputSchema: dayOrRangeSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getHeartRates(date), "heart-rate", { date }),
+    async ({ date, endDate }) =>
+      withAuth(() => perDay((d) => getClient().getHeartRates(d), date, endDate), "heart-rate", {
+        date,
+        endDate,
+      }),
   );
 
   registerAppTool(
@@ -96,11 +167,16 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     "get-sleep",
     {
       title: "Get Sleep",
-      description: "Get sleep data for a given date from Garmin Connect",
-      inputSchema: dateSchema,
+      description:
+        "Get sleep data (stages, score, HRV, breathing) for a day, or for each day from date to endDate in one call. The chart shows the days ending at the last requested date.",
+      inputSchema: dayOrRangeSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getSleepData(date), "sleep", { date }),
+    async ({ date, endDate }) =>
+      withAuth(() => perDay((d) => getClient().getSleepData(d), date, endDate), "sleep", {
+        date,
+        endDate,
+      }),
   );
 
   registerAppTool(
@@ -108,11 +184,16 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     "get-stress",
     {
       title: "Get Stress",
-      description: "Get stress data for a given date from Garmin Connect",
-      inputSchema: dateSchema,
+      description:
+        "Get stress data (average, max, intraday levels) for a day, or for each day from date to endDate in one call. The chart shows the days ending at the last requested date.",
+      inputSchema: dayOrRangeSchema,
       _meta: { ui: { resourceUri } },
     },
-    async ({ date }) => withAuth(() => getClient().getStressData(date), "stress", { date }),
+    async ({ date, endDate }) =>
+      withAuth(() => perDay((d) => getClient().getStressData(d), date, endDate), "stress", {
+        date,
+        endDate,
+      }),
   );
 
   registerAppTool(
@@ -209,12 +290,13 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
     "get-activity-splits",
     {
       title: "Get Activity Splits",
-      description: "Get per-km/mile splits (pace, HR, cadence) for a specific activity",
+      description:
+        "Get splits (pace, HR, cadence) for a specific activity. Returns the laps recorded by the watch (lapDTOs); when the activity was recorded as a single lap (auto-lap off), also per-km splits computed from the time series (kmSplits).",
       inputSchema: activityIdSchema,
       _meta: { ui: { resourceUri } },
     },
     async ({ activityId }) =>
-      withAuth(() => getClient().getActivitySplits(activityId), "splits", { activityId }),
+      withAuth(() => splitsWithKmFallback(activityId), "splits", { activityId }),
   );
 
   registerAppTool(

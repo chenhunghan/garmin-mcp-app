@@ -90,14 +90,27 @@ export function registerWorkoutTools(server: McpServer, resourceUri: string) {
     "list-workouts",
     {
       title: "List Workouts",
-      description: "List saved workouts from Garmin Connect",
+      description:
+        "List the user's saved/custom workouts (structured workouts they created, e.g. 'LT', 'Tempo 5K', '4x1km'). Use this whenever the user refers to a workout by name, then get-workout for its steps.",
       inputSchema: {
+        name: z
+          .string()
+          .optional()
+          .describe("Only workouts whose name contains this text (case-insensitive)"),
         start: z.number().optional().describe("Start index (default 0)"),
         limit: z.number().optional().describe("Max results (default 20)"),
       },
       _meta: { ui: { resourceUri } },
     },
-    async ({ start, limit }) => withAuth(() => getClient().getWorkouts(start ?? 0, limit ?? 20)),
+    async ({ name, start, limit }) =>
+      withAuth(async () => {
+        const workouts = await getClient().getWorkouts(start ?? 0, limit ?? 20);
+        if (!name || !Array.isArray(workouts)) return workouts;
+        const needle = name.toLowerCase();
+        return workouts.filter((w: { workoutName?: string }) =>
+          w.workoutName?.toLowerCase().includes(needle),
+        );
+      }),
   );
 
   registerAppTool(
@@ -105,7 +118,8 @@ export function registerWorkoutTools(server: McpServer, resourceUri: string) {
     "get-workout",
     {
       title: "Get Workout",
-      description: "Get workout details by ID from Garmin Connect",
+      description:
+        "Get a saved workout's steps (warm-up, intervals, targets) by ID. To find a workout by name, call list-workouts first.",
       inputSchema: workoutIdSchema,
       _meta: { ui: { resourceUri } },
     },

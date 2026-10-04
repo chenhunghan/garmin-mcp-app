@@ -191,6 +191,23 @@ describe("MCP tools", () => {
     });
   });
 
+  it("list-workouts finds a workout by name", async () => {
+    const all = (await client.callTool({ name: "list-workouts", arguments: { limit: 5 } })) as {
+      content: { text: string }[];
+    };
+    const [first] = JSON.parse(all.content[0]!.text) as { workoutName: string }[];
+    const byName = (await client.callTool({
+      name: "list-workouts",
+      arguments: { name: first!.workoutName.slice(0, 3).toUpperCase(), limit: 5 },
+    })) as { content: { text: string }[] };
+    expect(JSON.parse(byName.content[0]!.text)).toEqual([first]);
+    const none = (await client.callTool({
+      name: "list-workouts",
+      arguments: { name: "no such workout", limit: 5 },
+    })) as { content: { text: string }[] };
+    expect(JSON.parse(none.content[0]!.text)).toEqual([]);
+  });
+
   it("data-only tools don't open the app UI", async () => {
     const { tools } = await client.listTools();
     const settings = tools.find((t) => t.name === "get-user-settings");

@@ -1,6 +1,7 @@
 export { GarminClient } from "./client.ts";
 
 export { FileTokenStorage } from "./storage.ts";
+export { computeKmSplits, type KmSplit } from "./splits.ts";
 export type { TokenStorage } from "./storage.ts";
 
 export type {

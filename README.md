@@ -16,10 +16,41 @@ Connect your Garmin watch to Claude Desktop. Explore interactive charts.
 
 Ask Claude about your health, training, and fitness — it reads your Garmin data and shows interactive charts right in the conversation.
 
-- **Review your day** — steps, heart rate, sleep, stress, body battery, and HRV
-- **Analyze your workouts** — activity details, pace splits, HR zones, and training effect
-- **Track your fitness** — training readiness, training load, VO2 Max trends, and race predictions
-- **Plan your training** — create structured workouts, schedule them on your Garmin calendar, or edit existing ones
+- **Start your day** — a morning briefing: readiness, sleep, HRV, body battery and resting HR against your own baselines, with Claude's suggestions
+- **See your trends** — compare up to 4 metrics over 4 weeks to a year, and ask Claude what changed
+- **Plan your week** — Claude designs a week of training from your data, then creates and schedules the workouts on your Garmin calendar
+- **Analyze your workouts** — per-km splits (even for single-lap runs), HR zones, and training effect
+- **Track your fitness** — training readiness, training load, VO2 Max, race predictions, and 30+ more Garmin metrics
+
+### Your Garmin, coached by Claude
+
+The app frames your data against your own baselines; Claude reads it and suggests what to do. Every view has **Ask Claude** questions built from your numbers, and Claude knows what you're looking at.
+
+**Daily briefing** — _"How am I today?"_
+
+<p align="center">
+  <img width="600" alt="Daily briefing: training readiness 72 with its factors, and tiles for sleep, HRV, body battery, resting HR, stress and steps, each compared with a personal baseline" src="docs/images/daily-briefing.png" />
+</p>
+
+**Performance dashboard** — _"How has my fitness trended this year?"_
+
+<p align="center">
+  <img width="600" alt="Performance dashboard switching from 12 weeks to 1 year: resting HR, HRV with its baseline band, VO2 max and sleep score as small trend charts" src="docs/images/performance-dashboard.gif" />
+</p>
+
+**Weekly training plan** — _"Plan my training week"_ (or the `plan-training-week` prompt)
+
+<p align="center">
+  <img width="520" alt="Training week: planned workouts paired with completed runs, rest days, and today's long run still to come" src="docs/images/training-week.png" />
+</p>
+
+**Per-km splits** — _"Show the splits of my last run"_
+
+<p align="center">
+  <img width="600" alt="Per-km splits table with pace bars, the fastest kilometre highlighted, HR and cadence per km" src="docs/images/splits.png" />
+</p>
+
+<sub>Screenshots use the built-in demo mode (`npm run dev:ui:demo`): a fictional runner, no real person's data. Light and [dark](docs/images/daily-briefing-dark.png) themes follow Claude Desktop.</sub>
 
 What you can visualize
 

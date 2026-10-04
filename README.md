@@ -24,24 +24,28 @@ Ask Claude about your health, training, and fitness — it reads your Garmin dat
 What you can visualize
 
 Plot your activities
+
 <p align="center">
   <img width="600" alt="activities" src="https://github.com/user-attachments/assets/c180a8c5-6b8a-4102-aad2-d64fd98e3a85" />
 </p>
 
 Visualize training readiness
+
 <p align="center">
   <img width="600" alt="training readiness" src="https://github.com/user-attachments/assets/42b27fad-f425-4fe7-bd6f-e2816fbe4c12" />
 </p>
 <details>
 <summary>Full list of supported Garmin Connect data</summary>
 
-| Category     | Data                                                                  |
-| ------------ | --------------------------------------------------------------------- |
-| Daily health | Steps, heart rate, sleep stages, stress, body battery, HRV            |
-| Activities   | Activity list, activity details, per-km/mile splits, HR time-in-zones |
-| Training     | Training readiness, training status & load, VO2 Max, race predictions |
-| Profile      | Age, weight, height, HR zones, lactate threshold                      |
-| Workouts     | List, create, update, delete, and schedule workouts                   |
+| Category       | Data                                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------- |
+| Daily health   | Steps, heart rate, sleep stages, stress, body battery (+ events), HRV, respiration, SpO2, floors, hydration |
+| Trends         | Resting heart rate, weekly steps, weekly stress, weekly intensity minutes, weigh-ins                        |
+| Activities     | List / by date, details, splits, typed splits, HR time-in-zones, chart data, weather, exercise sets, gear   |
+| Training       | Training readiness, training status & load, VO2 Max, race predictions, endurance score, hill score          |
+| Performance    | Lactate threshold, cycling FTP, HR zones, fitness age, personal records, running tolerance, progress        |
+| Devices & gear | Devices, primary training device, last used device, gear, goals, training plans, calendar                   |
+| Workouts       | List, create, update, delete, and schedule workouts                                                         |
 
 </details>
 
@@ -53,7 +57,8 @@ Visualize training readiness
 <summary>Learn more</summary>
 
 - **Your credentials stay private.** You sign in through a secure login form rendered inside Claude Desktop. The login and MFA tools are marked as app-only (`visibility: ["app"]`), meaning Claude (the LLM) cannot call them and **never sees your email, password, or MFA code**.
-- **Claude doesn't know who you are.** The LLM only receives the health/fitness data you ask for (steps, sleep, etc.) — it has no access to your Garmin account credentials or OAuth tokens.
+- **Claude doesn't know who you are.** The LLM only receives the health/fitness data you ask for (steps, sleep, etc.) — it has no access to your Garmin account credentials, OAuth tokens, or profile (name, email, location).
+- **Your password is never sent in plain text.** The login form encrypts it with a single-use key before it passes through Claude Desktop, so it can't leak into host logs.
 - **Tokens are stored locally.** OAuth tokens are saved on your machine at `~/.garminconnect/` with restrictive file permissions (`0600`). They are never sent anywhere other than the Garmin Connect API.
 - **You can log out anytime.** Logging out clears all saved tokens from your machine.
 

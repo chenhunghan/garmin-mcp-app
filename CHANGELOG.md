@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.8.0...garmin-mcp-app-v0.9.0) (2026-10-08)
+
+
+### Features
+
+* publish to npm and the MCP Registry ([#40](https://github.com/chenhunghan/garmin-mcp-app/issues/40)) ([ee9d057](https://github.com/chenhunghan/garmin-mcp-app/commit/ee9d057847f70cc7ff21c317a629b697cc8b173f))
+
 ## [0.8.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.7.0...garmin-mcp-app-v0.8.0) (2026-10-04)
 
 

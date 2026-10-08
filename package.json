@@ -1,6 +1,6 @@
 {
   "name": "garmin-mcp-app",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "mcpName": "io.github.chenhunghan/garmin-mcp-app",
   "description": "Run Coach: your Garmin data in Claude, ChatGPT and any MCP client — daily briefing, training trends, workout planning and interactive charts. Unofficial, not affiliated with Garmin.",
   "keywords": [

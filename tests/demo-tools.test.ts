@@ -125,7 +125,10 @@ describe("demo mode: tools with a view", () => {
       });
       for (const m of data.metrics) {
         expect(m.error, m.metric).toBeUndefined();
-        expect(m.points.length, m.metric).toBeGreaterThan(range === "52w" ? 45 : 50);
+        // VO₂ max only updates on run days (~50 in 12 weeks, depending on where today
+        // falls in the training cycle); the other metrics are daily
+        const min = range === "52w" ? 45 : m.metric === "vo2max" ? 40 : 50;
+        expect(m.points.length, m.metric).toBeGreaterThan(min);
       }
       const [rhr, hrv, vo2] = data.metrics;
       if (range === "52w") {

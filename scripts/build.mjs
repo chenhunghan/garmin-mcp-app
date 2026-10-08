@@ -23,6 +23,9 @@ run("tsc --noEmit -p tsconfig.app.json");
 run("vite build");
 
 // 4. esbuild server
-run("esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js");
+// The banner makes dist/index.js runnable as the npm `bin` (npx garmin-mcp-app)
+run(
+  'esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --banner:js="#!/usr/bin/env node"',
+);
 
 console.log("\nBuild complete!");

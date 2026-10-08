@@ -1,10 +1,37 @@
 {
   "name": "garmin-mcp-app",
   "version": "0.8.0",
-  "type": "module",
+  "mcpName": "io.github.chenhunghan/garmin-mcp-app",
+  "description": "Run Coach: your Garmin data in Claude, ChatGPT and any MCP client — daily briefing, training trends, workout planning and interactive charts. Unofficial, not affiliated with Garmin.",
+  "keywords": [
+    "chatgpt",
+    "claude",
+    "garmin",
+    "garmin-connect",
+    "mcp",
+    "mcp-app",
+    "mcp-server",
+    "running",
+    "training"
+  ],
+  "homepage": "https://github.com/chenhunghan/garmin-mcp-app#readme",
+  "bugs": "https://github.com/chenhunghan/garmin-mcp-app/issues",
+  "license": "MIT",
+  "author": "Hung-Han (Henry) Chen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenhunghan/garmin-mcp-app.git"
+  },
+  "bin": {
+    "garmin-mcp-app": "dist/index.js"
+  },
   "workspaces": [
     "packages/*"
   ],
+  "files": [
+    "dist"
+  ],
+  "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
     "build:check": "tsc --noEmit && tsc --noEmit -p tsconfig.app.json",
@@ -24,19 +51,15 @@
     "typecheck:lib": "tsc --noEmit --project packages/garmin-connect/tsconfig.json",
     "prepare": "prek install || true"
   },
-  "dependencies": {
+  "devDependencies": {
+    "@commitlint/cli": "^20.4.2",
+    "@commitlint/config-conventional": "^20.4.2",
+    "@j178/prek": "^0.3.3",
     "@modelcontextprotocol/client": "^2.3.0",
     "@modelcontextprotocol/core": "^2.3.0",
     "@modelcontextprotocol/ext-apps": "^2.0.3",
     "@modelcontextprotocol/server": "^2.3.0",
     "@tailwindcss/vite": "^4.2.0",
-    "tailwindcss": "^4.2.0",
-    "zod": "^4.3.6"
-  },
-  "devDependencies": {
-    "@commitlint/cli": "^20.4.2",
-    "@commitlint/config-conventional": "^20.4.2",
-    "@j178/prek": "^0.3.3",
     "@types/node": "^22",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -53,9 +76,14 @@
     "react-dom": "^19.2.4",
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.6",
     "vite-plugin-singlefile": "^2.3.0",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "zod": "^4.3.6"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

@@ -16,3 +16,4 @@ docs/
 build/
 plugin/
 .agents/
+server.json

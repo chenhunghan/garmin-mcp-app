@@ -28,6 +28,22 @@ Or with the [Codex CLI](https://developers.openai.com/codex): `codex plugin mark
 
 **Coach** then appears in the sidebar (daily briefing and performance dashboard) and as a **Training Week** tab in conversations; or just ask "@Coach how am I today?". It runs on your computer, so it works in the desktop app only.
 
+### Other MCP clients (Cursor, VS Code, Claude Code, Codex CLI, …)
+
+Requires Node.js 20+. Add the server to your client's MCP config:
+
+```json
+{
+  "mcpServers": {
+    "garmin": { "command": "npx", "args": ["-y", "garmin-mcp-app"] }
+  }
+}
+```
+
+Or from the command line: `claude mcp add garmin -- npx -y garmin-mcp-app` (Claude Code), `codex mcp add garmin -- npx -y garmin-mcp-app` (Codex CLI).
+
+Clients that support [MCP Apps](https://modelcontextprotocol.io/docs/extensions/apps) (e.g. VS Code) show the interactive charts and the sign-in form. Other clients still get every Garmin tool as data, but can't show the sign-in form: sign in once from an MCP Apps client — the tokens are saved in `~/.garminconnect` and shared by every client on your computer.
+
 ## What you can do
 
 Ask Claude about your health, training, and fitness — it reads your Garmin data and shows interactive charts right in the conversation.

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.chenhunghan/garmin-mcp-app",
+  "title": "Run Coach",
+  "description": "Garmin data with interactive charts: daily briefing, training trends, workout planning. Unofficial.",
+  "repository": {
+    "url": "https://github.com/chenhunghan/garmin-mcp-app",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/chenhunghan/garmin-mcp-app#readme",
+  "version": "0.8.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "garmin-mcp-app",
+      "version": "0.8.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

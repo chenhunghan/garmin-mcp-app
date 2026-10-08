@@ -3,6 +3,9 @@ name: Release
 on:
   push:
     branches: [main]
+  # Re-publish the current version to npm (skipped if already there) and the
+  # MCP Registry, e.g. after the registry step failed
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -60,7 +63,7 @@ jobs:
   # publisher (this repo + release-please.yml) is configured on npmjs.com.
   npm-and-registry:
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    if: needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -87,7 +90,24 @@ jobs:
         run: npm run build
 
       - name: Publish to npm
-        run: npm publish --access public
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          if npm view "garmin-mcp-app@$version" version >/dev/null 2>&1; then
+            echo "garmin-mcp-app@$version is already on npm"
+          else
+            npm publish --access public
+          fi
+
+      # The registry checks the version exists on npm, which can take minutes to show up
+      - name: Wait for the npm release
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          for i in $(seq 1 40); do
+            npm view "garmin-mcp-app@$version" version >/dev/null 2>&1 && exit 0
+            sleep 30
+          done
+          echo "garmin-mcp-app@$version did not show up on npm in 20 minutes" >&2
+          exit 1
 
       - name: Install mcp-publisher
         run: curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher

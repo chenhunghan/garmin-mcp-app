@@ -21,8 +21,8 @@ const CAP = 4000;
 export const FLOWER_IDS = ["plant.flowers", "plant.dandelion", "plant.sorrel", "plant.periwinkle"];
 const DENSITY: Partial<Record<AreaKind | "unmapped", number[]>> = {
   park: [0.04, 0.06, 0.3, 0.01],
-  grass: [0.04, 0.05, 0.05, 0.12],
-  unmapped: [0.04, 0.05, 0.04, 0.1],
+  grass: [0.1, 0.1, 0.05, 0.06],
+  unmapped: [0.1, 0.1, 0.04, 0.05],
   wetland: [0, 0, 0, 0.05],
   farmland: [0.02, 0.02, 0, 0.03],
 };
@@ -35,6 +35,15 @@ function rng(seed: number) {
     s ^= s << 5;
     return (s >>> 0) / 4294967296;
   };
+}
+
+interface Patch {
+  x: number;
+  z: number;
+  spread: number;
+  land: AreaKind | "unmapped";
+  kind: number;
+  n: number;
 }
 
 interface Kind {
@@ -57,14 +66,26 @@ export class Flowers {
   constructor(
     private site: GrassSite,
     models: (THREE.Object3D[] | null)[],
+    /** Latitude of the run: in the subtropics things flower all year */
+    lat: number | null = null,
   ) {
     this.group.name = "flowers";
-    this.amount = site.season === "winter" ? 0.15 : site.season === "autumn" ? 0.6 : 1;
+    const warm = lat !== null && Math.abs(lat) < 30;
+    this.amount =
+      site.season === "winter"
+        ? warm
+          ? 0.6
+          : 0.1
+        : site.season === "autumn"
+          ? warm
+            ? 0.9
+            : 0.5
+          : 1;
     const scales: [number, number][] = [
-      [1.4, 2],
-      [1.1, 1.6],
-      [1.6, 2.6],
-      [0.9, 1.3],
+      [2.5, 3.5],
+      [2, 2.8],
+      [2, 3],
+      [1.4, 1.9],
     ];
     models.forEach((variants, k) => {
       const kind: Kind = { variants: [], meshes: [], scale: scales[k] ?? [1, 1.5] };
@@ -100,45 +121,81 @@ export class Flowers {
     });
   }
 
+  /**
+   * The patches of one chunk: plants grow in patches of one kind (a clump of
+   * dandelions, a drift of clover), which read from the path as spots of
+   * color. Deterministic, so the grass can thin out under them (bloomAt).
+   */
+  private patchCache = new Map<string, Patch[]>();
+  private patches(cx: number, cz: number): Patch[] {
+    const key = `${cx},${cz}`;
+    const hit = this.patchCache.get(key);
+    if (hit) return hit;
+    const { kindAt } = this.site;
+    const r = rng((cx * 83492791) ^ (cz * 2971215073));
+    const list: Patch[] = [];
+    for (let c = 0; c < 3; c++) {
+      const x = (cx + r()) * CHUNK;
+      const z = (cz + r()) * CHUNK;
+      const land = kindAt ? (kindAt(x, z) ?? "unmapped") : "unmapped";
+      const dens = DENSITY[land];
+      const spread = 0.7 + r() * 1.1;
+      const pick = r();
+      const amount = r();
+      if (!dens || !this.amount) continue;
+      const avail = dens.map((v, k) => (this.kinds[k]?.variants.length ? v : 0));
+      const total = avail.reduce((a, b) => a + b, 0);
+      if (!total) continue;
+      let rest = pick * total;
+      let kind = 0;
+      while (kind < avail.length - 1 && rest >= avail[kind]!) rest -= avail[kind++]!;
+      const n = Math.round(((total * 4 * CHUNK * CHUNK) / 3) * this.amount * (0.6 + amount * 1.2));
+      if (n > 0) list.push({ x, z, spread, land, kind, n });
+    }
+    if (this.patchCache.size > 4000) this.patchCache.clear();
+    this.patchCache.set(key, list);
+    return list;
+  }
+
+  /** How much a flower patch covers this spot, 0–1 (the grass grows shorter there) */
+  bloomAt(x: number, z: number): number {
+    const cx = Math.floor(x / CHUNK);
+    const cz = Math.floor(z / CHUNK);
+    let best = 0;
+    for (let i = -1; i <= 1; i++)
+      for (let j = -1; j <= 1; j++)
+        for (const pt of this.patches(cx + i, cz + j)) {
+          const d = Math.hypot(x - pt.x, z - pt.z) / (pt.spread * 1.15);
+          if (d < 1) best = Math.max(best, 1 - d * d);
+        }
+    return best;
+  }
+
   private chunk(cx: number, cz: number): Float32Array {
     const key = `${cx},${cz}`;
     const hit = this.chunks.get(key);
     if (hit) return hit;
     const { heightAt, kindAt, blocked } = this.site;
-    const r = rng((cx * 83492791) ^ (cz * 2971215073));
     const out: number[] = [];
-    // Plants come in loose clusters: a few seeds per chunk, plants around them
-    for (let c = 0; c < 6; c++) {
-      const sx = (cx + r()) * CHUNK;
-      const sz = (cz + r()) * CHUNK;
-      const land = kindAt ? (kindAt(sx, sz) ?? "unmapped") : "unmapped";
-      const dens = DENSITY[land];
-      if (!dens) continue;
-      for (let k = 0; k < this.kinds.length; k++) {
-        if (!this.kinds[k]?.variants.length) continue;
-        // Expected plants in this cluster's share of the chunk
-        const n = Math.round(
-          ((dens[k]! * CHUNK * CHUNK) / 6) * this.amount * (0.4 + r() * 1.2) + r() * 0.6,
+    for (const pt of this.patches(cx, cz)) {
+      const r = rng((pt.x * 7919) ^ (pt.z * 104729));
+      for (let i = 0; i < pt.n; i++) {
+        const a = r() * Math.PI * 2;
+        const d = Math.sqrt(r()) * pt.spread;
+        const x = pt.x + Math.cos(a) * d;
+        const z = pt.z + Math.sin(a) * d;
+        if (blocked(x, z)) continue;
+        if (kindAt && (kindAt(x, z) ?? "unmapped") !== pt.land) continue;
+        const [s0, s1] = this.kinds[pt.kind]!.scale;
+        out.push(
+          x,
+          heightAt(x, z) - 0.01,
+          z,
+          r() * Math.PI * 2,
+          s0 + r() * (s1 - s0),
+          pt.kind,
+          Math.floor(r() * this.kinds[pt.kind]!.variants.length),
         );
-        const spread = 1.2 + r() * 2.5;
-        for (let i = 0; i < n; i++) {
-          const a = r() * Math.PI * 2;
-          const d = Math.sqrt(r()) * spread;
-          const x = sx + Math.cos(a) * d;
-          const z = sz + Math.sin(a) * d;
-          if (blocked(x, z)) continue;
-          if (kindAt && (kindAt(x, z) ?? "unmapped") !== land) continue;
-          const [s0, s1] = this.kinds[k]!.scale;
-          out.push(
-            x,
-            heightAt(x, z) - 0.01,
-            z,
-            r() * Math.PI * 2,
-            s0 + r() * (s1 - s0),
-            k,
-            Math.floor(r() * this.kinds[k]!.variants.length),
-          );
-        }
       }
     }
     const arr = new Float32Array(out);

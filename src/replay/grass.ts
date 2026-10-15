@@ -272,6 +272,14 @@ export class Grass {
     return mesh;
   }
 
+  /** Thin the grass where something else grows (flower patches): 0–1 per spot */
+  private trim: ((x: number, z: number) => number) | null = null;
+  setTrim(trim: (x: number, z: number) => number) {
+    this.trim = trim;
+    this.chunks.clear();
+    this.lastQ = -1;
+  }
+
   /** The tufts of one chunk (generated once). */
   private chunk(cx: number, cz: number): Float32Array {
     const key = `${cx},${cz}`;
@@ -297,12 +305,13 @@ export class Grass {
       const slope =
         Math.max(Math.abs(heightAt(x + 0.7, z) - y), Math.abs(heightAt(x, z + 0.7) - y)) / 0.7;
       if (slope > 0.7) continue;
+      const trimmed = this.trim ? 1 - 0.85 * this.trim(x, z) : 1;
       out.push(
         x,
         y - 0.02,
         z,
         r() * Math.PI * 2,
-        g.h0 + (g.h1 - g.h0) * r() ** 1.5,
+        (g.h0 + (g.h1 - g.h0) * r() ** 1.5) * trimmed,
         g.width * (0.8 + r() * 0.4),
         g.dry,
         r(),

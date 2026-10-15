@@ -537,7 +537,10 @@ export class ReplayScene {
           }),
           Promise.all(FLOWER_IDS.map((id) => lib.model(id))).then((models) => {
             if (this.disposed || !site || models.every((m) => !m)) return;
-            this.flowers = new Flowers(site, models);
+            const flowers = new Flowers(site, models, this.track.origin?.lat ?? null);
+            this.flowers = flowers;
+            // The grass grows shorter in the flower patches, so they show
+            this.grass?.setTrim((x, z) => flowers.bloomAt(x, z));
             this.scene.add(this.flowers.group);
             this.disposeLater.push(this.flowers);
           }),

@@ -8,8 +8,10 @@
  */
 import * as THREE from "three/webgpu";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import { float, instanceIndex, positionLocal, sin, time, uniform, vec3 } from "three/tsl";
+import { float, instanceIndex, positionLocal, sin, time, vec3 } from "three/tsl";
 import { TREE_CONIFER, TREE_PALM } from "../geo/types.ts";
+import { treeWind } from "./tree-wind.ts";
+import { lookOf, type TreeLook } from "./ez-trees.ts";
 
 const LEAF = new THREE.Color("#4d7a30");
 const LEAF_DARK = new THREE.Color("#2f4f22");
@@ -312,8 +314,7 @@ function palm(near: boolean) {
   return mergeGeometries(parts)!;
 }
 
-/** Leaves sway a little in the wind (more towards the top) */
-export const treeWind = uniform(0.5);
+export { treeWind };
 
 function treeMaterial(leafy = false) {
   const mat = new THREE.MeshStandardNodeMaterial({
@@ -330,7 +331,8 @@ function treeMaterial(leafy = false) {
   return mat;
 }
 
-/** Near-detail radius and far radius (m), scaled by quality */
+/** Close-up (grown trees), near-detail and far radius (m), scaled by quality */
+const CLOSE = 60;
 const NEAR = 170;
 const FAR = 1900;
 
@@ -342,6 +344,14 @@ export class Forest {
   private px: Float32Array;
   private pz: Float32Array;
   private meshes: { near: THREE.InstancedMesh; far: THREE.InstancedMesh }[] = [];
+  /** Per tree: its close-up look (ez-trees.ts) and variant, −1 = none */
+  private looks: Int8Array;
+  private variant: Uint8Array;
+  /** Close-up meshes per look and variant (branches + leaves), once grown */
+  private close = new Map<
+    number,
+    { branches: THREE.InstancedMesh; leaves: THREE.InstancedMesh }[]
+  >();
   private mats: THREE.Material[] = [];
   private lastAt = -Infinity;
   private lastCam = new THREE.Vector3(Infinity, 0, 0);
@@ -361,6 +371,8 @@ export class Forest {
     this.kinds = new Uint8Array(n);
     this.px = new Float32Array(n);
     this.pz = new Float32Array(n);
+    this.looks = new Int8Array(n).fill(-1);
+    this.variant = new Uint8Array(n);
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const s = new THREE.Vector3();
@@ -388,6 +400,8 @@ export class Forest {
         c.multiply(new THREE.Color(1.1, 0.9, 0.7));
       c.toArray(this.colors, k * 3);
       this.kinds[k] = kind;
+      this.looks[k] = lookOf(trees[k * 4 + 3]!) ?? -1;
+      this.variant[k] = r(8) < 0.5 ? 0 : 1;
       this.px[k] = x;
       this.pz[k] = z;
       perKind[kind]!++;
@@ -413,6 +427,41 @@ export class Forest {
     }
   }
 
+  /** The looks in use (for growing only those) */
+  usedLooks(): Set<number> {
+    return new Set([...this.looks].filter((l) => l >= 0));
+  }
+
+  /** Close-up trees grown with the asset pack's bark and leaves (ez-trees.ts) */
+  attachLooks(looks: Map<number, TreeLook>) {
+    const counts = new Map<string, number>();
+    for (let k = 0; k < this.count; k++) {
+      const key = `${this.looks[k]},${this.variant[k]}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    for (const [li, look] of looks) {
+      const list = look.variants.map((v, vi) => {
+        const cap = Math.max(1, counts.get(`${li},${vi}`) ?? 0);
+        const make = (geo: THREE.BufferGeometry, mat: THREE.Material) => {
+          const mesh = new THREE.InstancedMesh(geo, mat, cap);
+          mesh.count = 0;
+          mesh.frustumCulled = false;
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          mesh.matrixAutoUpdate = false;
+          mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+          mesh.setColorAt(0, new THREE.Color(1, 1, 1));
+          this.group.add(mesh);
+          return mesh;
+        };
+        return { branches: make(v.branches, look.bark), leaves: make(v.leaves, look.leaves) };
+      });
+      this.close.set(li, list);
+      this.mats.push(look.bark, look.leaves);
+    }
+    this.lastQ = -1; // refill now
+  }
+
   /** Refill the instance buffers around the camera (throttled). */
   update(cam: THREE.Vector3, quality: number, now: number) {
     if (!this.count) return;
@@ -421,14 +470,26 @@ export class Forest {
     this.lastAt = now;
     this.lastCam.copy(cam);
     this.lastQ = quality;
+    const close2 = (CLOSE * quality) ** 2;
     const near2 = (NEAR * quality) ** 2;
     const far2 = (FAR * Math.max(0.6, quality)) ** 2;
     const fill = this.meshes.map(() => [0, 0]);
+    const closeFill = new Map<THREE.InstancedMesh, number>();
     for (let k = 0; k < this.count; k++) {
       const dx = this.px[k]! - cam.x;
       const dz = this.pz[k]! - cam.z;
       const d2 = dx * dx + dz * dz;
       if (d2 > far2) continue;
+      const grown = d2 < close2 ? this.close.get(this.looks[k]!)?.[this.variant[k]!] : undefined;
+      if (grown) {
+        for (const mesh of [grown.branches, grown.leaves]) {
+          const at = closeFill.get(mesh) ?? 0;
+          closeFill.set(mesh, at + 1);
+          mesh.instanceMatrix.array.set(this.matrices.subarray(k * 16, k * 16 + 16), at * 16);
+          mesh.instanceColor!.array.set(this.colors.subarray(k * 3, k * 3 + 3), at * 3);
+        }
+        continue;
+      }
       const kind = this.kinds[k]!;
       const lod = d2 < near2 ? 0 : 1;
       const mesh = lod ? this.meshes[kind]!.far : this.meshes[kind]!.near;
@@ -443,9 +504,26 @@ export class Forest {
         mesh.instanceColor!.needsUpdate = true;
       }
     });
+    for (const list of this.close.values()) {
+      for (const v of list) {
+        for (const mesh of [v.branches, v.leaves]) {
+          mesh.count = closeFill.get(mesh) ?? 0;
+          mesh.instanceMatrix.needsUpdate = true;
+          mesh.instanceColor!.needsUpdate = true;
+        }
+      }
+    }
   }
 
   dispose() {
+    for (const list of this.close.values()) {
+      for (const v of list) {
+        v.branches.geometry.dispose();
+        v.leaves.geometry.dispose();
+        v.branches.dispose();
+        v.leaves.dispose();
+      }
+    }
     for (const { near, far } of this.meshes) {
       near.geometry.dispose();
       far.geometry.dispose();

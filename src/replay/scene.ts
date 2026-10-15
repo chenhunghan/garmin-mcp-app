@@ -51,6 +51,7 @@ import { cloudLight, disposeClouds, driftClouds, withCloudShadows } from "./clou
 import { AssetLibrary, type FetchAssetFile } from "./assets.ts";
 import { G, GROUND_IDS, SurfaceSet, WALL_IDS } from "./surfaces.ts";
 import { SKY_IDS, SkyLight, skyWeights } from "./sky-light.ts";
+import { growLooks } from "./ez-trees.ts";
 import type { AreaKind, Surface } from "../geo/types.ts";
 import type { MapLayers } from "./map-layers.ts";
 
@@ -503,6 +504,18 @@ export class ReplayScene {
           notify();
         })
       : null;
+    const forest = this.forest;
+    const trees = forest
+      ? growLooks(lib, forest.usedLooks()).then((looks) => {
+          if (!looks?.size || this.disposed) return;
+          for (const look of looks.values()) {
+            withCloudShadows(look.bark);
+            withCloudShadows(look.leaves);
+          }
+          forest.attachLooks(looks);
+          notify();
+        })
+      : null;
     const skies = Promise.all(SKY_IDS.map((id) => lib.sky(id))).then((list) => {
       if (this.disposed) return;
       const found = list.filter((x) => x !== null);
@@ -515,7 +528,7 @@ export class ReplayScene {
       this.updateSun(true);
       notify();
     });
-    await Promise.allSettled([ground, skies, walls]);
+    await Promise.allSettled([ground, skies, walls, trees]);
   }
 
   private setupCamera() {

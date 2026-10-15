@@ -18,6 +18,7 @@ import {
 } from "./intraday.ts";
 import { Rng, clamp, mean, round } from "./random.ts";
 import { laps as runLaps, simulate, type LapStats, type Sample } from "./run.ts";
+import { routeOf, type Route as RunRoute } from "./route.ts";
 import {
   addDays,
   dayDiff,
@@ -477,7 +478,20 @@ const CHART_METRICS = [
   ["directElevation", 3, "meter", 100],
   ["directPower", 13, "watt", 1],
   ["directGradeAdjustedSpeed", 20, "mps", 0.1],
+  ["directLatitude", 67, "dd", 0],
+  ["directLongitude", 68, "dd", 0],
+  ["directAirTemperature", 130, "celcius", 0],
+  ["directVerticalSpeed", 23, "mps", 0.1],
+  ["directStrideLength", 41, "centimeter", 1],
+  ["directVerticalOscillation", 41, "centimeter", 1],
+  ["directGroundContactTime", 51, "ms", 1],
+  ["directVerticalRatio", 74, "percent", 1],
 ] as const;
+
+/** Smooth per-sample wobble in [-1, 1], the same for the same run and time. */
+const wobble = (id: number, t: number, k: number) =>
+  Math.sin(t / (17 + k * 5) + id * 0.37 + k) * 0.6 +
+  Math.sin(t / (5.3 + k) + id * 1.3 + 2 * k) * 0.4;
 
 function chartDetails(run: DemoRun, maxSize: number) {
   const { samples } = detailsOf(run);
@@ -489,6 +503,8 @@ function chartDetails(run: DemoRun, maxSize: number) {
     );
   }
   const pause = run.summary.elapsedDuration - run.summary.duration;
+  const route = routeOf(run.plan, samples.at(-1)!.d);
+  const id = run.plan.id;
   return {
     activityId: run.plan.id,
     measurementCount: CHART_METRICS.length,
@@ -499,7 +515,7 @@ function chartDetails(run: DemoRun, maxSize: number) {
       key,
       unit: { id, key: unit, factor },
     })),
-    activityDetailMetrics: pick.map((s) => ({
+    activityDetailMetrics: pick.map((s, i) => ({
       metrics: [
         run.plan.startMs + s.t * 1000,
         s.d,
@@ -513,6 +529,7 @@ function chartDetails(run: DemoRun, maxSize: number) {
         s.elev,
         s.power,
         s.speed,
+        ...dynamics(run, s, i, pick, route, id),
       ],
     })),
     geoPolylineDTO: null,
@@ -520,6 +537,30 @@ function chartDetails(run: DemoRun, maxSize: number) {
     pendingData: null,
     detailsAvailable: true,
   };
+}
+
+/** GPS, air temperature and running dynamics for one sample. */
+function dynamics(run: DemoRun, s: Sample, i: number, pick: Sample[], route: RunRoute, id: number) {
+  const { lat, lon } = route.at(s.d);
+  const prev = pick[Math.max(0, i - 1)]!;
+  const next = pick[Math.min(pick.length - 1, i + 1)]!;
+  const dt = next.t - prev.t;
+  const vspeed = dt > 0 ? (next.elev - prev.elev) / dt : 0;
+  const stride = s.cad > 0 ? (s.speed / (s.cad / 60)) * 100 : 0;
+  const vo = 9.6 - 0.55 * (s.speed - 3) + 0.25 * wobble(id, s.t, 1);
+  const gct = 300 - 38 * (s.speed - 2.6) + 6 * wobble(id, s.t, 2);
+  // The watch reads warm on the wrist, and the body warms it over the run
+  const temp = watchTemp(run) - 3 + 4 * (1 - Math.exp(-s.t / 600)) + 0.4 * wobble(id, s.t, 3);
+  return [
+    round(lat, 6),
+    round(lon, 6),
+    round(temp, 1),
+    round(vspeed, 2),
+    round(stride, 1),
+    round(vo, 1),
+    Math.round(gct),
+    round((vo / Math.max(stride, 1)) * 100, 1),
+  ];
 }
 
 // ── Daily wellness ────────────────────────────────────

@@ -5,6 +5,11 @@ interface SelectProps {
   value?: string;
   onValueChange?: (value: string) => void;
   className?: string;
+  /** Open the list above the trigger (e.g. in a bottom toolbar of a clipped container) */
+  side?: "top" | "bottom";
+  /** Extra classes for the trigger button (e.g. on a dark overlay) */
+  triggerClassName?: string;
+  "aria-label"?: string;
   children: ReactNode;
 }
 
@@ -46,7 +51,15 @@ function ChevronDown({ className }: { className?: string }) {
   );
 }
 
-export function Select({ value, onValueChange, className, children }: SelectProps) {
+export function Select({
+  value,
+  onValueChange,
+  className,
+  side = "bottom",
+  triggerClassName,
+  "aria-label": ariaLabel,
+  children,
+}: SelectProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -81,7 +94,11 @@ export function Select({ value, onValueChange, className, children }: SelectProp
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 rounded-full bg-foreground/10 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-foreground/15"
+        aria-label={ariaLabel}
+        className={cn(
+          "flex items-center gap-1.5 rounded-full bg-foreground/10 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-foreground/15",
+          triggerClassName,
+        )}
       >
         {selected?.label ?? "Select"}
         <ChevronDown className="opacity-60" />
@@ -89,7 +106,12 @@ export function Select({ value, onValueChange, className, children }: SelectProp
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 min-w-[var(--trigger-width,8rem)] rounded-lg border border-border/50 bg-popover p-1 shadow-lg">
+        <div
+          className={cn(
+            "absolute right-0 z-50 min-w-[var(--trigger-width,8rem)] rounded-lg border border-border/50 bg-popover p-1 shadow-lg",
+            side === "top" ? "bottom-full mb-1 max-h-[60vh] overflow-y-auto" : "top-full mt-1",
+          )}
+        >
           {options.map((opt) => (
             <button
               key={opt.value}

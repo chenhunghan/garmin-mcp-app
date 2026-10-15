@@ -1,0 +1,175 @@
+import type { McpServer } from "@modelcontextprotocol/server";
+import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
+import { z } from "zod";
+import { getClient } from "../garmin.js";
+import { readSettings, updateSettings } from "../settings.js";
+import { buildRunMap } from "../geo/run-map.js";
+import { withAuth } from "./data.js";
+import {
+  buildReplay,
+  parseActivity,
+  parseWeather,
+  replaySummary,
+  type ReplayData,
+} from "../replay-model.js";
+
+const activityIdInput = z
+  .union([z.string(), z.number()])
+  .optional()
+  .describe("Garmin activity ID (default: the most recent run)");
+
+/** Time series resolution: ~1 sample/second for an hour-long run. */
+const DEFAULT_POINTS = 3600;
+
+/**
+ * Claude opens the replay, then the view asks for the time series: keep the
+ * Garmin responses briefly so the view doesn't repeat Claude's requests.
+ */
+const CACHE_MS = 5 * 60_000;
+const cache = new Map<string, { at: number; value: Promise<unknown> }>();
+
+function cached<T>(key: string, fetch: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  for (const [k, v] of cache) if (now - v.at > CACHE_MS) cache.delete(k);
+  const hit = cache.get(key);
+  if (hit) return hit.value as Promise<T>;
+  const value = fetch();
+  cache.set(key, { at: now, value });
+  // Don't keep failures: the next call retries
+  value.catch(() => cache.delete(key));
+  return value;
+}
+
+/** The requested activity, else the most recent run (else the most recent activity). */
+async function resolveActivityId(activityId?: string | number): Promise<string | number> {
+  if (activityId !== undefined && activityId !== "") return activityId;
+  const list = (await cached("activities", () => getClient().getActivities(0, 20))) as Array<{
+    activityId?: number;
+    activityType?: { typeKey?: string };
+  }> | null;
+  const runs = (list ?? []).filter((a) => a.activityType?.typeKey?.includes("running"));
+  const pick = runs[0] ?? list?.[0];
+  if (!pick?.activityId) throw new Error("No activities found");
+  return pick.activityId;
+}
+
+const details = (id: string | number) =>
+  cached(`details:${id}`, () => getClient().getActivityDetails(id));
+const weather = (id: string | number) =>
+  cached(`weather:${id}`, () => getClient().getActivityWeather(id));
+
+function loadReplay(activityId: string | number, maxPoints: number): Promise<ReplayData> {
+  return cached(`replay:${activityId}:${maxPoints}`, () => fetchReplay(activityId, maxPoints));
+}
+
+async function fetchReplay(activityId: string | number, maxPoints: number): Promise<ReplayData> {
+  const client = getClient();
+  const [d, chart, splits, w, zones] = await Promise.allSettled([
+    details(activityId),
+    client.getActivityChartDetails(activityId, maxPoints),
+    client.getActivitySplits(activityId),
+    weather(activityId),
+    client.getActivityHrZones(activityId),
+  ]);
+  // The time series is the replay; everything else is optional context
+  if (chart.status === "rejected") throw chart.reason;
+  const val = (r: PromiseSettledResult<unknown>) => (r.status === "fulfilled" ? r.value : null);
+  return buildReplay({
+    activityId,
+    details: val(d),
+    chart: chart.value,
+    splits: val(splits),
+    weather: val(w),
+    hrZones: val(zones),
+  });
+}
+
+export function registerReplayTools(server: McpServer, resourceUri: string) {
+  registerAppTool(
+    server,
+    "show-run-replay",
+    {
+      title: "Show Run Replay",
+      description:
+        "Open an interactive 3D replay of a run: a runner follows the GPS track over the terrain while pace, heart rate (zones), cadence, elevation/grade, power, running dynamics and weather play back over time, with pause, fast-forward and scrubbing. Use when the user wants to replay, relive, watch or review a run as a whole. Returns a short summary of the run; the view renders the time series.",
+      inputSchema: z.object({ activityId: activityIdInput }),
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ activityId }) =>
+      withAuth(
+        async () => {
+          const id = await resolveActivityId(activityId);
+          const [d, w] = await Promise.allSettled([details(id), weather(id)]);
+          const raw = d.status === "fulfilled" ? (d.value as Record<string, unknown> | null) : null;
+          const hasPolyline = (raw?.metadataDTO as { hasPolyline?: boolean } | undefined)
+            ?.hasPolyline;
+          return replaySummary(
+            parseActivity(id, raw),
+            parseWeather(w.status === "fulfilled" ? w.value : null),
+            typeof hasPolyline === "boolean" ? hasPolyline : null,
+          );
+        },
+        "replay",
+        { activityId },
+      ),
+  );
+
+  registerAppTool(
+    server,
+    "garmin-get-run-replay",
+    {
+      title: "Get Run Replay Data",
+      description:
+        "Time series of an activity for the 3D replay view (GPS, elevation, HR, cadence, speed, power, running dynamics), plus laps, weather and HR zones",
+      inputSchema: z.object({
+        activityId: activityIdInput,
+        maxPoints: z.number().int().min(100).max(10_000).optional(),
+      }),
+      _meta: { ui: { resourceUri, visibility: ["app"] } },
+    },
+    async ({ activityId, maxPoints }) =>
+      withAuth(async () =>
+        loadReplay(await resolveActivityId(activityId), maxPoints ?? DEFAULT_POINTS),
+      ),
+  );
+
+  registerAppTool(
+    server,
+    "garmin-run-map-settings",
+    {
+      title: "Run Replay Map Settings",
+      description:
+        "Read or change whether the run replay fetches real elevation (AWS Terrain Tiles) and map data (OpenStreetMap) for the area around a run",
+      inputSchema: z.object({ realMap: z.boolean().optional() }),
+      _meta: { ui: { resourceUri, visibility: ["app"] } },
+    },
+    async ({ realMap }) => {
+      const settings =
+        realMap === undefined ? await readSettings() : await updateSettings({ realMap });
+      return { content: [{ type: "text" as const, text: JSON.stringify(settings) }] };
+    },
+  );
+
+  registerAppTool(
+    server,
+    "garmin-get-run-map",
+    {
+      title: "Get Run Map",
+      description:
+        "Real elevation and OpenStreetMap features (roads, land cover, water, buildings) around an activity's GPS track, for the 3D replay. Only when the real map setting is on.",
+      inputSchema: z.object({ activityId: activityIdInput }),
+      _meta: { ui: { resourceUri, visibility: ["app"] } },
+    },
+    async ({ activityId }) =>
+      withAuth(async () => {
+        if (!(await readSettings()).realMap) return { enabled: false };
+        const replay = await loadReplay(await resolveActivityId(activityId), DEFAULT_POINTS);
+        const { lat, lon } = replay.channels;
+        const map =
+          lat && lon
+            ? await cached(`map:${replay.activity.id}`, () => buildRunMap(lat, lon))
+            : null;
+        return map ? { enabled: true, ...map } : { enabled: true, unavailable: "no GPS track" };
+      }),
+  );
+}

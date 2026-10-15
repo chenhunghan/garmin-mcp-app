@@ -178,6 +178,11 @@ export function simulate(plan: RunPlan): Sample[] {
       push();
     }
   }
+  // Every demo run is a loop (src/demo/route.ts): finish at the starting
+  // elevation, or the replay's ground has a step where start and finish meet
+  const total = samples.at(-1)!.d || 1;
+  const drift = samples.at(-1)!.elev - samples[0]!.elev;
+  for (const x of samples) x.elev = round(x.elev - (drift * x.d) / total, 1);
   return plan.laps === "auto" ? withKmMarks(samples) : samples;
 }
 

@@ -49,6 +49,7 @@ const args: Record<string, Record<string, unknown>> = {
   "get-workout": { workoutId: world.workouts[0]!.workoutId },
   "show-training-week": {},
   "show-performance-dashboard": {},
+  "show-run-replay": {},
 };
 
 let client: Client;
@@ -103,6 +104,17 @@ describe("demo mode: tools with a view", () => {
       expect(result.structuredContent?.view, name).toBeTruthy();
     });
   }
+
+  it("garmin-get-run-replay has a GPS track and running dynamics", async () => {
+    const { data } = await call("garmin-get-run-replay", { activityId: latestRun.plan.id });
+    expect(data.hasGps).toBe(true);
+    expect(data.n).toBeGreaterThan(100);
+    for (const ch of ["lat", "lon", "elev", "hr", "cad", "speed", "power", "stride", "vo", "gct"]) {
+      expect(data.channels[ch], ch).toBeTruthy();
+    }
+    expect(data.weather.tempC).not.toBeNull();
+    expect(data.hrZones).toHaveLength(5);
+  });
 
   it("get-daily-briefing has every metric (no gaps on screen)", async () => {
     const { data } = await call("get-daily-briefing");

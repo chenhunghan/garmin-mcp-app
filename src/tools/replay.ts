@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getClient } from "../garmin.js";
 import { readSettings, updateSettings } from "../settings.js";
 import { buildRunMap } from "../geo/run-map.js";
+import { readAsset } from "../asset-store.js";
 import { withAuth } from "./data.js";
 import {
   buildReplay,
@@ -174,5 +175,28 @@ export function registerReplayTools(server: McpServer, resourceUri: string) {
             : null;
         return map ? { enabled: true, ...map } : { enabled: true, unavailable: "no GPS track" };
       }),
+  );
+  registerAppTool(
+    server,
+    "garmin-get-replay-asset",
+    {
+      title: "Get Replay Asset",
+      description:
+        "One file of the 3D replay's asset pack (scanned materials, sky light, models, running motion; CC0), base64-encoded. Served from a local cache, downloaded once from the app's GitHub release.",
+      inputSchema: z.object({ file: z.string().max(200) }),
+      _meta: { ui: { resourceUri, visibility: ["app"] } },
+    },
+    async ({ file }) => {
+      try {
+        const buf = await readAsset(file);
+        const data = Buffer.from(buf).toString("base64");
+        return { content: [{ type: "text" as const, text: JSON.stringify({ file, data }) }] };
+      } catch (e) {
+        return {
+          isError: true,
+          content: [{ type: "text" as const, text: e instanceof Error ? e.message : String(e) }],
+        };
+      }
+    },
   );
 }

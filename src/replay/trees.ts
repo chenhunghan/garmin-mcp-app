@@ -371,7 +371,8 @@ export class Forest {
       const x = trees[k * 4]!;
       const z = trees[k * 4 + 1]!;
       const mapped = trees[k * 4 + 2]!;
-      const kind = trees[k * 4 + 3]! === TREE_CONIFER ? 1 : trees[k * 4 + 3]! === TREE_PALM ? 2 : 0;
+      const base = trees[k * 4 + 3]! & 3;
+      const kind = base === TREE_CONIFER ? 1 : base === TREE_PALM ? 2 : 0;
       const r = (j: number) => jitter(x * 0.37 + j, z * 0.41, j * 1.3) * 0.5 + 0.5;
       const h = mapped || [7 + r(1) * 6, 9 + r(1) * 8, 8 + r(1) * 7][kind]!;
       const wide = kind === 2 ? 1 : 0.85 + r(2) * 0.35;

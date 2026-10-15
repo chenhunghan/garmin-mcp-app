@@ -80,7 +80,7 @@ export async function buildRunMap(
   const features =
     osm.status === "fulfilled"
       ? osm.value
-      : { roads: [], areas: [], buildings: [], rivers: [], trees: [] };
+      : { roads: [], areas: [], buildings: [], rivers: [], trees: [], furniture: [] };
   if (osm.status === "fulfilled") attribution.push("Map data © OpenStreetMap contributors");
   else
     missing.push(

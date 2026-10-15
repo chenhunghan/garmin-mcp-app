@@ -6,18 +6,31 @@
 import * as THREE from "three/webgpu";
 import {
   abs,
+  attribute,
+  cameraPosition,
   color,
   float,
+  max,
   mix,
   mul,
   mx_noise_float,
   mx_worley_noise_float,
+  normalWorld,
   positionWorld,
   smoothstep,
   sub,
+  transformNormalToView,
   uv,
   vec3,
 } from "three/tsl";
+import {
+  G,
+  GROUND_IDS,
+  groundNormal,
+  layerIndex,
+  worldNoise,
+  type SurfaceSet,
+} from "./surfaces.ts";
 import { Line2 } from "three/addons/lines/webgpu/Line2.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
 import { locate, timeAtDistance, type ReplayData } from "../replay-model.ts";
@@ -34,6 +47,8 @@ export interface RouteMeshes {
   setProgress(i: number): void;
   /** Far camera: draw the route as a screen-space line that stays visible */
   setFar(far: boolean): void;
+  /** The worn trail in scanned materials (asset pack), or generated */
+  setSurfaces(set: SurfaceSet | null): void;
   dispose(): void;
 }
 
@@ -68,6 +83,12 @@ export function buildRoute(
   data: ReplayData,
   track: Track,
   heightAt: (x: number, z: number) => number,
+  /**
+   * Per dense path sample: the ground material the run wears into
+   * (GROUND_IDS index), or −1 where it runs on pavement (no trail there).
+   * Default: an earth trail all along.
+   */
+  trailLayer?: Float32Array,
 ): RouteMeshes {
   // Geometry follows the dense spline path; colors come from the samples
   const path = track.dense;
@@ -104,7 +125,7 @@ export function buildRoute(
   geo.computeVertexNormals();
   geo.computeBoundingSphere();
 
-  const trail = trailMesh(track, heightAt);
+  const trail = trailMesh(track, heightAt, trailLayer);
 
   // Soft edges across the ribbon
   const edge = smoothstep(float(0.5), float(0.36), abs(sub(uv().x, 0.5)));
@@ -228,6 +249,9 @@ export function buildRoute(
     setFar(far) {
       line.visible = far;
     },
+    setSurfaces(set) {
+      trail.setSurfaces(set);
+    },
     setProgress(i) {
       const di = track.denseIndex(Math.floor(i), i - Math.floor(i));
       const k = Math.max(0, Math.min(totalIdx, Math.ceil(di) * 6));
@@ -313,13 +337,28 @@ function addMarkers(
  * with frayed edges, as its own mesh so it stays crisp whatever the terrain
  * grid's resolution.
  */
-function trailMesh(track: Track, heightAt: (x: number, z: number) => number) {
+function trailMesh(
+  track: Track,
+  heightAt: (x: number, z: number) => number,
+  trailLayer?: Float32Array,
+) {
   const path = track.dense;
   const n = path.n;
   const across = [-1, -0.45, 0, 0.45, 1];
   const half = 1.7;
   const pos = new Float32Array(n * across.length * 3);
   const uvs = new Float32Array(n * across.length * 2);
+  const layers = new Float32Array(n * across.length);
+  const show = new Float32Array(n * across.length);
+  // Ease the trail in and out over ~6 m where the run leaves or joins pavement
+  const shown = new Float32Array(n);
+  for (let i = 0; i < n; i++) shown[i] = trailLayer && trailLayer[i]! < 0 ? 0 : 1;
+  const eased = new Float32Array(n);
+  for (let i = 0, lo = 0, hi = 0, sum = 0; i < n; i++) {
+    while (hi < n && path.s[hi]! <= path.s[i]! + 3) sum += shown[hi++]!;
+    while (path.s[lo]! < path.s[i]! - 3) sum -= shown[lo++]!;
+    eased[i] = sum / (hi - lo);
+  }
   for (let i = 0; i < n; i++) {
     const h = path.heading[i]!;
     const px = Math.cos(h);
@@ -330,6 +369,9 @@ function trailMesh(track: Track, heightAt: (x: number, z: number) => number) {
       const o = i * across.length + k;
       pos.set([x, heightAt(x, z) + 0.03, z], o * 3);
       uvs.set([(a + 1) / 2, path.s[i]! / 4], o * 2);
+      const l = trailLayer?.[i] ?? G.dirt;
+      layers[o] = l < 0 ? G.dirt : l;
+      show[o] = eased[i]!;
     });
   }
   const index: number[] = [];
@@ -343,6 +385,8 @@ function trailMesh(track: Track, heightAt: (x: number, z: number) => number) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   geo.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+  geo.setAttribute("aLayer", new THREE.BufferAttribute(layers, 1));
+  geo.setAttribute("aShow", new THREE.BufferAttribute(show, 1));
   geo.setIndex(index);
   geo.computeVertexNormals();
   geo.computeBoundingSphere();
@@ -366,10 +410,40 @@ function trailMesh(track: Track, heightAt: (x: number, z: number) => number) {
     mix(float(0.82), float(1.08), gravel),
   );
   // Frayed edges, trodden harder in the middle
-  mat.opacityNode = smoothstep(float(0.5), float(0.26), abs(sub(uv().x, 0.5)).add(fray)).mul(0.92);
+  const visible = attribute("aShow", "float");
+  mat.opacityNode = smoothstep(float(0.5), float(0.26), abs(sub(uv().x, 0.5)).add(fray))
+    .mul(0.92)
+    .mul(visible);
+  const generatedColor = mat.colorNode;
   const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
   mesh.renderOrder = 0.5;
   mesh.frustumCulled = false;
-  return { mesh, geo, mat };
+  const setSurfaces = (set: SurfaceSet | null) => {
+    if (!set) {
+      mat.colorNode = generatedColor;
+      mat.normalNode = null;
+      mat.roughnessNode = null;
+      mat.opacityNode = smoothstep(float(0.5), float(0.26), abs(sub(uv().x, 0.5)).add(fray))
+        .mul(0.92)
+        .mul(visible);
+    } else {
+      const near = smoothstep(120, 10, positionWorld.distance(cameraPosition));
+      const s = set.sample(
+        layerIndex(attribute("aLayer", "float"), GROUND_IDS.length),
+        p,
+        smoothstep(0.35, 0.65, worldNoise(p, 40, 0.8)),
+      );
+      mat.colorNode = s.color;
+      mat.roughnessNode = max(s.rough, float(0.62));
+      mat.normalNode = transformNormalToView(groundNormal(normalWorld, s.tilt, near));
+      // The scanned trail shows through by its height map at the frayed edges
+      const center = smoothstep(float(0.5), float(0.2), abs(sub(uv().x, 0.5)).add(fray));
+      mat.opacityNode = smoothstep(float(0.25), float(0.55), center.add(s.height.sub(0.5).mul(0.5)))
+        .mul(0.95)
+        .mul(visible);
+    }
+    mat.needsUpdate = true;
+  };
+  return { mesh, geo, mat, setSurfaces };
 }

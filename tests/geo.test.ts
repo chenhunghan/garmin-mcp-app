@@ -2,7 +2,8 @@ import { deflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { decodePng } from "../src/geo/png.ts";
 import { lonLatToPixel, projection, terrariumHeight, toLatLon, toLocal } from "../src/geo/dem.ts";
-import { buildingKind, parseOverpass } from "../src/geo/osm.ts";
+import { buildingKind, osmColour, parseOverpass, surfaceOf } from "../src/geo/osm.ts";
+import { FURNITURE, TREE_GENUS } from "../src/geo/types.ts";
 import { decodeGrid, sampleGrid } from "../src/geo/types.ts";
 
 /** A tiny RGB PNG with the given filter bytes per row. */
@@ -138,6 +139,70 @@ describe("OpenStreetMap", () => {
     ]);
   });
 
+  it("reads the surface: mapped where tagged, else what the class usually has", () => {
+    expect(features.roads.map((r) => [r.surface, r.surfaceMapped ?? false])).toEqual([
+      ["asphalt", false],
+      ["dirt", false],
+      ["asphalt", true],
+    ]);
+    expect(surfaceOf("paving_stones")).toBe("paving");
+    expect(surfaceOf("fine_gravel")).toBe("gravel");
+    expect(surfaceOf("concrete:plates")).toBe("concrete");
+    expect(surfaceOf("ground")).toBe("dirt");
+    expect(surfaceOf("tartan")).toBe("asphalt");
+    expect(surfaceOf("")).toBeNull();
+  });
+
+  it("reads facade and roof materials and colours", () => {
+    const b = parseOverpass(
+      {
+        elements: [
+          {
+            type: "way",
+            tags: {
+              building: "yes",
+              "building:material": "brick",
+              "building:colour": "Beige",
+              "roof:material": "roof_tiles",
+              "roof:colour": "#a33",
+            },
+            geometry: square(46.2, 8.5),
+          },
+        ],
+      },
+      p,
+    ).buildings[0]!;
+    expect([b.material, b.colour, b.roofMaterial, b.roofColour]).toEqual([
+      "brick",
+      "#dccfb0",
+      "tiles",
+      "#aa3333",
+    ]);
+    expect(osmColour("no such colour")).toBeUndefined();
+  });
+
+  it("reads mapped street furniture with its direction", () => {
+    const f = parseOverpass(
+      {
+        elements: [
+          { type: "node", lat: 46.2, lon: 8.5, tags: { highway: "street_lamp" } },
+          { type: "node", lat: 46.2, lon: 8.5, tags: { amenity: "bench", direction: "450" } },
+          { type: "node", lat: 46.2, lon: 8.5, tags: { emergency: "fire_hydrant" } },
+          { type: "node", lat: 46.2, lon: 8.5, tags: { amenity: "cafe" } },
+        ],
+      },
+      p,
+    );
+    expect(f.furniture.filter((_, i) => i % 4 >= 2)).toEqual([
+      FURNITURE.indexOf("street_lamp"),
+      -1,
+      FURNITURE.indexOf("bench"),
+      90,
+      FURNITURE.indexOf("fire_hydrant"),
+      -1,
+    ]);
+  });
+
   it("reads buildings, land cover, rivers and multipolygon water", () => {
     expect(features.buildings).toHaveLength(1);
     expect(features.buildings[0]!.h).toBe(13);
@@ -185,6 +250,14 @@ describe("OpenStreetMap", () => {
     // [x, z, height, kind] per tree
     expect(f.trees.slice(2, 4)).toEqual([12, 1]);
     expect(f.trees.slice(6, 8)).toEqual([0, 2]);
+    // Genus groups ride in the kind value (group × 4 + kind)
+    const genus = parseOverpass(
+      {
+        elements: [{ type: "node", lat: 46.2, lon: 8.5, tags: { natural: "tree", genus: "Acer" } }],
+      },
+      p,
+    ).trees[3]!;
+    expect([genus & 3, genus >> 2]).toEqual([0, TREE_GENUS.indexOf("maple")]);
     // ~38 m row → a tree every 7 m
     expect(f.trees.length / 4 - 2).toBeGreaterThanOrEqual(5);
     expect(f.trees.length / 4 - 2).toBeLessThanOrEqual(6);

@@ -30,6 +30,7 @@ import {
   select,
   smoothstep,
   step,
+  transformNormalToView,
   uniform,
   vec2,
   vec3,
@@ -38,6 +39,116 @@ import {
 import type { Node } from "three/webgpu";
 import type { Building, BuildingKind } from "../geo/types.ts";
 import { insidePolygon } from "./map-match.ts";
+import type { RoofMaterial, WallMaterial } from "../geo/types.ts";
+import { W as WL, WALL_IDS, WALL_NEUTRAL, layerIndex, type SurfaceSet } from "./surfaces.ts";
+
+/**
+ * Facade and roof materials (WALL_IDS layer): the building's mapped OSM
+ * material first, else what that kind of building is usually clad in — in
+ * East Asia, tiled facades; elsewhere render, brick and concrete.
+ */
+const MAPPED_WALL: Record<WallMaterial, number[]> = {
+  plaster: [WL.wall_plaster, WL.wall_render],
+  concrete: [WL.wall_concrete],
+  brick: [WL.wall_brick],
+  stone: [WL.wall_lightbrick],
+  glass: [-1],
+  metal: [WL.wall_metal],
+  wood: [WL.wall_wood],
+  tiles: [WL.wall_tiles],
+};
+const MAPPED_ROOF: Record<RoofMaterial, number> = {
+  tiles: WL.roof_tiles,
+  slate: WL.roof_slate,
+  metal: WL.wall_metal,
+  concrete: WL.roof_concrete,
+  glass: WL.roof_concrete,
+  grass: WL.roof_concrete,
+};
+/** [layer, weight] choices per building kind, when OSM has no material */
+const USUAL_WALL: Record<"eastAsia" | "other", Record<BuildingKind, [number, number][]>> = {
+  eastAsia: {
+    house: [
+      [WL.wall_tiles, 0.45],
+      [WL.wall_render, 0.35],
+      [WL.wall_concrete, 0.2],
+    ],
+    apartments: [
+      [WL.wall_tiles, 0.6],
+      [WL.wall_render, 0.2],
+      [WL.wall_concrete, 0.2],
+    ],
+    shop: [
+      [WL.wall_tiles, 0.55],
+      [WL.wall_render, 0.3],
+      [WL.wall_concrete, 0.15],
+    ],
+    office: [
+      [WL.wall_concrete, 0.5],
+      [WL.wall_tiles, 0.3],
+      [WL.wall_render, 0.2],
+    ],
+    industrial: [
+      [WL.wall_metal, 0.6],
+      [WL.wall_concrete, 0.4],
+    ],
+    civic: [
+      [WL.wall_tiles, 0.4],
+      [WL.wall_concrete, 0.35],
+      [WL.wall_lightbrick, 0.25],
+    ],
+    shed: [
+      [WL.wall_metal, 0.6],
+      [WL.wall_concrete, 0.4],
+    ],
+  },
+  other: {
+    house: [
+      [WL.wall_plaster, 0.45],
+      [WL.wall_brick, 0.35],
+      [WL.wall_lightbrick, 0.2],
+    ],
+    apartments: [
+      [WL.wall_render, 0.4],
+      [WL.wall_concrete, 0.3],
+      [WL.wall_brick, 0.3],
+    ],
+    shop: [
+      [WL.wall_plaster, 0.45],
+      [WL.wall_render, 0.35],
+      [WL.wall_brick, 0.2],
+    ],
+    office: [
+      [WL.wall_concrete, 0.7],
+      [WL.wall_render, 0.3],
+    ],
+    industrial: [
+      [WL.wall_metal, 0.6],
+      [WL.wall_concrete, 0.25],
+      [WL.wall_brick, 0.15],
+    ],
+    civic: [
+      [WL.wall_lightbrick, 0.4],
+      [WL.wall_concrete, 0.35],
+      [WL.wall_plaster, 0.25],
+    ],
+    shed: [
+      [WL.wall_wood, 0.5],
+      [WL.wall_metal, 0.5],
+    ],
+  },
+};
+function pick(choices: [number, number][], r: number): number {
+  for (const [v, w] of choices) {
+    if (r < w) return v;
+    r -= w;
+  }
+  return choices[0]![0];
+}
+/** Lon/lat inside East Asia (China, Taiwan, Korea, Japan, Hong Kong) */
+export function inEastAsia(lat: number, lon: number) {
+  return lat > 18 && lat < 46 && lon > 100 && lon < 146;
+}
 
 interface Style {
   /** Window bay width (m); 0 = no windows */
@@ -229,6 +340,7 @@ export function buildingsGeometry(
   list: FacadeInput[],
   /** Balconies left to place, shared across calls */
   budget = { balconies: MAX_BALCONIES },
+  region: "eastAsia" | "other" = "other",
 ): {
   geometry: THREE.BufferGeometry | null;
   balconies: Balcony[];
@@ -241,6 +353,7 @@ export function buildingsGeometry(
   const bld = new Floats(cap * 4);
   const win = new Floats(cap * 4);
   const gls = new Floats(cap * 4);
+  const srf = new Floats(cap);
   const balconies: Balcony[] = [];
   const tmp = new THREE.Color();
 
@@ -308,12 +421,27 @@ export function buildingsGeometry(
     }
     // Usable height for windows (v measured from the lowest ground)
     const usable = top - 0.4 - parapet - 0.3;
-    const wall = tmp.set(st.walls[Math.floor(r() * st.walls.length)]!);
+    const wall = tmp.set(b.colour ?? st.walls[Math.floor(r() * st.walls.length)]!);
     wall.offsetHSL(0, (r() - 0.5) * 0.03, (r() - 0.5) * 0.05).multiplyScalar(0.72);
     const wallC = [wall.r, wall.g, wall.b] as const;
     const roof = new THREE.Color(st.roofs[Math.floor(r() * st.roofs.length)]!);
     if (pitched && b.kind === "house")
       roof.set(["#8c4a36", "#5d5550", "#9b5a40", "#4f5559"][Math.floor(r() * 4)]!);
+    if (b.roofColour) roof.set(b.roofColour).multiplyScalar(0.8);
+    // Scanned materials: mapped, else usual for the kind and region
+    const mappedWall = b.material ? MAPPED_WALL[b.material] : null;
+    const wallLayer = mappedWall
+      ? mappedWall[Math.floor(r() * mappedWall.length)]!
+      : st.clad
+        ? WL.wall_metal
+        : pick(USUAL_WALL[region][b.kind] ?? USUAL_WALL[region].house, r());
+    const roofLayer = b.roofMaterial
+      ? MAPPED_ROOF[b.roofMaterial]
+      : pitched
+        ? region === "eastAsia" || r() < 0.35
+          ? WL.roof_slate
+          : WL.roof_tiles
+        : WL.roof_concrete;
     const glass = new THREE.Color(st.glass).offsetHSL(0, 0, (r() - 0.5) * 0.03);
     // Window proportions vary from building to building: some wide bands,
     // some tall, most in between
@@ -338,6 +466,7 @@ export function buildingsGeometry(
     const balcColor = new THREE.Color(...wallC).multiplyScalar(r() < 0.6 ? 1.04 : 1.18);
 
     const attrs = (u: number, v: number, part: number, bay: number, sl = sill) => {
+      srf.push(part === ROOF ? roofLayer : part === UNIT ? WL.roof_concrete : wallLayer);
       fac.push(u, v, part, usable);
       bld.push(bay, floorH, groundH, seed);
       win.push(winShare, sl, head, lit);
@@ -607,6 +736,7 @@ export function buildingsGeometry(
   geo.setAttribute("aBldg", new THREE.BufferAttribute(bld.array.slice(), 4));
   geo.setAttribute("aWin", new THREE.BufferAttribute(win.array.slice(), 4));
   geo.setAttribute("aGlass", new THREE.BufferAttribute(gls.array.slice(), 4));
+  geo.setAttribute("aSurf", new THREE.BufferAttribute(srf.array.slice(), 1));
   geo.computeBoundingSphere();
   return { geometry: geo, balconies };
 }
@@ -695,7 +825,7 @@ function box(x: N, a: N, b: N, w: N) {
   return smoothstep(a.sub(w), a.add(w), x).mul(float(1).sub(smoothstep(b.sub(w), b.add(w), x)));
 }
 
-export function facadeMaterial() {
+export function facadeMaterial(surfaces: SurfaceSet | null = null) {
   const mat = new THREE.MeshStandardNodeMaterial({ roughness: 0.88, metalness: 0 });
   const F = attribute("aFacade", "vec4");
   const B = attribute("aBldg", "vec4");
@@ -875,7 +1005,49 @@ export function facadeMaterial() {
   const tileHash = hash(
     vec2(floor(courseY), floor(positionWorld.x.add(positionWorld.z).div(0.35))),
   );
-  const wallCol = vertexColor()
+  // Scanned wall and roof materials (asset pack), in the wall's own meters
+  // (along it, up it), on roofs along the slope, on flat roofs in plan
+  let surface: Node<"vec3"> = vertexColor().xyz;
+  let surfaceRough: Node<"float"> | null = null;
+  let surfaceNormal: Node<"vec3"> | null = null;
+  if (surfaces) {
+    const layer = attribute("aSurf", "float");
+    const textured = step(-0.5, layer);
+    const Tw = normalize(vec3(Nw.z, 0, Nw.x.negate()).add(vec3(1e-4, 0, 0)));
+    const slope = float(1).sub(abs(Nw.y));
+    const onRoof = step(0.5, part).mul(step(part, 1.5));
+    const flatRoof = onRoof.mul(step(slope, 0.05));
+    const along = dot(positionWorld, Tw);
+    const up = positionWorld.y.div(max(float(0.25), Nw.y.mul(Nw.y).oneMinus().sqrt()));
+    const wallUv = vec2(meters, v);
+    const roofUv = vec2(along, up);
+    const uvw = mix(mix(wallUv, roofUv, onRoof), positionWorld.xz, flatRoof);
+    const s = surfaces.sample(layerIndex(layer, WALL_IDS.length), uvw);
+    // Plain materials are gray detail around 0.5 (linear): tinted by the
+    // building's color; brick, tiles on roofs and wood keep their own
+    const neutral = [...WALL_NEUTRAL].reduce<Node<"float">>(
+      (acc, i) => acc.add(step(float(i - 0.5), layer).mul(step(layer, float(i + 0.5)))),
+      float(0),
+    );
+    const tint = vertexColor().xyz;
+    const own = s.color.mul(mix(vec3(1, 1, 1), tint.div(dot(tint, vec3(0.3333)).max(0.05)), 0.25));
+    const detail = mix(own, tint.mul(s.color).mul(2), neutral).mul(mix(float(1), s.ao, 0.6));
+    surface = mix(vertexColor().xyz, detail, textured);
+    surfaceRough = mix(float(0.88), max(s.rough, float(0.5)), textured);
+    // Relief: along the wall (u) and up (v); on roofs along the slope
+    const Up = normalize(
+      vec3(0, 1, 0)
+        .sub(Nw.mul(Nw.y))
+        .add(vec3(0, 1e-4, 0)),
+    );
+    const Bv = mix(Up, vec3(0, 0, 1), flatRoof);
+    const Tv = mix(Tw, vec3(1, 0, 0), flatRoof);
+    const strength = smoothstep(80, 8, positionWorld.distance(cameraPosition)).mul(textured);
+    surfaceNormal = normalize(
+      Nw.add(Tv.mul(s.tilt.x.mul(strength))).add(Bv.mul(s.tilt.y.mul(strength))),
+    );
+  }
+  const wallCol = surface
     .mul(float(1).sub(slab.mul(0.16)))
     .mul(mix(float(1), float(0.86).add(rib.mul(0.14)), isClad))
     .mul(float(1).sub(grime.mul(isWall)))
@@ -914,15 +1086,21 @@ export function facadeMaterial() {
   const glassCol = vec3(G.x, G.y, G.z);
   let base = mix(wallCol, frameCol, frame);
   base = mix(base, glassCol.mul(float(1).sub(reveal.mul(0.5))), pane);
-  base = mix(base, vertexColor().mul(1.25), sillBand);
+  base = mix(base, vertexColor().xyz.mul(1.25), sillBand);
   base = mix(base, signCol, sign);
   mat.colorNode = base;
   const isUnit = step(2.5, part).mul(step(part, 3.5));
   mat.roughnessNode = mix(
-    mix(mix(float(0.88), float(0.5), isUnit), float(0.45), frame),
+    mix(mix(surfaceRough ?? float(0.88), float(0.5), isUnit), float(0.45), frame),
     float(0.06),
     pane,
   );
+  if (surfaceNormal) {
+    // (flat over glass and frames)
+    mat.normalNode = transformNormalToView(
+      normalize(mix(surfaceNormal, Nw, max(pane, frame).min(1))),
+    );
+  }
   mat.metalnessNode = isUnit.mul(0.35);
   mat.emissiveNode = mirrored
     .mul(fres)

@@ -38,7 +38,7 @@ export function mapMatch(
   z: ArrayLike<number>,
   s: ArrayLike<number>,
   roads: Road[],
-): { x: Float32Array; z: Float32Array; matched: number } {
+): { x: Float32Array; z: Float32Array; matched: number; way: Int32Array } {
   const n = x.length;
   const cell = 25;
   const grid = new Map<string, Segment[]>();
@@ -71,6 +71,7 @@ export function mapMatch(
   const dx = new Float32Array(n);
   const dz = new Float32Array(n);
   const has = new Uint8Array(n);
+  const ways = new Int32Array(n).fill(-1);
   let prevWay = -1;
   let matched = 0;
   for (let i = 0; i < n; i++) {
@@ -102,13 +103,14 @@ export function mapMatch(
       dx[i] = bx - px;
       dz[i] = bz - pz;
       has[i] = 1;
+      ways[i] = bway;
       matched++;
     }
     prevWay = bway;
   }
 
   // Smooth the offsets over ±12 m of route; unmatched points pull toward zero
-  const out = { x: new Float32Array(n), z: new Float32Array(n), matched };
+  const out = { x: new Float32Array(n), z: new Float32Array(n), matched, way: ways };
   const R = 12;
   let lo = 0;
   let hi = 0;

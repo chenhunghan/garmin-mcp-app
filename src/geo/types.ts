@@ -18,9 +18,23 @@ export interface HeightGrid {
 
 export type RoadClass = "major" | "minor" | "residential" | "service" | "track" | "path" | "steps";
 
+/** What a road or path is surfaced with: OSM `surface`, else a default for its class */
+export type Surface =
+  | "asphalt"
+  | "concrete"
+  | "paving"
+  | "gravel"
+  | "dirt"
+  | "grass"
+  | "sand"
+  | "wood";
+
 export interface Road {
   cls: RoadClass;
   paved: boolean;
+  surface?: Surface;
+  /** The surface is mapped (OSM `surface`), not assumed from the class */
+  surfaceMapped?: boolean;
   /** Width in meters */
   width: number;
   /** Flat [x, z, x, z, …] */
@@ -64,18 +78,61 @@ export interface Building {
   levels?: number;
   /** Roof shape from OSM's roof:shape; "pitched" = a house with no shape mapped */
   roof?: "flat" | "gabled" | "hipped" | "pyramidal" | "pitched";
+  /** Facade material and color, when mapped (building:material, building:colour) */
+  material?: WallMaterial;
+  colour?: string;
+  /** Roof material and color, when mapped (roof:material, roof:colour) */
+  roofMaterial?: RoofMaterial;
+  roofColour?: string;
   pts: number[];
 }
+
+export type WallMaterial =
+  | "plaster"
+  | "concrete"
+  | "brick"
+  | "stone"
+  | "glass"
+  | "metal"
+  | "wood"
+  | "tiles";
+
+export type RoofMaterial = "tiles" | "slate" | "metal" | "concrete" | "glass" | "grass";
+
+/** Street furniture mapped as OSM nodes, in `RunMap.furniture` */
+export const FURNITURE = [
+  "street_lamp",
+  "traffic_signals",
+  "bench",
+  "waste_basket",
+  "fire_hydrant",
+  "drinking_water",
+  "bollard",
+] as const;
+export type FurnitureKind = (typeof FURNITURE)[number];
 
 export interface River {
   width: number;
   pts: number[];
 }
 
-/** Tree kinds, in `RunMap.trees` */
+/** Tree kinds, in `RunMap.trees` (the low 2 bits of the kind value) */
 export const TREE_BROADLEAF = 0;
 export const TREE_CONIFER = 1;
 export const TREE_PALM = 2;
+/**
+ * Genus groups from OSM genus/species/taxon, picking bark and leaves (kind
+ * value = group × 4 + kind). 0 = not mapped.
+ */
+export const TREE_GENUS = [
+  "unknown",
+  "maple", // Acer, Liquidambar, Platanus: lobed leaves
+  "camphor", // Cinnamomum, Machilus, Ficus, Magnolia: glossy oval leaves, rough bark
+  "zelkova", // Zelkova, Ulmus, Celtis, Koelreuteria: small serrated leaves, smooth flaky bark
+  "heart", // Tilia, Cercis, Populus, Catalpa: heart-shaped leaves
+  "pine", // Pinus, Picea, Abies, Cedrus, Juniperus, Cupressus, Taxodium
+  "birch", // Betula, Alnus, Fraxinus, Fagus, Quercus: generic broadleaf
+] as const;
 
 export interface RunMap {
   origin: { lat: number; lon: number };
@@ -87,6 +144,8 @@ export interface RunMap {
   rivers: River[];
   /** Mapped trees (OSM natural=tree, and tree rows sampled every 7 m): flat [x, z, height (0 = unknown), kind, …] */
   trees: number[];
+  /** Mapped street furniture: flat [x, z, FURNITURE index, direction (degrees, -1 = unknown), …] */
+  furniture?: number[];
   attribution: string[];
   /** Parts that couldn't be fetched (the rest still renders) */
   missing: string[];

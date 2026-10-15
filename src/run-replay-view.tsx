@@ -11,6 +11,15 @@ import { buildTrack, type Track } from "./replay/track.ts";
 import type { RunMap } from "./geo/types.ts";
 import { CAMERA_LABEL, type CameraMode, type ReplayScene } from "./replay/scene.ts";
 import type { RunnerBody } from "./replay/runner-model.ts";
+import { assetCredits } from "./replay-assets.ts";
+
+/** base64 → bytes, without fetch() (a host's CSP may forbid data: URLs) */
+function fromBase64(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
 
 const RATES = [0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 128];
 const CAMERA_MODES: CameraMode[] = ["chase", "side", "front", "drone", "overview"];
@@ -73,6 +82,7 @@ function ReplayPlayer({ data }: { data: ReplayData }) {
   const [backend, setBackend] = useState<string | null>(null);
   const [synthetic, setSynthetic] = useState(false);
   const [realMapShown, setRealMapShown] = useState(false);
+  const [assetIds, setAssetIds] = useState<string[]>([]);
   const [sceneError, setSceneError] = useState<string | null>(null);
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -175,6 +185,15 @@ function ReplayPlayer({ data }: { data: ReplayData }) {
         if (disposed) return;
         scene = new ReplayScene(canvas, data, map);
         scene.body = bodyRef.current;
+        // The asset pack: scanned materials, sky light, models (served by the MCP server)
+        scene.fetchAsset = async (file) => {
+          const r = (await callTool("garmin-get-replay-asset", { file })) as {
+            data?: string;
+          } | null;
+          if (!r?.data) throw new Error(`no data for ${file}`);
+          return fromBase64(r.data);
+        };
+        scene.onAssets = (ids) => !disposed && setAssetIds(ids);
         const info = await scene.init();
         if (disposed) {
           scene.dispose();
@@ -613,9 +632,11 @@ function ReplayPlayer({ data }: { data: ReplayData }) {
           </div>
         </div>
       )}
-      {(realMapShown && map?.attribution.length) || mapNote ? (
+      {(realMapShown && map?.attribution.length) || mapNote || assetIds.length ? (
         <div className="text-[11px] text-muted-foreground">
-          {realMapShown && map?.attribution.join(" · ")}
+          {[realMapShown ? map?.attribution.join(" · ") : null, assetCredits(assetIds) || null]
+            .filter(Boolean)
+            .join(" · ")}
           {mapNote && <span className="ml-2">{mapNote}</span>}
         </div>
       ) : null}

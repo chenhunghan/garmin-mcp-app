@@ -1,0 +1,1334 @@
+{
+  "version": 1,
+  "bytes": 20564436,
+  "assets": [
+    {
+      "id": "ground.lawn",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.lawn.a.22d21d78bc.webp",
+          "bytes": 699930,
+          "sha256": "22d21d78bceba71072fa7dd28c302515dd7bce4058b41f1344f31594deb4d0dc"
+        },
+        {
+          "name": "ground.lawn.b.a45a51304d.webp",
+          "bytes": 834246,
+          "sha256": "a45a51304d29011e4567fa9918d0e1248ec3c9151ff77b32ce90ce96004b9fe3"
+        }
+      ],
+      "meta": {
+        "tile": 1.4
+      },
+      "credit": {
+        "title": "Grass004",
+        "author": "ambientCG (Lennart Demes)",
+        "license": "CC0-1.0",
+        "url": "https://ambientcg.com/a/Grass004"
+      }
+    },
+    {
+      "id": "ground.meadow",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.meadow.a.516e4ccd21.webp",
+          "bytes": 572494,
+          "sha256": "516e4ccd21112898b116f6fea25a5984ec067790fe7cbbed051ddcef559d51d1"
+        },
+        {
+          "name": "ground.meadow.b.504ebf6355.webp",
+          "bytes": 800970,
+          "sha256": "504ebf6355b087f9ca9470d8dbf6b85d649bb3e77554c4f0f8bf34f7da793e4c"
+        }
+      ],
+      "meta": {
+        "tile": 2
+      },
+      "credit": {
+        "title": "Leafy Grass",
+        "author": "Charlotte Baglioni",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/leafy_grass"
+      }
+    },
+    {
+      "id": "ground.forest",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.forest.a.4e4177aff9.webp",
+          "bytes": 455372,
+          "sha256": "4e4177aff939f9e0e9533f3f2fc3ba25e0b54589a98bc9f2f1ada0c2a170c20b"
+        },
+        {
+          "name": "ground.forest.b.fc6d0551d6.webp",
+          "bytes": 833348,
+          "sha256": "fc6d0551d6ca2edebb25f7cb49d1cd3f49872597a7e4cdc661722bd9f06a25bd"
+        }
+      ],
+      "meta": {
+        "tile": 3.0009725093841553
+      },
+      "credit": {
+        "title": "Forest Leaves 02",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/forest_leaves_02"
+      }
+    },
+    {
+      "id": "ground.dirt",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.dirt.a.afd93e4923.webp",
+          "bytes": 330310,
+          "sha256": "afd93e4923e3d680aa3abf007d60b2204299a9301b8752e7acf6964fcb23d2eb"
+        },
+        {
+          "name": "ground.dirt.b.2b560fdee2.webp",
+          "bytes": 768960,
+          "sha256": "2b560fdee2c87fe4344ddbe8456759f1bf0c8d918dbbf86bce591b0d48b5f931"
+        }
+      ],
+      "meta": {
+        "tile": 2
+      },
+      "credit": {
+        "title": "Rocky Trail 02",
+        "author": "Amal Kumar",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/rocky_trail_02"
+      }
+    },
+    {
+      "id": "ground.gravel",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.gravel.a.f60f36d5d2.webp",
+          "bytes": 667458,
+          "sha256": "f60f36d5d2401a15f2581c57bddde8f43cadf21c556e48ccb51960c35cb3e101"
+        },
+        {
+          "name": "ground.gravel.b.bbcf368dc9.webp",
+          "bytes": 897798,
+          "sha256": "bbcf368dc90e4668e06552dd1d9e90e8fa7951530021dc136cf7aef114f9f437"
+        }
+      ],
+      "meta": {
+        "tile": 2
+      },
+      "credit": {
+        "title": "Gravel Floor 02",
+        "author": "Jenelle van Heerden, Dimitrios Savva",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/gravel_floor_02"
+      }
+    },
+    {
+      "id": "ground.asphalt",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.asphalt.a.a80c9d436f.webp",
+          "bytes": 546284,
+          "sha256": "a80c9d436fdb78e28fef61afc5f60256ed472bd9b3240b747c8d6f5eca2145fc"
+        },
+        {
+          "name": "ground.asphalt.b.2f4ed866ef.webp",
+          "bytes": 631398,
+          "sha256": "2f4ed866ef65d87a8d89c6491250b5af48c94a5c38160c4d37019c3e205a2bc1"
+        }
+      ],
+      "meta": {
+        "tile": 3.000000238418579
+      },
+      "credit": {
+        "title": "Asphalt 02",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/asphalt_02"
+      }
+    },
+    {
+      "id": "ground.paving",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.paving.a.ad326bb3e0.webp",
+          "bytes": 308498,
+          "sha256": "ad326bb3e0e0bf63501623e8737936dfa5c982d80d503ce3318a2ca4eb67a519"
+        },
+        {
+          "name": "ground.paving.b.06c98faaf2.webp",
+          "bytes": 340098,
+          "sha256": "06c98faaf24f7ae76a17708741acb943d6bdc90ed64a282cc7c36b3962926f43"
+        }
+      ],
+      "meta": {
+        "tile": 3.0999999046325684
+      },
+      "credit": {
+        "title": "Pavement 04",
+        "author": "Jan Burghardt",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/pavement_04"
+      }
+    },
+    {
+      "id": "ground.concrete",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.concrete.a.e9b2fc69e5.webp",
+          "bytes": 471346,
+          "sha256": "e9b2fc69e5fa58951639c757a2eaa6dd5037d6110cac9028e1d73cf62d05169e"
+        },
+        {
+          "name": "ground.concrete.b.5fc2697bd3.webp",
+          "bytes": 668920,
+          "sha256": "5fc2697bd30dc0bab6b175f904fd38b0e01796502c13c060b337772b9d30ba7a"
+        }
+      ],
+      "meta": {
+        "tile": 1.8000000715255737
+      },
+      "credit": {
+        "title": "Concrete Pavement",
+        "author": "Charlotte Baglioni",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/concrete_pavement"
+      }
+    },
+    {
+      "id": "ground.sand",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.sand.a.b4dde7162f.webp",
+          "bytes": 234296,
+          "sha256": "b4dde7162fbee9728f54a8d1b72505579e23c9d3161a81f780899c5b4206cf59"
+        },
+        {
+          "name": "ground.sand.b.6b530506ad.webp",
+          "bytes": 322008,
+          "sha256": "6b530506ade6cbaf76ad219a1a6707b89a8596924db6a48e08d2d77fc06333a2"
+        }
+      ],
+      "meta": {
+        "tile": 1.5
+      },
+      "credit": {
+        "title": "Sand 01",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/sand_01"
+      }
+    },
+    {
+      "id": "ground.rock",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.rock.a.277b4bb8dc.webp",
+          "bytes": 366474,
+          "sha256": "277b4bb8dca4572c39aadfed1ff8854f2f6e5bb5298407ee2d5a33360060a130"
+        },
+        {
+          "name": "ground.rock.b.284fe96696.webp",
+          "bytes": 599870,
+          "sha256": "284fe96696b9e6e92ab8abaa30872302a6bb3c8df8cb37c9e9def30a60590eea"
+        }
+      ],
+      "meta": {
+        "tile": 3
+      },
+      "credit": {
+        "title": "Rocks Ground 05",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/rocks_ground_05"
+      }
+    },
+    {
+      "id": "ground.soil",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.soil.a.692fc1b1fc.webp",
+          "bytes": 297096,
+          "sha256": "692fc1b1fc654f77c08a32b34d66c78f532c633f60154b9b4e273f637bf1fa4c"
+        },
+        {
+          "name": "ground.soil.b.ae9bdf57da.webp",
+          "bytes": 621672,
+          "sha256": "ae9bdf57da3e4533cf595ea2ea3fff6275fbad4148f59ef857470dd1339e63fa"
+        }
+      ],
+      "meta": {
+        "tile": 1.299996018409729
+      },
+      "credit": {
+        "title": "Brown Mud 02",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/brown_mud_02"
+      }
+    },
+    {
+      "id": "ground.worn",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "ground.worn.a.d4ee58af73.webp",
+          "bytes": 605238,
+          "sha256": "d4ee58af73fe6b9131c2304507924ae2855d07630df587104d022884b695e202"
+        },
+        {
+          "name": "ground.worn.b.0910a98a80.webp",
+          "bytes": 597168,
+          "sha256": "0910a98a80d831307e75391aba63b6e62463190ef59e863cb59f1063722adde5"
+        }
+      ],
+      "meta": {
+        "tile": 2
+      },
+      "credit": {
+        "title": "Ground037",
+        "author": "ambientCG (Lennart Demes)",
+        "license": "CC0-1.0",
+        "url": "https://ambientcg.com/a/Ground037"
+      }
+    },
+    {
+      "id": "wall.plaster",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "wall.plaster.a.bdc3b8ff66.webp",
+          "bytes": 55978,
+          "sha256": "bdc3b8ff66d94dbe8d46ac2ed29d8e794873f653978a77ae3f9d9c90dd56d06c"
+        },
+        {
+          "name": "wall.plaster.b.c5d3e544ab.webp",
+          "bytes": 51024,
+          "sha256": "c5d3e544ab22f3f370421777678ac6f63b98036f67c9f0ff3fdaba0f581bad82"
+        }
+      ],
+      "meta": {
+        "tile": 3
+      },
+      "credit": {
+        "title": "Beige Wall 001",
+        "author": "Dimitrios Savva, Rico Cilliers",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/beige_wall_001"
+      }
+    },
+    {
+      "id": "wall.render",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "wall.render.a.c5fb9c1e4a.webp",
+          "bytes": 106790,
+          "sha256": "c5fb9c1e4af52c01c9b2a6f879accd2e12a6acba78d8060f7f7e04299a667f26"
+        },
+        {
+          "name": "wall.render.b.aa439c7982.webp",
+          "bytes": 67840,
+          "sha256": "aa439c7982551f65db2bec73e3dbfc0e51245919ddc3a3cf9ca7a43fa1eb8e68"
+        }
+      ],
+      "meta": {
+        "tile": 1
+      },
+      "credit": {
+        "title": "Grey Plaster",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/grey_plaster"
+      }
+    },
+    {
+      "id": "wall.concrete",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "wall.concrete.a.77da0afab8.webp",
+          "bytes": 46934,
+          "sha256": "77da0afab89688e90c102d192f567352cc6c509a6ba1e5715475346c7adc3c92"
+        },
+        {
+          "name": "wall.concrete.b.2c6aa40491.webp",
+          "bytes": 40042,
+          "sha256": "2c6aa40491c7f4c8aea598630cde1fb571e9bb48d6dada9b062868c126dedd42"
+        }
+      ],
+      "meta": {
+        "tile": 2.1599998474121094
+      },
+      "credit": {
+        "title": "Concrete Wall 007",
+        "author": "Dario Barresi, Rico Cilliers, Charlotte Baglioni",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/concrete_wall_007"
+      }
+    },
+    {
+      "id": "wall.brick",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "wall.brick.a.fd22ce2306.webp",
+          "bytes": 60638,
+          "sha256": "fd22ce23069fb2010da510d5a4eb325eba6155b4e78c189182a2b461ccdd411f"
+        },
+        {
+          "name": "wall.brick.b.7c6d6e0e64.webp",
+          "bytes": 95902,
+          "sha256": "7c6d6e0e642329b30dff4f0638b21b1df4312db9c56bc63bee395eac69ee7415"
+        }
+      ],
+      "meta": {
+        "tile": 1.399999976158142
+      },
+      "credit": {
+        "title": "Red Brick",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/red_brick"
+      }
+    },
+    {
+      "id": "wall.lightbrick",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "wall.lightbrick.a.7d627f7474.webp",
+          "bytes": 85808,
+          "sha256": "7d627f747420c0258ad126e06858a89df6c9fabeecc34c45019a5142b89925f4"
+        },
+        {
+          "name": "wall.lightbrick.b.c50f60e6fb.webp",
+          "bytes": 79870,
+          "sha256": "c50f60e6fbbaccaf93504f4476e9d89ad5a3296d104eb62bfc2b9567bbecef51"
+        }
+      ],
+      "meta": {
+        "tile": 2
+      },
+      "credit": {
+        "title": "White Sandstone Bricks 03",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/white_sandstone_bricks_03"
+      }
+    },
+    {
+      "id": "wall.tiles",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "wall.tiles.a.9c1f46f7a3.webp",
+          "bytes": 38304,
+          "sha256": "9c1f46f7a327d5e97aa293eac5b08a4849a66579c4ddf0566b9e3c016d87519f"
+        },
+        {
+          "name": "wall.tiles.b.ffcb2e0f9e.webp",
+          "bytes": 48626,
+          "sha256": "ffcb2e0f9e5d5c7dd0df07116714c577e519cac7ea5179e297b300a33298f175"
+        }
+      ],
+      "meta": {
+        "tile": 2
+      },
+      "credit": {
+        "title": "Rectangular Facade Tiles",
+        "author": "Charlotte Baglioni",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/rectangular_facade_tiles"
+      }
+    },
+    {
+      "id": "wall.metal",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "wall.metal.a.f0cdd18618.webp",
+          "bytes": 28110,
+          "sha256": "f0cdd186186828aee640a252b8e8074a389f6da0c0d76b31e71e2e8f9a21b135"
+        },
+        {
+          "name": "wall.metal.b.e761967df0.webp",
+          "bytes": 23962,
+          "sha256": "e761967df08e6128689e76a1ab0d52734b45b9fb8aebb12cd9750a7ba6cebf18"
+        }
+      ],
+      "meta": {
+        "tile": 2.700000047683716
+      },
+      "credit": {
+        "title": "Corrugated Iron 02",
+        "author": "Jenelle van Heerden, Sergej Majboroda",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/corrugated_iron_02"
+      }
+    },
+    {
+      "id": "wall.wood",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "wall.wood.a.6b235fde5c.webp",
+          "bytes": 67636,
+          "sha256": "6b235fde5c59aab680d9bb7a2018abb8c13049f8a89da9ec2c9ca2912cb14c14"
+        },
+        {
+          "name": "wall.wood.b.dc830f7de7.webp",
+          "bytes": 11104,
+          "sha256": "dc830f7de707bba41a56a1a7183d83e14b2b9551145c5c34be4cf927c2be4524"
+        }
+      ],
+      "meta": {
+        "tile": 2
+      },
+      "credit": {
+        "title": "Wood Planks Dirt",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/wood_planks_dirt"
+      }
+    },
+    {
+      "id": "roof.tiles",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "roof.tiles.a.10a4a93df8.webp",
+          "bytes": 65814,
+          "sha256": "10a4a93df80a422ce658ce12d53d42bdefeda99c2e41287d338434a9b0c801a7"
+        },
+        {
+          "name": "roof.tiles.b.e7cff04081.webp",
+          "bytes": 49786,
+          "sha256": "e7cff04081ce17f7dd67d85aa92afb7b2141b5a2d54b4e2a17225feda34fcfb7"
+        }
+      ],
+      "meta": {
+        "tile": 4
+      },
+      "credit": {
+        "title": "Roof 09",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/roof_09"
+      }
+    },
+    {
+      "id": "roof.slate",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "roof.slate.a.ff8b76b3a3.webp",
+          "bytes": 98750,
+          "sha256": "ff8b76b3a3b651e658a963f468e0f45d02001d648a81362c81d331ca11448677"
+        },
+        {
+          "name": "roof.slate.b.e1ec932497.webp",
+          "bytes": 108460,
+          "sha256": "e1ec932497d676f49a4ed0b7a2d6f2e19d4f200999a25ca8595effb8f6590706"
+        }
+      ],
+      "meta": {
+        "tile": 8
+      },
+      "credit": {
+        "title": "Grey Roof 01",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/grey_roof_01"
+      }
+    },
+    {
+      "id": "roof.concrete",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "roof.concrete.a.1d56b9a0ae.webp",
+          "bytes": 74378,
+          "sha256": "1d56b9a0ae2b8545eaea4394213becd2369f08c16fa6f39c86d919565301835e"
+        },
+        {
+          "name": "roof.concrete.b.d97091f31b.webp",
+          "bytes": 55188,
+          "sha256": "d97091f31bd7af40057da23ab7de4310df7f21e12a33d7c97dceb4df7111615a"
+        }
+      ],
+      "meta": {
+        "tile": 3
+      },
+      "credit": {
+        "title": "Concrete Floor Worn 001",
+        "author": "Dimitrios Savva, Rico Cilliers",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/concrete_floor_worn_001"
+      }
+    },
+    {
+      "id": "bark.zelkova",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "bark.zelkova.a.e9b00fcb52.webp",
+          "bytes": 107664,
+          "sha256": "e9b00fcb525d9c69924e2eecb17ef1daf21bbd59ff9b13f92a3f60ad55fb6bdf"
+        },
+        {
+          "name": "bark.zelkova.b.ac878154fe.webp",
+          "bytes": 92212,
+          "sha256": "ac878154fea86ceda85e8c94de7db0974044deda658f357172b7d9f60ed11218"
+        }
+      ],
+      "meta": {
+        "tile": 1.799999713897705
+      },
+      "credit": {
+        "title": "Japanese Zelkova Bark",
+        "author": "Charlotte Baglioni",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/japanese_zelkova_bark"
+      }
+    },
+    {
+      "id": "bark.camphor",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "bark.camphor.a.e4f0a2b2bf.webp",
+          "bytes": 140654,
+          "sha256": "e4f0a2b2bf5fa3e024a7dd44a8489b89fcb0ae318b56d37587fb8a9858187d3a"
+        },
+        {
+          "name": "bark.camphor.b.cea3421e11.webp",
+          "bytes": 172182,
+          "sha256": "cea3421e1169c931d7397b8045ea37199adf9689926a855219c1ff7161ac6551"
+        }
+      ],
+      "meta": {
+        "tile": 1.7999999523162842
+      },
+      "credit": {
+        "title": "Japanese Camphor Bark",
+        "author": "Charlotte Baglioni",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/japanese_camphor_bark"
+      }
+    },
+    {
+      "id": "bark.brown",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "bark.brown.a.8b1dd673bf.webp",
+          "bytes": 101210,
+          "sha256": "8b1dd673bf87b6ecd800823dfe4a4662681297031304b137aadb1b2202704b89"
+        },
+        {
+          "name": "bark.brown.b.3e13bc162e.webp",
+          "bytes": 179990,
+          "sha256": "3e13bc162e58c2870c3ce4066d87db09742ca39cafb9da32a6b098bd913052d0"
+        }
+      ],
+      "meta": {
+        "tile": 0.9999990463256836
+      },
+      "credit": {
+        "title": "Bark Brown 02",
+        "author": "Rob Tuytel",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/bark_brown_02"
+      }
+    },
+    {
+      "id": "bark.pine",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "bark.pine.a.d7b5c6a515.webp",
+          "bytes": 89986,
+          "sha256": "d7b5c6a51597a49e68b43c65b7b63a7c279f7a490075fc37a242bde0c7595e59"
+        },
+        {
+          "name": "bark.pine.b.0dbae13b98.webp",
+          "bytes": 131202,
+          "sha256": "0dbae13b98f40e25986f72d90c898cd645fe1e71df36c0f762129be8760e7156"
+        }
+      ],
+      "meta": {
+        "tile": 1.9999996423721313
+      },
+      "credit": {
+        "title": "Pine Bark",
+        "author": "Dimitrios Savva",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/pine_bark"
+      }
+    },
+    {
+      "id": "bark.palm",
+      "kind": "surface",
+      "files": [
+        {
+          "name": "bark.palm.a.4653885b96.webp",
+          "bytes": 116786,
+          "sha256": "4653885b9612b1e9a83080b4a99556770202bed4f22c92d8bfa5c59f1e188431"
+        },
+        {
+          "name": "bark.palm.b.918b3a1444.webp",
+          "bytes": 47104,
+          "sha256": "918b3a1444bdf21382c253d434a276eff8d26f9ad163aedacf6d91526d8b28c9"
+        }
+      ],
+      "meta": {
+        "tile": 1.2999999523162842
+      },
+      "credit": {
+        "title": "Palm Tree Bark",
+        "author": "Dimitrios Savva, Rico Cilliers",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/palm_tree_bark"
+      }
+    },
+    {
+      "id": "leaves.broad",
+      "kind": "atlas",
+      "files": [
+        {
+          "name": "leaves.broad.a.106d4564ef.webp",
+          "bytes": 139218,
+          "sha256": "106d4564ef4fc49237b15a9567e11a88ec28779ea24238d32bf84d39321010f5"
+        },
+        {
+          "name": "leaves.broad.b.954417c611.webp",
+          "bytes": 92446,
+          "sha256": "954417c611edbc3ee67e55fd0a3068923bd3b14b3e0160d377427318b7c51695"
+        }
+      ],
+      "meta": {
+        "rects": [
+          [0.7188, 0.3398, 0.2246, 0.3223],
+          [0.0469, 0.0059, 0.2441, 0.3223],
+          [0.3828, 0.6738, 0.2324, 0.3164],
+          [0.0508, 0.6758, 0.2266, 0.3125],
+          [0.7188, 0.0078, 0.2305, 0.3164],
+          [0.3887, 0.3516, 0.2266, 0.3086],
+          [0.0527, 0.3438, 0.2266, 0.3105],
+          [0.3906, 0.0039, 0.2188, 0.3184],
+          [0.7168, 0.6777, 0.2266, 0.3145]
+        ]
+      },
+      "credit": {
+        "title": "LeafSet024",
+        "author": "ambientCG (Lennart Demes)",
+        "license": "CC0-1.0",
+        "url": "https://ambientcg.com/a/LeafSet024"
+      }
+    },
+    {
+      "id": "leaves.heart",
+      "kind": "atlas",
+      "files": [
+        {
+          "name": "leaves.heart.a.5280a648bf.webp",
+          "bytes": 74764,
+          "sha256": "5280a648bf49268a47a4c0f71a7ac8691610fcdf6c0ea288ec98366aa699d558"
+        },
+        {
+          "name": "leaves.heart.b.3ef0d03ee6.webp",
+          "bytes": 92724,
+          "sha256": "3ef0d03ee61f505c296ad86b495d0f5f560f8e687996b401208ea42014678ecc"
+        }
+      ],
+      "meta": {
+        "rects": [
+          [0.6445, 0.0625, 0.2617, 0.4043],
+          [0.375, 0.0449, 0.2461, 0.4492],
+          [0.1094, 0.043, 0.2324, 0.4434],
+          [0.125, 0.5293, 0.2305, 0.4277],
+          [0.4141, 0.541, 0.2129, 0.416],
+          [0.6738, 0.5488, 0.2285, 0.4023]
+        ]
+      },
+      "credit": {
+        "title": "LeafSet004",
+        "author": "ambientCG (Lennart Demes)",
+        "license": "CC0-1.0",
+        "url": "https://ambientcg.com/a/LeafSet004"
+      }
+    },
+    {
+      "id": "leaves.maple",
+      "kind": "atlas",
+      "files": [
+        {
+          "name": "leaves.maple.a.a038212575.webp",
+          "bytes": 88372,
+          "sha256": "a038212575f27afc78ab062a32db78609d63d7503f3c77048f9a378f2609b94b"
+        },
+        {
+          "name": "leaves.maple.b.0453b1a745.webp",
+          "bytes": 107166,
+          "sha256": "0453b1a745b895168a53828c7e7c0241ed04317d41c3f118c89bf7c05bfc06ed"
+        }
+      ],
+      "meta": {
+        "rects": [
+          [0.0664, 0.0469, 0.4004, 0.4141],
+          [0.0742, 0.502, 0.3652, 0.4805],
+          [0.5684, 0.0469, 0.332, 0.4082],
+          [0.5977, 0.5, 0.3027, 0.4688]
+        ]
+      },
+      "credit": {
+        "title": "LeafSet010",
+        "author": "ambientCG (Lennart Demes)",
+        "license": "CC0-1.0",
+        "url": "https://ambientcg.com/a/LeafSet010"
+      }
+    },
+    {
+      "id": "leaves.needles",
+      "kind": "atlas",
+      "files": [
+        {
+          "name": "leaves.needles.a.feb300adbe.webp",
+          "bytes": 81080,
+          "sha256": "feb300adbe26c3c9a055490197c0ce6bfd440980fe37cf96b37539688b4cd90a"
+        },
+        {
+          "name": "leaves.needles.b.fe0a9aa842.webp",
+          "bytes": 73450,
+          "sha256": "fe0a9aa842a14739913b25418af0f357e9d6e5ac8492c5293afc4ddfacba77f4"
+        }
+      ],
+      "meta": {
+        "rects": [
+          [0.0332, 0.5, 0.4434, 0.2344],
+          [0.5508, 0.6465, 0.4219, 0.0371],
+          [0.0254, 0.8242, 0.4648, 0.0762],
+          [0.5645, 0.8027, 0.3828, 0.0977],
+          [0.5117, 0.084, 0.4219, 0.0684],
+          [0.0254, 0.2402, 0.5137, 0.166],
+          [0.5684, 0.5156, 0.4063, 0.1094],
+          [0.0449, 0.0469, 0.3887, 0.0977],
+          [0.584, 0.3555, 0.375, 0.0703],
+          [0.5918, 0.2227, 0.3223, 0.084]
+        ]
+      },
+      "credit": {
+        "title": "PineNeedles001",
+        "author": "ambientCG (Lennart Demes)",
+        "license": "CC0-1.0",
+        "url": "https://ambientcg.com/a/PineNeedles001"
+      }
+    },
+    {
+      "id": "grass.blades",
+      "kind": "atlas",
+      "files": [
+        {
+          "name": "grass.blades.a.5afb95caa4.webp",
+          "bytes": 63114,
+          "sha256": "5afb95caa4047a606c7d7d98a31822ed610afbcb750b0f8fdedd0dbb9df0f02a"
+        },
+        {
+          "name": "grass.blades.b.e740ea0636.webp",
+          "bytes": 65890,
+          "sha256": "e740ea06365a8b5775fb47d1e1c74d0308f1450247a192a3db615aa6dcfd9db5"
+        }
+      ],
+      "meta": {
+        "rects": [
+          [0.1504, 0.0586, 0.0332, 0.8496],
+          [0.0371, 0.0918, 0.0547, 0.8164],
+          [0.3398, 0.0957, 0.0371, 0.8086],
+          [0.5391, 0.1133, 0.0352, 0.7969],
+          [0.4141, 0.0977, 0.0762, 0.8086],
+          [0.7285, 0.1094, 0.0527, 0.7988],
+          [0.209, 0.0801, 0.082, 0.8262],
+          [0.6309, 0.1406, 0.0684, 0.7695],
+          [0.8164, 0.123, 0.1387, 0.7832]
+        ]
+      },
+      "credit": {
+        "title": "Foliage001",
+        "author": "ambientCG (Lennart Demes)",
+        "license": "CC0-1.0",
+        "url": "https://ambientcg.com/a/Foliage001"
+      }
+    },
+    {
+      "id": "plant.flowers",
+      "kind": "model",
+      "files": [
+        {
+          "name": "plant.flowers.fe7bc07920.glb",
+          "bytes": 127956,
+          "sha256": "fe7bc07920251617e7c6ecb05fd4d206586ca145643a2771ecbc50dd91906d30"
+        }
+      ],
+      "meta": {
+        "variants": [
+          {
+            "width": 0.217,
+            "depth": 0.25,
+            "height": 0.267,
+            "tris": 496
+          },
+          {
+            "width": 0.182,
+            "depth": 0.204,
+            "height": 0.191,
+            "tris": 495
+          },
+          {
+            "width": 0.216,
+            "depth": 0.158,
+            "height": 0.179,
+            "tris": 611
+          },
+          {
+            "width": 0.194,
+            "depth": 0.193,
+            "height": 0.168,
+            "tris": 234
+          },
+          {
+            "width": 0.111,
+            "depth": 0.166,
+            "height": 0.147,
+            "tris": 200
+          }
+        ],
+        "sourceTris": 3053
+      },
+      "credit": {
+        "title": "Flower Empodium",
+        "author": "Jenelle van Heerden, Rico Cilliers",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/flower_empodium"
+      }
+    },
+    {
+      "id": "plant.sorrel",
+      "kind": "model",
+      "files": [
+        {
+          "name": "plant.sorrel.a70794c9ff.glb",
+          "bytes": 120504,
+          "sha256": "a70794c9ff393b4087d596a0240623b5b4d5ea80af09222ce19e11c7403d2114"
+        }
+      ],
+      "meta": {
+        "variants": [
+          {
+            "width": 0.352,
+            "depth": 0.146,
+            "height": 0.058,
+            "tris": 1599
+          }
+        ],
+        "sourceTris": 3319
+      },
+      "credit": {
+        "title": "Shrub Sorrel 01",
+        "author": "Rico Cilliers",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/shrub_sorrel_01"
+      }
+    },
+    {
+      "id": "plant.dandelion",
+      "kind": "model",
+      "files": [
+        {
+          "name": "plant.dandelion.d17adcbf12.glb",
+          "bytes": 284568,
+          "sha256": "d17adcbf1231a4a99a40025481bc9d2fe182c586a124ca7ab7356fdaace662aa"
+        }
+      ],
+      "meta": {
+        "variants": [
+          {
+            "width": 0.222,
+            "depth": 0.257,
+            "height": 0.164,
+            "tris": 1289
+          },
+          {
+            "width": 0.202,
+            "depth": 0.217,
+            "height": 0.114,
+            "tris": 1279
+          },
+          {
+            "width": 0.17,
+            "depth": 0.167,
+            "height": 0.102,
+            "tris": 200
+          },
+          {
+            "width": 0.122,
+            "depth": 0.142,
+            "height": 0.057,
+            "tris": 199
+          },
+          {
+            "width": 0.214,
+            "depth": 0.205,
+            "height": 0.045,
+            "tris": 199
+          }
+        ],
+        "sourceTris": 54764
+      },
+      "credit": {
+        "title": "Dandelion 01",
+        "author": "Rob Tuytel, Rico Cilliers",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/dandelion_01"
+      }
+    },
+    {
+      "id": "sky.clear",
+      "kind": "sky",
+      "files": [
+        {
+          "name": "sky.clear.b56d1ffbef.rgbe",
+          "bytes": 327724,
+          "sha256": "b56d1ffbefe97df01dff41c7f5200910347bfa378053afe76a8197240583f9ce"
+        }
+      ],
+      "meta": {
+        "sunU": 0.302,
+        "sunV": 0.025,
+        "sunClipped": 679,
+        "skyLum": 0.269,
+        "groundLum": 0.179,
+        "skyColor": [0.66, 0.98, 2.198],
+        "sunUp": true,
+        "cover": 0
+      },
+      "credit": {
+        "title": "Noon Grass",
+        "author": "Greg Zaal",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/noon_grass"
+      }
+    },
+    {
+      "id": "sky.cloudy",
+      "kind": "sky",
+      "files": [
+        {
+          "name": "sky.cloudy.a9968f81cb.rgbe",
+          "bytes": 376991,
+          "sha256": "a9968f81cb7dbfa38e1b74b3f0f3d1dc52abdae99b207200c39d7e6b3a6bc3f1"
+        }
+      ],
+      "meta": {
+        "sunU": 0.563,
+        "sunV": 0.373,
+        "sunClipped": 397,
+        "skyLum": 1.234,
+        "groundLum": 0.243,
+        "skyColor": [0.871, 1.027, 1.117],
+        "sunUp": true,
+        "cover": 0.5
+      },
+      "credit": {
+        "title": "Buikslotermeerplein",
+        "author": "Greg Zaal",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/buikslotermeerplein"
+      }
+    },
+    {
+      "id": "sky.overcast",
+      "kind": "sky",
+      "files": [
+        {
+          "name": "sky.overcast.eddff3c46c.rgbe",
+          "bytes": 210478,
+          "sha256": "eddff3c46c3a3ca644c8ddf918164801c9cd75110aa09f8be81228dd77391bce"
+        }
+      ],
+      "meta": {
+        "sunU": 0.468,
+        "sunV": 0.307,
+        "sunClipped": 17,
+        "skyLum": 1.26,
+        "groundLum": 0.553,
+        "skyColor": [1.011, 0.997, 0.995],
+        "sunUp": true,
+        "cover": 1
+      },
+      "credit": {
+        "title": "Overcast Soil (Pure Sky)",
+        "author": "Jarod Guest, Sergej Majboroda",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/overcast_soil_puresky"
+      }
+    },
+    {
+      "id": "sky.golden",
+      "kind": "sky",
+      "files": [
+        {
+          "name": "sky.golden.29f640a65d.rgbe",
+          "bytes": 358834,
+          "sha256": "29f640a65d8ff2d5436bdc280f14246872cf1025756bef22ecb6b346bf88e454"
+        }
+      ],
+      "meta": {
+        "sunU": 0.599,
+        "sunV": 0.455,
+        "sunClipped": 683,
+        "skyLum": 0.434,
+        "groundLum": 0.099,
+        "skyColor": [0.802, 1.03, 1.289],
+        "low": true,
+        "cover": 0
+      },
+      "credit": {
+        "title": "Spruit Sunrise",
+        "author": "Greg Zaal",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/spruit_sunrise"
+      }
+    },
+    {
+      "id": "sky.dusk",
+      "kind": "sky",
+      "files": [
+        {
+          "name": "sky.dusk.32b522651e.rgbe",
+          "bytes": 267355,
+          "sha256": "32b522651e7aac2b02e6381a99862a1cce967d7ced96906195a059ba4d56df73"
+        }
+      ],
+      "meta": {
+        "sunU": 0.606,
+        "sunV": 0.455,
+        "sunClipped": 251,
+        "skyLum": 0.932,
+        "groundLum": 0.495,
+        "skyColor": [0.864, 1.014, 1.26],
+        "low": true,
+        "cover": 0.6
+      },
+      "credit": {
+        "title": "Kloppenheim 06 (Pure Sky)",
+        "author": "Greg Zaal, Jarod Guest",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/kloppenheim_06_puresky"
+      }
+    },
+    {
+      "id": "sky.night",
+      "kind": "sky",
+      "files": [
+        {
+          "name": "sky.night.08f5fa6ff8.rgbe",
+          "bytes": 403700,
+          "sha256": "08f5fa6ff845840fe3b1165c3ba3827582b5571534c0ddeafee1ccf257fc3b5d"
+        }
+      ],
+      "meta": {
+        "sunU": 0.093,
+        "sunV": 0.416,
+        "sunClipped": 999,
+        "skyLum": 0.472,
+        "groundLum": 0.119,
+        "skyColor": [1.453, 0.896, 0.7],
+        "night": true,
+        "urban": true
+      },
+      "credit": {
+        "title": "Shanghai Bund",
+        "author": "Greg Zaal",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/shanghai_bund"
+      }
+    },
+    {
+      "id": "sky.night-open",
+      "kind": "sky",
+      "files": [
+        {
+          "name": "sky.night-open.b191fe91d7.rgbe",
+          "bytes": 406892,
+          "sha256": "b191fe91d7a48c58766d2a8218d3d9d99665de8870c0fe41813bbeab4e4d8bf9"
+        }
+      ],
+      "meta": {
+        "sunU": 0.47,
+        "sunV": 0.311,
+        "sunClipped": 102,
+        "skyLum": 0.294,
+        "groundLum": 0.051,
+        "skyColor": [1.015, 0.994, 1.013],
+        "night": true
+      },
+      "credit": {
+        "title": "Rogland Clear Night",
+        "author": "Greg Zaal",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/rogland_clear_night"
+      }
+    },
+    {
+      "id": "street.lamp",
+      "kind": "model",
+      "files": [
+        {
+          "name": "street.lamp.f5ed931a2b.glb",
+          "bytes": 161388,
+          "sha256": "f5ed931a2b5efbdfb39eb2f6a9a116757a3f5aa9b85f922578bd0d24efd0bcb1"
+        }
+      ],
+      "meta": {
+        "variants": [
+          {
+            "width": 0.705,
+            "depth": 0.384,
+            "height": 3.87,
+            "tris": 3000
+          }
+        ],
+        "sourceTris": 30610
+      },
+      "credit": {
+        "title": "Street Lamp 01",
+        "author": "Josh Dean",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/street_lamp_01"
+      }
+    },
+    {
+      "id": "street.lamp2",
+      "kind": "model",
+      "files": [
+        {
+          "name": "street.lamp2.3f6bdaef6f.glb",
+          "bytes": 180560,
+          "sha256": "3f6bdaef6f8af6fa2e1841059e23ff0bf13996d2074704acb9a725d452b77954"
+        }
+      ],
+      "meta": {
+        "variants": [
+          {
+            "width": 0.384,
+            "depth": 0.805,
+            "height": 1.673,
+            "tris": 3000
+          }
+        ],
+        "sourceTris": 20338
+      },
+      "credit": {
+        "title": "Street Lamp 02",
+        "author": "Josh Dean",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/street_lamp_02"
+      }
+    },
+    {
+      "id": "street.bench",
+      "kind": "model",
+      "files": [
+        {
+          "name": "street.bench.26d21a803d.glb",
+          "bytes": 107424,
+          "sha256": "26d21a803d31f361de79f432eae8e222401d8664b2125b41e6de86111775aaca"
+        }
+      ],
+      "meta": {
+        "variants": [
+          {
+            "width": 1.165,
+            "depth": 0.497,
+            "height": 0.889,
+            "tris": 630
+          }
+        ],
+        "sourceTris": 630
+      },
+      "credit": {
+        "title": "Painted Wooden Bench",
+        "author": "Kirill Sannikov",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/painted_wooden_bench"
+      }
+    },
+    {
+      "id": "street.bin",
+      "kind": "model",
+      "files": [
+        {
+          "name": "street.bin.47c6d4301d.glb",
+          "bytes": 176948,
+          "sha256": "47c6d4301d05829c4b5cfbc29d0ef134a8d1fb7f6300dec48423d787ae620db0"
+        }
+      ],
+      "meta": {
+        "variants": [
+          {
+            "width": 0.65,
+            "depth": 0.552,
+            "height": 0.906,
+            "tris": 1500
+          }
+        ],
+        "sourceTris": 4880
+      },
+      "credit": {
+        "title": "Metal Trash Can",
+        "author": "GurJas Studios",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/metal_trash_can"
+      }
+    },
+    {
+      "id": "street.hydrant",
+      "kind": "model",
+      "files": [
+        {
+          "name": "street.hydrant.b16a3ff00b.glb",
+          "bytes": 163704,
+          "sha256": "b16a3ff00b3ae199bd14a9a48690703fc2ca738e9caa6a779ef31bcfc06a5820"
+        }
+      ],
+      "meta": {
+        "variants": [
+          {
+            "width": 0.278,
+            "depth": 0.317,
+            "height": 0.8,
+            "tris": 1500
+          }
+        ],
+        "sourceTris": 43158
+      },
+      "credit": {
+        "title": "Fire Hydrant",
+        "author": "Gonçalo Felício",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/fire_hydrant"
+      }
+    }
+  ]
+}

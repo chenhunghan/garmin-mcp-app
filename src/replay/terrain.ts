@@ -12,12 +12,15 @@
 import * as THREE from "three/webgpu";
 import {
   cameraPosition,
+  clamp,
   color,
   float,
+  max,
   mix,
   normalWorld,
   normalize,
   positionWorld,
+  select,
   smoothstep,
   texture,
   transformNormalToView,
@@ -26,8 +29,19 @@ import {
   vec3,
   vertexColor,
 } from "three/tsl";
+import type { Node } from "three/webgpu";
 import type { Track } from "./track.ts";
 import type { LandCover } from "./map-layers.ts";
+import {
+  G,
+  GROUND_IDS,
+  groundNormal,
+  heightBlend,
+  layerIndex,
+  mixSample,
+  worldNoise,
+  type SurfaceSet,
+} from "./surfaces.ts";
 
 /** Seeded 2D gradient-ish noise + fBm (CPU side, for heights). */
 export function makeNoise(seed: number) {
@@ -118,6 +132,8 @@ export interface Terrain {
   distanceAt(x: number, z: number): number;
   size: number;
   center: { x: number; z: number };
+  /** Switch the ground to scanned materials (asset pack), or back to generated detail */
+  setSurfaces(set: SurfaceSet | null): void;
   dispose(): void;
 }
 
@@ -443,7 +459,8 @@ export function buildTerrain(
     out[o + 2] = tmp.b;
   };
 
-  const material = groundMaterial(opts.snow, opts.landCover ?? null);
+  const ground = groundMaterial(opts.snow, opts.landCover ?? null, opts.season);
+  const material = ground.material;
   const group = new THREE.Group();
   group.name = "terrain";
   const geos: THREE.BufferGeometry[] = [];
@@ -583,6 +600,7 @@ export function buildTerrain(
     },
     size,
     center,
+    setSurfaces: ground.setSurfaces,
     dispose() {
       for (const g of geos) g.dispose();
       material.dispose();
@@ -694,43 +712,111 @@ function detailTexture(): THREE.DataTexture {
 
 /**
  * Meadow (baked per-vertex color), dirt path, rock and snow, with relief and
- * fine color from the detail texture at two scales (breaks up tiling).
+ * fine color from the detail texture at two scales (breaks up tiling) — or,
+ * once the asset pack's scanned materials arrive, those: the mapped land
+ * cover picks each spot's material, rock takes the steep slopes, and worn
+ * patches break up the green.
  */
-function groundMaterial(snow: number, landCover: LandCover | null) {
+function groundMaterial(snow: number, landCover: LandCover | null, season: Season) {
   const mat = new THREE.MeshStandardNodeMaterial({ roughness: 0.95, metalness: 0 });
-  const tex = detailTexture();
+  const snowU = uniform(snow);
+  const slope = float(1).sub(normalWorld.y);
+  const snowMix = snowU.mul(smoothstep(0.55, 0.25, slope));
   const p = positionWorld.xz;
-  const a = texture(tex, p.div(7));
-  const b = texture(tex, vec2(p.y, p.x.negate()).div(31));
   const near = smoothstep(260, 25, positionWorld.distance(cameraPosition));
 
-  const fine = a.b.mul(0.6).add(b.b.mul(0.4));
-  const variation = mix(float(0.86), float(1.1), fine);
-  let grass = vertexColor().mul(variation);
-  if (landCover) {
-    // OpenStreetMap land cover where mapped; plain meadow elsewhere
-    const lc = texture(
-      landCover.texture,
-      p.sub(vec2(landCover.x0, landCover.z0)).div(landCover.size),
+  const generated = () => {
+    const tex = detailTexture();
+    const a = texture(tex, p.div(7));
+    const b = texture(tex, vec2(p.y, p.x.negate()).div(31));
+    const fine = a.b.mul(0.6).add(b.b.mul(0.4));
+    const variation = mix(float(0.86), float(1.1), fine);
+    let grass = vertexColor().mul(variation);
+    if (landCover) {
+      // OpenStreetMap land cover where mapped; plain meadow elsewhere
+      const lc = texture(
+        landCover.texture,
+        p.sub(vec2(landCover.x0, landCover.z0)).div(landCover.size),
+      );
+      grass = mix(grass, lc.rgb.mul(variation), lc.a);
+    }
+    // Rock on steep slopes; the trail itself is a mesh (route.ts), independent
+    // of this grid's resolution
+    const rockMix = smoothstep(0.3, 0.5, slope.add(b.b.sub(0.5).mul(0.2)));
+    const rock = mix(color("#6f6a62"), color("#8f887e"), fine);
+    const rocky = mix(grass, rock, rockMix);
+    mat.colorNode = mix(rocky, color("#eef2f6").mul(mix(float(0.93), float(1.02), fine)), snowMix);
+    mat.roughnessNode = mix(float(0.97), float(0.6), snowMix);
+    mat.aoNode = null;
+    // Relief: tilt the normal by the texture's slopes (two scales), fading with distance
+    const tilt = a.rg.sub(0.5).mul(1.0).add(b.rg.sub(0.5).mul(0.6));
+    const strength = near.mul(mix(float(0.7), float(1.5), rockMix));
+    const g = vec3(tilt.x, 0, tilt.y).mul(strength);
+    mat.normalNode = transformNormalToView(normalize(normalWorld.sub(g)));
+  };
+
+  const scanned = (set: SurfaceSet) => {
+    const N = GROUND_IDS.length;
+    const breakup = smoothstep(0.35, 0.65, worldNoise(p, 60, 0.13));
+    // Each spot's material from the land cover (borders jittered ±1.5 m so
+    // they aren't straight raster steps); unmapped ground is meadow
+    let primary: Node<"float"> = float(G.lawn);
+    if (landCover) {
+      const jitter = vec2(worldNoise(p, 7, 0.31), worldNoise(p, 7, 0.77))
+        .sub(0.5)
+        .mul(3);
+      const uv = p.add(jitter).sub(vec2(landCover.x0, landCover.z0)).div(landCover.size);
+      const raw = texture(landCover.surfaceIndex, uv).r.mul(255);
+      const inside = uv.x
+        .greaterThan(0)
+        .and(uv.x.lessThan(1))
+        .and(uv.y.greaterThan(0))
+        .and(uv.y.lessThan(1));
+      primary = select(inside.and(raw.lessThan(254.5)), raw, float(G.lawn));
+    }
+    const veg = primary.lessThan(G.forest + 0.5).or(primary.equal(float(G.worn)));
+    const A = set.sample(layerIndex(primary, N), p, breakup);
+    // Rock on steep slopes; elsewhere patches of thinner grass with soil
+    // showing (on lawns) or bare, trodden ground (in meadows and woods)
+    const rockW = smoothstep(0.28, 0.5, slope);
+    const patch = smoothstep(0.55, 0.9, worldNoise(p, 45, 0.52)).mul(0.8);
+    const patchW = select(veg, patch, float(0));
+    const patchLayer = select(primary.equal(float(G.lawn)), float(G.meadow), float(G.worn));
+    const second = select(rockW.greaterThan(patchW), float(G.rock), patchLayer);
+    const B = set.sample(layerIndex(second, N), p, breakup);
+    const k = heightBlend(A.height, B.height, max(rockW, patchW));
+    const s = mixSample(A, B, k);
+    // Large-scale variation baked per vertex (generated landscapes), relative
+    // to its base green, and the season on everything that grows
+    const lush = new THREE.Color(PALETTE[season].lush);
+    const macro = clamp(
+      vertexColor().xyz.div(vec3(lush.r, lush.g, lush.b)),
+      vec3(0.7, 0.7, 0.7),
+      vec3(1.35, 1.35, 1.35),
     );
-    grass = mix(grass, lc.rgb.mul(variation), lc.a);
-  }
+    const dry = season === "autumn" ? 0.18 : season === "winter" ? 0.3 : 0;
+    const seasonal = mix(s.color, s.color.mul(vec3(1.18, 1.0, 0.62)), float(dry));
+    const base = select(veg, seasonal.mul(macro), s.color);
+    mat.colorNode = mix(
+      base,
+      color("#eef2f6").mul(mix(float(0.92), float(1.02), s.height)),
+      snowMix,
+    );
+    // (Some scans' roughness reads glossy, ~0.3 for grass: ground is never that smooth)
+    mat.roughnessNode = mix(max(s.rough, float(0.62)), float(0.6), snowMix);
+    mat.aoNode = mix(float(1), s.ao, near.mul(0.85));
+    mat.normalNode = transformNormalToView(
+      groundNormal(normalWorld, s.tilt, near.mul(float(1).sub(snowMix.mul(0.7)))),
+    );
+  };
 
-  // Rock on steep slopes; the trail itself is a mesh (route.ts), independent
-  // of this grid's resolution
-  const slope = float(1).sub(normalWorld.y);
-  const rockMix = smoothstep(0.3, 0.5, slope.add(b.b.sub(0.5).mul(0.2)));
-  const rock = mix(color("#6f6a62"), color("#8f887e"), fine);
-  const rocky = mix(grass, rock, rockMix);
-  const snowU = uniform(snow);
-  const snowMix = snowU.mul(smoothstep(0.55, 0.25, slope));
-  mat.colorNode = mix(rocky, color("#eef2f6").mul(mix(float(0.93), float(1.02), fine)), snowMix);
-  mat.roughnessNode = mix(float(0.97), float(0.6), snowMix);
-
-  // Relief: tilt the normal by the texture's slopes (two scales), fading with distance
-  const tilt = a.rg.sub(0.5).mul(1.0).add(b.rg.sub(0.5).mul(0.6));
-  const strength = near.mul(mix(float(0.7), float(1.5), rockMix));
-  const g = vec3(tilt.x, 0, tilt.y).mul(strength);
-  mat.normalNode = transformNormalToView(normalize(normalWorld.sub(g)));
-  return mat;
+  generated();
+  return {
+    material: mat,
+    setSurfaces(set: SurfaceSet | null) {
+      if (set) scanned(set);
+      else generated();
+      mat.needsUpdate = true;
+    },
+  };
 }

@@ -48,6 +48,32 @@ import { Breath, rain, snow, stars, type Effect } from "./effects.ts";
 import { facadeLight } from "./facade.ts";
 import { Forest, treeWind } from "./trees.ts";
 import { cloudLight, disposeClouds, driftClouds, withCloudShadows } from "./clouds.ts";
+import { AssetLibrary, type FetchAssetFile } from "./assets.ts";
+import { G, GROUND_IDS, SurfaceSet, WALL_IDS } from "./surfaces.ts";
+import { SKY_IDS, SkyLight, skyWeights } from "./sky-light.ts";
+import type { AreaKind, Surface } from "../geo/types.ts";
+import type { MapLayers } from "./map-layers.ts";
+
+/** What the run wears into the ground on each surface (−1: pavement, no trail) */
+const TRAIL_ON: Record<Surface, number> = {
+  asphalt: -1,
+  concrete: -1,
+  paving: -1,
+  wood: -1,
+  gravel: G.gravel,
+  dirt: G.dirt,
+  grass: G.worn,
+  sand: G.sand,
+};
+const TRAIL_OFF_ROAD: Partial<Record<AreaKind, number>> = {
+  residential: -1,
+  industrial: -1,
+  park: G.worn,
+  pitch: G.worn,
+  grass: G.worn,
+  sand: G.sand,
+  rock: G.gravel,
+};
 
 export type CameraMode = "chase" | "side" | "front" | "drone" | "overview";
 
@@ -138,6 +164,16 @@ export class ReplayScene {
   private disposeLater: { dispose(): void }[] = [];
   private forest: Forest | null = null;
   private grass: Grass | null = null;
+  private layers: MapLayers | null = null;
+  /** Map way each dense path sample was snapped to (−1: none) */
+  private matchedWay: Int32Array | null = null;
+  /** Fetches files of the asset pack (scanned materials, sky light, models); set before init() */
+  fetchAsset: FetchAssetFile | null = null;
+  private assets: AssetLibrary | null = null;
+  /** Sky photos for the environment light, once they've arrived */
+  private skyLight: SkyLight | null = null;
+  /** Called when more assets are on screen (for the credits line) */
+  onAssets?: (ids: string[]) => void;
   /** Which runner is shown: from the Garmin profile, or the user's pick */
   body: RunnerBody = "profile";
   private bodyLoad = 0;
@@ -175,6 +211,7 @@ export class ReplayScene {
     if (map?.roads.length && !this.track.synthetic) {
       const d = this.track.dense;
       const snapped = mapMatch(d.x, d.z, d.s, map.roads);
+      this.matchedWay = snapped.way;
       d.x.set(snapped.x);
       d.z.set(snapped.z);
       measureDense(d);
@@ -244,6 +281,7 @@ export class ReplayScene {
     this.seek(0);
     this.lastFrameAt = performance.now();
     renderer.setAnimationLoop(() => this.frame());
+    void this.loadAssets();
     return { backend, syntheticCourse: this.track.synthetic, realMap: this.groundAbs !== null };
   }
 
@@ -361,6 +399,7 @@ export class ReplayScene {
     if (this.map && groundAbs) {
       const layers = buildMapLayers(this.map, this.terrain.heightAt, this.terrain.distanceAt);
       scene.add(layers.group);
+      this.layers = layers;
       this.disposeLater.push(layers);
       this.occluders = occluderIndex(layers.occluders);
       this.details = layers.details;
@@ -393,7 +432,7 @@ export class ReplayScene {
       scene.add(this.grass.mesh);
       this.disposeLater.push(this.grass);
     }
-    this.route = buildRoute(data, track, this.terrain.heightAt);
+    this.route = buildRoute(data, track, this.terrain.heightAt, this.trailLayers(landCover));
     scene.add(this.route.group);
     this.setColorBy(this.colorBy);
 
@@ -410,6 +449,73 @@ export class ReplayScene {
       this.effects.push(rain(condition === "storm"));
     if (condition === "snow") this.effects.push(snow());
     for (const e of this.effects) scene.add(e.object);
+  }
+
+  /**
+   * The ground the run wears a trail into, per path sample: the surface of
+   * the mapped way it follows, else the land it crosses (null: no map, an
+   * earth trail all along).
+   */
+  private trailLayers(
+    landCover: { kindAt(x: number, z: number): AreaKind | null } | null,
+  ): Float32Array | undefined {
+    const map = this.map;
+    if (!map || !this.groundAbs) return undefined;
+    const d = this.track.dense;
+    const out = new Float32Array(d.n);
+    for (let k = 0; k < d.n; k++) {
+      const way = this.matchedWay?.[k] ?? -1;
+      const road = way >= 0 ? map.roads[way] : undefined;
+      if (road) {
+        out[k] = TRAIL_ON[road.surface ?? (road.paved ? "asphalt" : "dirt")];
+        continue;
+      }
+      const kind = landCover?.kindAt(d.x[k]!, d.z[k]!) ?? null;
+      out[k] = kind ? (TRAIL_OFF_ROAD[kind] ?? G.dirt) : G.dirt;
+    }
+    return out;
+  }
+
+  /**
+   * Upgrade the generated look with the asset pack as its parts arrive:
+   * scanned ground and road materials first. Anything missing keeps the
+   * generated version.
+   */
+  private async loadAssets() {
+    if (!this.fetchAsset) return;
+    const lib = (this.assets ??= new AssetLibrary(this.fetchAsset));
+    const notify = () => this.onAssets?.([...lib.used]);
+    const ground = lib.surfaces([...GROUND_IDS], 1024).then((arrays) => {
+      if (!arrays || this.disposed) return;
+      this.disposeLater.push(arrays.a, arrays.b);
+      const set = new SurfaceSet(arrays);
+      this.terrain.setSurfaces(set);
+      this.layers?.setSurfaces(set);
+      this.route.setSurfaces(set);
+      notify();
+    });
+    const walls = this.layers
+      ? lib.surfaces([...WALL_IDS], 512).then((arrays) => {
+          if (!arrays || this.disposed || !this.layers) return;
+          this.disposeLater.push(arrays.a, arrays.b);
+          this.layers.setWallSurfaces(new SurfaceSet(arrays));
+          this.sun.shadow.needsUpdate = true;
+          notify();
+        })
+      : null;
+    const skies = Promise.all(SKY_IDS.map((id) => lib.sky(id))).then((list) => {
+      if (this.disposed) return;
+      const found = list.filter((x) => x !== null);
+      if (!found.length) return;
+      this.skyLight = new SkyLight(new Map(found.map((x) => [x.id, x])));
+      this.disposeLater.push(this.skyLight);
+      // Re-bake now with the photos
+      this.lastEnvAt = 0;
+      this.lastEnvSun.set(0, -1, 0);
+      this.updateSun(true);
+      notify();
+    });
+    await Promise.allSettled([ground, skies, walls]);
   }
 
   private setupCamera() {
@@ -780,7 +886,10 @@ export class ReplayScene {
     try {
       this.pmrem ??= new THREE.PMREMGenerator(this.renderer);
       const prev = this.envTarget;
-      this.envTarget = this.pmrem.fromScene(this.envScene, 0.04);
+      const photo = this.skyLight ? this.photoEnvironment(dir) : null;
+      this.envTarget = photo
+        ? this.pmrem.fromEquirectangular(photo)
+        : this.pmrem.fromScene(this.envScene, 0.04);
       this.scene.environment = this.envTarget.texture;
       prev?.dispose();
     } catch {
@@ -789,6 +898,26 @@ export class ReplayScene {
     // Without the sun disc the sky map is in a sane range: it now carries the
     // sky's light and real reflections (the hemisphere light only fills in)
     this.scene.environmentIntensity = lerp(0.2, 0.34, day) * lerp(1, 1.1, this.cloud);
+  }
+
+  /**
+   * The sky photos blended for this sun and weather, as bright as the plain
+   * dome would be (its colors are the generated sky's), so exposure and the
+   * rest of the lighting stay as tuned.
+   */
+  private photoEnvironment(dir: THREE.Vector3): THREE.Texture | null {
+    const elevation = (Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1)) * 180) / Math.PI;
+    const urban = (this.map?.buildings.length ?? 0) > 40;
+    const weights = skyWeights(elevation, this.cloud, urban);
+    const h = facadeLight.horizon.value;
+    const z = facadeLight.zenith.value;
+    const tint = new THREE.Color(h.r + z.r, h.g + z.g, h.b + z.b).multiplyScalar(0.5);
+    // The dome's mean luminance over the upper hemisphere (zenith pulled
+    // halfway to the horizon, as in buildWorld)
+    const target = 0.2126 * tint.r + 0.7152 * tint.g + 0.0722 * tint.b;
+    return (
+      this.skyLight!.build(weights, dir, target, tint, this.envGroundMat.color)?.texture ?? null
+    );
   }
 
   private updateCamera(dt: number) {

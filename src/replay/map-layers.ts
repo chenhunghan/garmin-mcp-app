@@ -9,10 +9,13 @@ import { insidePolygon } from "./map-match.ts";
 import { drape } from "./drape.ts";
 import {
   abs,
+  attribute,
   cameraPosition,
   dot,
   float,
+  max,
   mix,
+  normalWorld,
   normalize,
   positionWorld,
   pow,
@@ -24,7 +27,7 @@ import {
   vec2,
   vec3,
 } from "three/tsl";
-import { noiseTexture } from "./clouds.ts";
+import { noiseTexture, withCloudShadows } from "./clouds.ts";
 import type { Node } from "three/webgpu";
 import {
   balconyMesh,
@@ -32,8 +35,30 @@ import {
   buildingsGeometry,
   facadeLight,
   facadeMaterial,
+  inEastAsia,
   type FacadeInput,
 } from "./facade.ts";
+import {
+  G,
+  GROUND_IDS,
+  groundNormal,
+  layerIndex,
+  worldNoise,
+  type SurfaceSet,
+} from "./surfaces.ts";
+import type { Surface } from "../geo/types.ts";
+
+/** Ground material for each road surface */
+const SURFACE_LAYER: Record<Surface, number> = {
+  asphalt: G.asphalt,
+  concrete: G.concrete,
+  paving: G.paving,
+  gravel: G.gravel,
+  dirt: G.dirt,
+  grass: G.worn,
+  sand: G.sand,
+  wood: G.paving,
+};
 import type { AreaKind, RunMap } from "../geo/types.ts";
 
 const LAND_COLOR: Record<AreaKind, string> = {
@@ -66,8 +91,28 @@ const LAND_ORDER: AreaKind[] = [
   "water",
 ];
 
+/** The ground material for each land kind (index into GROUND_IDS, see surfaces.ts) */
+const LAND_SURFACE: Record<AreaKind, number> = {
+  farmland: G.soil,
+  grass: G.lawn,
+  park: G.lawn,
+  pitch: G.lawn,
+  scrub: G.forest,
+  forest: G.forest,
+  residential: G.worn,
+  industrial: G.gravel,
+  sand: G.sand,
+  rock: G.rock,
+  wetland: G.meadow,
+  water: G.meadow,
+};
+/** "Nothing mapped here" in the surface index */
+export const NO_SURFACE = 255;
+
 export interface LandCover {
   texture: THREE.CanvasTexture;
+  /** Ground material per texel (R8: GROUND_IDS index, 255 = not mapped), nearest-sampled */
+  surfaceIndex: THREE.DataTexture;
   /** World rectangle the texture covers */
   x0: number;
   z0: number;
@@ -134,6 +179,15 @@ export function landCoverTexture(
     }
   });
   const kinds = kctx.getImageData(0, 0, M, M).data;
+  const index = new Uint8Array(M * M);
+  for (let i = 0; i < M * M; i++) {
+    const kind = kinds[i * 4 + 3]! >= 128 ? LAND_ORDER[kinds[i * 4]! - 1] : undefined;
+    index[i] = kind ? LAND_SURFACE[kind] : NO_SURFACE;
+  }
+  const surfaceIndex = new THREE.DataTexture(index, M, M, THREE.RedFormat, THREE.UnsignedByteType);
+  surfaceIndex.magFilter = surfaceIndex.minFilter = THREE.NearestFilter;
+  surfaceIndex.generateMipmaps = false;
+  surfaceIndex.needsUpdate = true;
   const kindAt = (x: number, z: number): AreaKind | null => {
     const i = Math.floor(((x - x0) / size) * M);
     const j = Math.floor(((z - z0) / size) * M);
@@ -143,7 +197,7 @@ export function landCoverTexture(
     if (kinds[k + 3]! < 250) return null;
     return LAND_ORDER[kinds[k]! - 1] ?? null;
   };
-  return { texture, x0, z0, size, kindAt };
+  return { texture, surfaceIndex, x0, z0, size, kindAt };
 }
 
 /** Make every triangle of a ground-hugging mesh face up (winding-agnostic). */
@@ -188,12 +242,16 @@ function ribbon(
   lift: number,
   heightAt: (x: number, z: number) => number,
   rgb: THREE.Color,
+  /** Ground material (GROUND_IDS index) for the scanned surfaces */
+  layer = 0,
 ): THREE.BufferGeometry | null {
   if (pts.length < 4) return null;
   const p = densify(pts, 2.5);
   const n = p.length / 2;
   const pos = new Float32Array(n * 6);
   const col = new Float32Array(n * 6);
+  const lay = new Float32Array(n * 2).fill(layer);
+  const across = new Float32Array(n * 2);
   for (let i = 0; i < n; i++) {
     const a = Math.max(0, i - 1);
     const b = Math.min(n - 1, i + 1);
@@ -213,6 +271,7 @@ function ribbon(
       col[o] = rgb.r;
       col[o + 1] = rgb.g;
       col[o + 2] = rgb.b;
+      across[i * 2 + side] = s;
     }
   }
   const index: number[] = [];
@@ -223,6 +282,8 @@ function ribbon(
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  geo.setAttribute("aSurface", new THREE.BufferAttribute(lay, 1));
+  geo.setAttribute("aAcross", new THREE.BufferAttribute(across, 1));
   geo.setIndex(index);
   return faceUp(geo);
 }
@@ -289,6 +350,10 @@ export interface MapLayers {
   details: Detail[];
   /** Footprints with their roof height (scene y), for camera collision */
   occluders: Occluder[];
+  /** Roads and paths in scanned materials (asset pack), or back to plain colors */
+  setSurfaces(set: SurfaceSet | null): void;
+  /** Facades and roofs in scanned materials (asset pack) */
+  setWallSurfaces(set: SurfaceSet): void;
   dispose(): void;
 }
 
@@ -326,22 +391,44 @@ export function buildMapLayers(
         0.05 + Math.min(0.06, r.width * 0.004),
         heightAt,
         r.paved ? (r.cls === "path" || r.cls === "steps" ? lightPaving : asphalt) : dirt,
+        SURFACE_LAYER[r.surface ?? (r.paved ? "asphalt" : "dirt")],
       ),
     )
     .filter((g): g is THREE.BufferGeometry => g !== null);
-  add(
-    roadGeos,
-    drape(
-      new THREE.MeshStandardNodeMaterial({
-        vertexColors: true,
-        roughness: 0.88,
-        polygonOffset: true,
-        polygonOffsetFactor: -1,
-        polygonOffsetUnits: -2,
-      }),
-      0.12,
-    ),
-  );
+  const roadMat = drape(
+    new THREE.MeshStandardNodeMaterial({
+      vertexColors: true,
+      roughness: 0.88,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -2,
+    }),
+    0.12,
+  ) as THREE.MeshStandardNodeMaterial;
+  add(roadGeos, roadMat);
+  const setRoadSurfaces = (set: SurfaceSet | null) => {
+    if (!set) {
+      roadMat.colorNode = null;
+      roadMat.normalNode = null;
+      roadMat.roughnessNode = null;
+      roadMat.aoNode = null;
+    } else {
+      const p = positionWorld.xz;
+      const near = smoothstep(200, 20, positionWorld.distance(cameraPosition));
+      const s = set.sample(
+        layerIndex(attribute("aSurface", "float"), GROUND_IDS.length),
+        p,
+        smoothstep(0.35, 0.65, worldNoise(p, 50, 0.4)),
+      );
+      // Grime and wear collect along the edges
+      const edge = smoothstep(0.62, 1, abs(attribute("aAcross", "float")));
+      roadMat.colorNode = s.color.mul(float(1).sub(edge.mul(0.22)));
+      roadMat.roughnessNode = max(s.rough, float(0.55));
+      roadMat.aoNode = mix(float(1), s.ao, near.mul(0.8));
+      roadMat.normalNode = transformNormalToView(groundNormal(normalWorld, s.tilt, near));
+    }
+    roadMat.needsUpdate = true;
+  };
 
   // Water: lakes flat at their shore level, rivers draped
   const waterMat = () => drape(waterMaterial(), 0.1);
@@ -417,15 +504,18 @@ export function buildMapLayers(
       return { list, cx, cz, d: distanceAt(cx, cz) };
     })
     .sort((a, b) => a.d - b.d);
-  const facadeMat = facadeMaterial();
+  let facadeMat = facadeMaterial();
+  const facadeMeshes: THREE.Mesh[] = [];
+  const region = inEastAsia(map.origin.lat, map.origin.lon) ? "eastAsia" : "other";
   const balconyShared = balconyParts();
-  disposables.push(facadeMat, balconyShared.geometry, balconyShared.material);
+  disposables.push(balconyShared.geometry, balconyShared.material);
   const budget = { balconies: 20000 };
   const details: Detail[] = [];
   for (const tile of tileList) {
-    const { geometry, balconies } = buildingsGeometry(tile.list, budget);
+    const { geometry, balconies } = buildingsGeometry(tile.list, budget, region);
     if (geometry) {
       const mesh = new THREE.Mesh(geometry, facadeMat);
+      facadeMeshes.push(mesh);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.matrixAutoUpdate = false;
@@ -444,8 +534,19 @@ export function buildMapLayers(
     group,
     occluders,
     details,
+    setSurfaces(set) {
+      setRoadSurfaces(set);
+    },
+    setWallSurfaces(set) {
+      const old = facadeMat;
+      facadeMat = facadeMaterial(set);
+      withCloudShadows(facadeMat);
+      for (const m of facadeMeshes) m.material = facadeMat;
+      old.dispose();
+    },
     dispose() {
       for (const d of disposables) d.dispose();
+      facadeMat.dispose();
     },
   };
 }

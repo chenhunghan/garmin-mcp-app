@@ -118,6 +118,8 @@ const untested: Record<string, string> = {
   "garmin-logout": "clears tokens",
   "garmin-get-run-map":
     "fetches AWS elevation tiles and OpenStreetMap; parsing is unit-tested in geo.test.ts",
+  "garmin-get-replay-asset":
+    "serves the downloaded asset pack; the store is unit-tested in replay-assets.test.ts",
   "create-workout": "write operation, no recording",
   "update-workout": "write operation, no recording",
   "delete-workout": "write operation, no recording",

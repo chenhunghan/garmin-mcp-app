@@ -688,20 +688,18 @@ export function buildWorld(today: string): World {
       if (date === yesterday) {
         laps = "single";
         workoutId = null;
-        if (kind === "easy" || kind === "recovery") {
-          // An easy run that finished quicker than it started (negative split)
-          kind = "easy";
-          const extra = Math.round(rng.range(80, 240) / 10) * 10;
-          segments = [
-            seg(easyPace(thr) + 20, "ACTIVE", { m: 1000 }),
-            seg(easyPace(thr) + 6, "ACTIVE", { m: 4000 }),
-            seg(easyPace(thr) - 6, "ACTIVE", { m: 1000 }),
-            seg(easyPace(thr) - 16, "ACTIVE", { m: 1000 }),
-            seg(easyPace(thr) - 26, "ACTIVE", { m: 1000 + extra }),
-          ];
-        } else {
-          segments = historySegments(kind, thr, p, volume, weeksAgo, rng).segments;
-        }
+        // Always an easy run that finished quicker than it started (negative
+        // split), whatever the plan had for that weekday: the view's pinned
+        // story (and its test) shouldn't change with the date
+        kind = "easy";
+        const extra = Math.round(rng.range(80, 240) / 10) * 10;
+        segments = [
+          seg(easyPace(thr) + 20, "ACTIVE", { m: 1000 }),
+          seg(easyPace(thr) + 6, "ACTIVE", { m: 4000 }),
+          seg(easyPace(thr) - 6, "ACTIVE", { m: 1000 }),
+          seg(easyPace(thr) - 16, "ACTIVE", { m: 1000 }),
+          seg(easyPace(thr) - 26, "ACTIVE", { m: 1000 + extra }),
+        ];
       }
       const dayOfYear = dayDiff(`${date.slice(0, 4)}-01-01`, date);
       const tempC = round(

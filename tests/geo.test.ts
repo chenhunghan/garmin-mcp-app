@@ -145,6 +145,20 @@ describe("OpenStreetMap", () => {
       ["dirt", false],
       ["asphalt", true],
     ]);
+    const lit = parseOverpass(
+      {
+        elements: [
+          {
+            type: "way",
+            tags: { highway: "footway", lit: "yes" },
+            geometry: square(46.2, 8.5).slice(0, 2),
+          },
+        ],
+      },
+      p,
+    ).roads[0]!;
+    expect(lit.lit).toBe(true);
+    expect(features.roads[0]!.lit).toBeUndefined();
     expect(surfaceOf("paving_stones")).toBe("paving");
     expect(surfaceOf("fine_gravel")).toBe("gravel");
     expect(surfaceOf("concrete:plates")).toBe("concrete");

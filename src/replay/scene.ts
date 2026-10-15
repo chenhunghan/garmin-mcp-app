@@ -52,6 +52,7 @@ import { AssetLibrary, type FetchAssetFile } from "./assets.ts";
 import { G, GROUND_IDS, SurfaceSet, WALL_IDS } from "./surfaces.ts";
 import { SKY_IDS, SkyLight, skyWeights } from "./sky-light.ts";
 import { growLooks } from "./ez-trees.ts";
+import { StreetFurniture, lampLight, placeFurniture } from "./furniture.ts";
 import type { AreaKind, Surface } from "../geo/types.ts";
 import type { MapLayers } from "./map-layers.ts";
 
@@ -166,6 +167,7 @@ export class ReplayScene {
   private forest: Forest | null = null;
   private grass: Grass | null = null;
   private layers: MapLayers | null = null;
+  private furniture: StreetFurniture | null = null;
   /** Map way each dense path sample was snapped to (−1: none) */
   private matchedWay: Int32Array | null = null;
   /** Fetches files of the asset pack (scanned materials, sky light, models); set before init() */
@@ -232,6 +234,16 @@ export class ReplayScene {
     // Without GPS, put the sun where the local clock says it is
     this.origin = this.track.origin ?? { lat: 45, lon: offsetMin / 4 };
     this.startMs = data.activity.startMs ?? Date.now() - this.duration * 1000;
+    // Dev UI: ?hour=21 replays the run as if it started at that local hour
+    // (to check night and dusk lighting on any run)
+    if (typeof __DEV_UI__ !== "undefined" && __DEV_UI__) {
+      const hour = Number(new URLSearchParams(location.search).get("hour"));
+      if (Number.isFinite(hour) && new URLSearchParams(location.search).has("hour")) {
+        const local = new Date(this.startMs + offsetMin * 60_000);
+        const shift = (hour - (local.getUTCHours() + local.getUTCMinutes() / 60)) * 3600_000;
+        this.startMs += shift;
+      }
+    }
     const tempC = data.weather?.tempC ?? data.channels.temp?.find((v) => v !== null) ?? 15;
     this.breath = new Breath(smoothstepJs(8, -2, tempC ?? 15));
   }
@@ -404,6 +416,12 @@ export class ReplayScene {
       this.disposeLater.push(layers);
       this.occluders = occluderIndex(layers.occluders);
       this.details = layers.details;
+      const items = placeFurniture(this.map.furniture ?? [], this.map.roads);
+      if (items.length) {
+        this.furniture = new StreetFurniture(items, this.terrain.heightAt);
+        scene.add(this.furniture.group);
+        this.disposeLater.push(this.furniture);
+      }
       if (this.map.trees?.length) {
         this.forest = new Forest(this.map.trees, this.terrain.heightAt, season);
         scene.add(this.forest.group);
@@ -504,6 +522,18 @@ export class ReplayScene {
           notify();
         })
       : null;
+    const furniture = this.furniture;
+    const models = furniture
+      ? furniture.useModels(lib).then((ids) => {
+          if (this.disposed || !ids.length) return;
+          for (const m of furniture.group.children) {
+            const mat = (m as THREE.Mesh).material as THREE.Material;
+            if (mat) withCloudShadows(mat);
+          }
+          this.sun.shadow.needsUpdate = true;
+          notify();
+        })
+      : null;
     const forest = this.forest;
     const trees = forest
       ? growLooks(lib, forest.usedLooks()).then((looks) => {
@@ -528,7 +558,7 @@ export class ReplayScene {
       this.updateSun(true);
       notify();
     });
-    await Promise.allSettled([ground, skies, walls, trees]);
+    await Promise.allSettled([ground, skies, walls, trees, models]);
   }
 
   private setupCamera() {
@@ -794,6 +824,8 @@ export class ReplayScene {
       .multiplyScalar(0.25 + wl * 0.9);
     // Facades: lit rooms come on before it's fully dark; glass mirrors the sky
     facadeLight.night.value = 1 - smoothstepJs(-4, 4, elevation);
+    // Street lamps come on at dusk
+    lampLight.night.value = 1 - smoothstepJs(-2, 6, elevation);
     facadeLight.day.value = day;
     const skyGain = lerp(0.25, 2.6, day) * dim;
     facadeLight.horizon.value.copy(fog.color).multiplyScalar(skyGain);
@@ -841,6 +873,7 @@ export class ReplayScene {
   private updateDetails(now: number) {
     const cam = this.camera.position;
     this.forest?.update(cam, this.quality, now);
+    this.furniture?.update(cam);
     this.grass?.update(cam, this.quality, now);
     if (now - this.lastDetailAt < 200) return;
     this.lastDetailAt = now;

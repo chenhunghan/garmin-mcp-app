@@ -30,6 +30,7 @@ import {
 } from "three/tsl";
 import type { AreaKind } from "../geo/types.ts";
 import { noiseTexture } from "./clouds.ts";
+import { lampAt } from "./furniture.ts";
 
 /** Tufts per m² and blade height range (m) by land kind */
 interface Growth {
@@ -185,8 +186,12 @@ function grassMaterial() {
   mat.colorNode = mix(root, tip, smoothstep(0, 1, t))
     .mul(seedTint)
     .mul(ao);
-  // Light through the blades near the tips (back-lit grass glows)
-  mat.emissiveNode = tip.mul(t.mul(t)).mul(0.04);
+  // Light through the blades near the tips (back-lit grass glows), and the
+  // street lamps' light at night, like the ground under them
+  mat.emissiveNode = tip
+    .mul(t.mul(t))
+    .mul(0.04)
+    .add(mat.colorNode.mul(lampAt(base.xz)));
   return mat;
 }
 

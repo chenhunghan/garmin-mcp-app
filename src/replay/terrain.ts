@@ -32,6 +32,7 @@ import {
 import type { Node } from "three/webgpu";
 import type { Track } from "./track.ts";
 import type { LandCover } from "./map-layers.ts";
+import { lampAt } from "./furniture.ts";
 import {
   G,
   GROUND_IDS,
@@ -746,6 +747,7 @@ function groundMaterial(snow: number, landCover: LandCover | null, season: Seaso
     const rock = mix(color("#6f6a62"), color("#8f887e"), fine);
     const rocky = mix(grass, rock, rockMix);
     mat.colorNode = mix(rocky, color("#eef2f6").mul(mix(float(0.93), float(1.02), fine)), snowMix);
+    mat.emissiveNode = mat.colorNode.mul(lampAt(p));
     mat.roughnessNode = mix(float(0.97), float(0.6), snowMix);
     mat.aoNode = null;
     // Relief: tilt the normal by the texture's slopes (two scales), fading with distance

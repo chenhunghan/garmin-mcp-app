@@ -85,3 +85,26 @@ describe("groundBlocker", () => {
     expect(blocked(45, 35)).toBe(false);
   });
 });
+
+describe("street furniture", () => {
+  it("places mapped items facing the nearest road, and lamps along lit ways", async () => {
+    const { placeFurniture } = await import("../src/replay/furniture.ts");
+    const road = { cls: "path" as const, paved: true, width: 2, lit: true, pts: [0, 0, 100, 0] };
+    const items = placeFurniture([10, 5, 2, -1, 20, 5, 2, 90], [road]);
+    const benches = items.filter((i) => i.kind === "bench");
+    // North of the road (+z is south): facing it means facing −z
+    expect(Math.abs(Math.abs(benches[0]!.yaw) - Math.PI)).toBeLessThan(1e-6);
+    // Mapped direction 90° (east) → +x
+    expect(benches[1]!.yaw).toBeCloseTo(Math.PI / 2);
+    const lamps = items.filter((i) => i.kind === "street_lamp");
+    // 100 m lit path, one every 28 m from 14 m on
+    expect(lamps.map((l) => Math.round(l.x))).toEqual([14, 42, 70, 98]);
+    expect(lamps.every((l) => Math.abs(l.z) > 1)).toBe(true);
+  });
+
+  it("puts no lamps on unlit ways", async () => {
+    const { placeFurniture } = await import("../src/replay/furniture.ts");
+    const road = { cls: "path" as const, paved: true, width: 2, pts: [0, 0, 100, 0] };
+    expect(placeFurniture([], [road])).toEqual([]);
+  });
+});

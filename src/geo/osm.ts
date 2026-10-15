@@ -446,6 +446,9 @@ export function parseOverpass(json: { elements?: Element[] }, proj: Projection):
         paved,
         surface: mapped ?? defaultSurface(t.highway, cls),
         ...(mapped ? { surfaceMapped: true } : {}),
+        ...(/^(yes|24\/7|automatic|limited|interval|sunset-sunrise|dusk-dawn)$/.test(t.lit ?? "")
+          ? { lit: true }
+          : {}),
         width,
         pts: flat(g),
       });

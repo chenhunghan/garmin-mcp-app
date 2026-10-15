@@ -31,6 +31,7 @@ import {
   worldNoise,
   type SurfaceSet,
 } from "./surfaces.ts";
+import { lampAt } from "./furniture.ts";
 import { Line2 } from "three/addons/lines/webgpu/Line2.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
 import { locate, timeAtDistance, type ReplayData } from "../replay-model.ts";
@@ -435,6 +436,7 @@ function trailMesh(
         smoothstep(0.35, 0.65, worldNoise(p, 40, 0.8)),
       );
       mat.colorNode = s.color;
+      mat.emissiveNode = s.color.mul(lampAt(p));
       mat.roughnessNode = max(s.rough, float(0.62));
       mat.normalNode = transformNormalToView(groundNormal(normalWorld, s.tilt, near));
       // The scanned trail shows through by its height map at the frayed edges

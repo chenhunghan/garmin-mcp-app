@@ -26,8 +26,10 @@ import {
   transformNormalToView,
   vec2,
   vec3,
+  vertexColor,
 } from "three/tsl";
 import { noiseTexture, withCloudShadows } from "./clouds.ts";
+import { lampAt } from "./furniture.ts";
 import type { Node } from "three/webgpu";
 import {
   balconyMesh,
@@ -405,10 +407,12 @@ export function buildMapLayers(
     }),
     0.12,
   ) as THREE.MeshStandardNodeMaterial;
+  roadMat.emissiveNode = vertexColor().xyz.mul(lampAt(positionWorld.xz));
   add(roadGeos, roadMat);
   const setRoadSurfaces = (set: SurfaceSet | null) => {
     if (!set) {
       roadMat.colorNode = null;
+      roadMat.emissiveNode = vertexColor().xyz.mul(lampAt(positionWorld.xz));
       roadMat.normalNode = null;
       roadMat.roughnessNode = null;
       roadMat.aoNode = null;
@@ -423,6 +427,7 @@ export function buildMapLayers(
       // Grime and wear collect along the edges
       const edge = smoothstep(0.62, 1, abs(attribute("aAcross", "float")));
       roadMat.colorNode = s.color.mul(float(1).sub(edge.mul(0.22)));
+      roadMat.emissiveNode = roadMat.colorNode.mul(lampAt(p));
       roadMat.roughnessNode = max(s.rough, float(0.55));
       roadMat.aoNode = mix(float(1), s.ao, near.mul(0.8));
       roadMat.normalNode = transformNormalToView(groundNormal(normalWorld, s.tilt, near));

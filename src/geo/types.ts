@@ -35,6 +35,8 @@ export interface Road {
   surface?: Surface;
   /** The surface is mapped (OSM `surface`), not assumed from the class */
   surfaceMapped?: boolean;
+  /** Street lights along it (OSM `lit`) */
+  lit?: boolean;
   /** Width in meters */
   width: number;
   /** Flat [x, z, x, z, …] */

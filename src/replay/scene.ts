@@ -106,6 +106,7 @@ const tmpSnapA = new THREE.Vector3();
 const tmpSnapB = new THREE.Vector3();
 const tmpSnapC = new THREE.Vector3();
 const tmpV2 = new THREE.Vector3();
+const tmpW = new THREE.Vector2();
 const lerp = (a: number, b: number, f: number) => a + (b - a) * f;
 
 export class ReplayScene {
@@ -711,12 +712,12 @@ export class ReplayScene {
     for (const e of this.effects) e.update(dt, this.camera, this.wind);
     this.updateFog();
     this.updateDetails(now);
-    // The glowing wake behind the runner, at hip height (scaled with the runner)
+    // The path line leaves the runner at the hips (scaled with the runner);
+    // dust drifts with the run's wind (as for the clouds: ≈ m/s)
     this.route.update(
-      this.camera.position,
       this.time,
       0.95 * this.runner.root.scale.y,
-      this.terrain.heightAt,
+      tmpW.set(this.wind.x * 11, this.wind.y * 11),
     );
     // Clouds drift with the run's wind (in replay time, so a seek lands on the same sky)
     driftClouds(this.wind.x * 11, this.wind.y * 11, this.time);
@@ -745,7 +746,7 @@ export class ReplayScene {
     const j = Math.min(track.n - 1, i + 1);
     const f = at.f;
     if (track.n === 0) return;
-    // Position on the dense spline path (round corners, matches the ribbon)
+    // Position on the dense spline path (round corners, matches the path line)
     const d = track.dense;
     const di = track.denseIndex(i, f);
     const k = Math.floor(di);
@@ -974,7 +975,7 @@ export class ReplayScene {
     const dist = this.camera.position.distanceTo(this.controls.target);
     fog.near = this.fogRange.near + dist;
     fog.far = this.fogRange.far + dist * 1.3;
-    // The ribbon is too thin to see from far away: show the route line instead
+    // The path line is too thin to follow from far away: show the route line instead
     this.route.setFar(dist > 70);
   }
 

@@ -1,7 +1,8 @@
 /**
- * The path on the ground: a ribbon along the route whose traveled part is
- * colored by the chosen metric (the part ahead is a pale trail), plus km
- * posts and lap flags with generated label textures.
+ * The route: the worn trail on the ground, the run's trace (a glowing line
+ * along what's been run, dust behind the runner: run-trace.ts), the overview
+ * line for far cameras, plus km posts and lap flags with generated label
+ * textures.
  */
 import * as THREE from "three/webgpu";
 import {
@@ -12,7 +13,6 @@ import {
   float,
   max,
   mix,
-  mul,
   mx_noise_float,
   mx_worley_noise_float,
   normalWorld,
@@ -20,7 +20,6 @@ import {
   smoothstep,
   sub,
   transformNormalToView,
-  uniform,
   uv,
   vec3,
 } from "three/tsl";
@@ -33,15 +32,12 @@ import {
   type SurfaceSet,
 } from "./surfaces.ts";
 import { lampAt } from "./furniture.ts";
-import { GlowTrail } from "./glow-trail.ts";
+import { Dust, PathLine } from "./run-trace.ts";
 import { Line2 } from "three/addons/lines/webgpu/Line2.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
 import { locate, timeAtDistance, type ReplayData } from "../replay-model.ts";
 import type { Track } from "./track.ts";
 import { drape } from "./drape.ts";
-
-const WIDTH = 0.95;
-const LIFT = 0.05;
 
 export interface RouteMeshes {
   group: THREE.Group;
@@ -52,13 +48,11 @@ export interface RouteMeshes {
   setFar(far: boolean): void;
   /** The worn trail in scanned materials (asset pack), or generated */
   setSurfaces(set: SurfaceSet | null): void;
-  /** Each frame: the glowing wake behind the runner (hip: its height above the path) */
-  update(
-    cam: THREE.Vector3,
-    t: number,
-    hip: number,
-    ground: (x: number, z: number) => number,
-  ): void;
+  /**
+   * Each frame: the path line up to the runner (leaving at `hip` above the
+   * path) and the dust behind (`t`: replay time; `wind`: m/s, x east, y → z)
+   */
+  update(t: number, hip: number, wind: THREE.Vector2): void;
   dispose(): void;
 }
 
@@ -100,103 +94,24 @@ export function buildRoute(
    */
   trailLayer?: Float32Array,
 ): RouteMeshes {
-  // Geometry follows the dense spline path; colors come from the samples
   const path = track.dense;
   const n = path.n;
-  const positions = new Float32Array(n * 2 * 3);
-  const uvs = new Float32Array(n * 2 * 2);
+  // The chosen metric per dense sample, twice (both edges of the path line)
   const colors = new Float32Array(n * 2 * 3).fill(1);
-  for (let i = 0; i < n; i++) {
-    const h = path.heading[i]!;
-    // Right-hand perpendicular of the travel direction (sin h, cos h)
-    const px = Math.cos(h) * (WIDTH / 2);
-    const pz = -Math.sin(h) * (WIDTH / 2);
-    for (let side = 0; side < 2; side++) {
-      const sgn = side === 0 ? -1 : 1;
-      const x = path.x[i]! + px * sgn;
-      const z = path.z[i]! + pz * sgn;
-      // Sit on whichever is higher: the recorded path or the generated ground
-      const y = Math.max(path.y[i]!, heightAt(x, z)) + LIFT;
-      positions.set([x, y, z], (i * 2 + side) * 3);
-      uvs.set([side, path.s[i]! / WIDTH], (i * 2 + side) * 2);
-    }
-  }
-  const index: number[] = [];
-  for (let i = 0; i < n - 1; i++) {
-    const a = i * 2;
-    index.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
   const colorAttr = new THREE.BufferAttribute(colors, 3);
-  geo.setAttribute("color", colorAttr);
-  geo.setIndex(index);
-  geo.computeVertexNormals();
-  geo.computeBoundingSphere();
+  const sampleColors = new Float32Array(n * 3).fill(1);
 
   const trail = trailMesh(track, heightAt, trailLayer);
-
-  // Soft edges across the ribbon
-  const edge = smoothstep(float(0.5), float(0.36), abs(sub(uv().x, 0.5)));
-
-  const done = new THREE.MeshStandardNodeMaterial({
-    vertexColors: true,
-    roughness: 0.55,
-    metalness: 0,
-    transparent: true,
-    polygonOffset: true,
-    polygonOffsetFactor: -2,
-    polygonOffsetUnits: -4,
-  });
-  drape(done, 0.26);
-  // The split between traveled and ahead, at the runner's distance along the
-  // ribbon (in ribbon widths, like uv.y): a soft hand-over just past the feet
-  // (drawn per pixel, not on segment boundaries, which left a gap under them)
-  const progress = uniform(0);
-  const handOver = smoothstep(progress.sub(0.15 / WIDTH), progress.add(0.45 / WIDTH), uv().y);
-  done.opacityNode = edge.mul(0.78).mul(float(1).sub(handOver));
-  done.emissiveNode = mul(THREE.TSL.vertexColor(), 0.08);
-
-  const ahead = new THREE.MeshStandardNodeMaterial({
-    color: 0xf3efe6,
-    roughness: 0.8,
-    transparent: true,
-    polygonOffset: true,
-    polygonOffsetFactor: -2,
-    polygonOffsetUnits: -4,
-  });
-  drape(ahead, 0.24);
-  ahead.opacityNode = edge.mul(0.18).mul(handOver);
-
-  // Same buffers, separate draw ranges: traveled [0, k), ahead [k, end)
-  const aheadGeo = new THREE.BufferGeometry();
-  for (const name of ["position", "uv", "color", "normal"]) {
-    aheadGeo.setAttribute(name, geo.getAttribute(name));
-  }
-  aheadGeo.setIndex(geo.getIndex());
-  aheadGeo.boundingSphere = geo.boundingSphere;
-  const doneMesh = new THREE.Mesh(geo, done);
-  const aheadMesh = new THREE.Mesh(aheadGeo, ahead);
-  doneMesh.receiveShadow = true;
-  aheadMesh.receiveShadow = true;
-  doneMesh.renderOrder = 2;
-  aheadMesh.renderOrder = 1;
-  doneMesh.frustumCulled = false;
-  aheadMesh.frustumCulled = false;
-
   const group = new THREE.Group();
   group.name = "route";
   group.add(trail.mesh);
-  // The route itself isn't drawn on the ground any more (ground ribbons got
-  // cut by the terrain and sank into it): behind the runner it's a glowing
-  // wake at hip height, from afar a line drawn over everything
-  const sampleColors = new Float32Array(n * 3).fill(1);
-  const glow = new GlowTrail(track, () => sampleColors);
-  group.add(glow.group);
+  // The route isn't drawn on the ground (ground ribbons got cut by the
+  // terrain and sank into it): what's been run is a thin glowing line, with
+  // dust kicked up behind the runner; from afar a line drawn over everything
+  const pathLine = new PathLine(track, heightAt, colorAttr);
+  const dust = new Dust(track, data.channels.t, heightAt, () => sampleColors);
+  group.add(pathLine.mesh, dust.sprite);
   let progressIndex = 0;
-  void doneMesh;
-  void aheadMesh;
 
   // Overview line: a constant-width line a little above the ground
   const linePts: number[] = [];
@@ -235,17 +150,13 @@ export function buildRoute(
   const disposables: { dispose(): void }[] = [
     trail.geo,
     trail.mat,
-    glow,
-    geo,
-    aheadGeo,
-    done,
-    ahead,
+    pathLine,
+    dust,
     lineGeo,
     lineMat,
   ];
   addMarkers(group, data, track, heightAt, disposables);
 
-  const totalIdx = Math.max(0, (n - 1) * 6);
   return {
     group,
     setColors(rgb) {
@@ -276,24 +187,17 @@ export function buildRoute(
     },
     setFar(far) {
       line.visible = far;
+      pathLine.mesh.visible = !far;
     },
     setSurfaces(set) {
       trail.setSurfaces(set);
     },
-    update(cam, t, hip, ground) {
-      glow.update(progressIndex, hip, cam, t, ground);
+    update(t, hip, wind) {
+      pathLine.update(progressIndex, hip);
+      dust.update(t, wind);
     },
     setProgress(i) {
-      const di = track.denseIndex(Math.floor(i), i - Math.floor(i));
-      progressIndex = di;
-      const a = Math.min(n - 1, Math.floor(di));
-      const b = Math.min(n - 1, a + 1);
-      progress.value = (path.s[a]! + (path.s[b]! - path.s[a]!) * (di - a)) / WIDTH;
-      // Draw ranges overlap by a few segments around the hand-over
-      const k0 = Math.max(0, Math.min(totalIdx, (Math.floor(di) - 2) * 6));
-      const k1 = Math.max(0, Math.min(totalIdx, (Math.ceil(di) + 2) * 6));
-      geo.setDrawRange(0, k1);
-      aheadGeo.setDrawRange(k0, totalIdx - k0);
+      progressIndex = track.denseIndex(Math.floor(i), i - Math.floor(i));
     },
     dispose() {
       for (const d of disposables) d.dispose();

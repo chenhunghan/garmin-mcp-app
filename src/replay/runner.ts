@@ -752,14 +752,24 @@ export class Runner {
    * cadence and sampled at the stride phase.
    */
   useMotion(clips: MotionClip[]) {
-    this.motion = clips
-      .filter((c) => c.curves && c.phases > 1)
-      .sort((a, b) => a.cadence - b.cadence);
+    const ok = clips.filter((c) => c.curves && c.phases > 1);
+    // Jogging-pace clips blend by cadence; a faster one (≥ 3.6 m/s) by speed
+    this.motion = ok.filter((c) => c.speed < 3.6).sort((a, b) => a.cadence - b.cadence);
+    this.motionFast = ok.find((c) => c.speed >= 3.6) ?? null;
+    if (!this.motion.length && this.motionFast) this.motion = [this.motionFast];
   }
+  private motionFast: MotionClip | null = null;
+  /** Running speed for the motion blend (set in update) */
+  private motionSpeed = 0;
 
-  /** Motion-capture channel at stride phase p, blended between clips by cadence */
+  /**
+   * Motion-capture channel at stride phase p: blended between the jogging
+   * clips by cadence, then toward the fast clip from 3.5 to 4.5 m/s
+   */
   private mocap(name: keyof MotionClip["curves"], p: number, cadence: number): number {
     const clips = this.motion;
+    const fast = this.motionFast;
+    const wf = fast ? Math.max(0, Math.min(1, (this.motionSpeed - 3.5) / 1.0)) : 0;
     const at = (c: MotionClip) => {
       const v = c.curves[name];
       const x = (((p % 1) + 1) % 1) * c.phases;
@@ -767,11 +777,15 @@ export class Runner {
       const f = x - i;
       return v[i % c.phases]! * (1 - f) + v[(i + 1) % c.phases]! * f;
     };
-    if (clips.length === 1) return at(clips[0]!);
-    const a = clips[0]!;
-    const b = clips[clips.length - 1]!;
-    const w = Math.max(0, Math.min(1, (cadence - a.cadence) / (b.cadence - a.cadence || 1)));
-    return at(a) * (1 - w) + at(b) * w;
+    let base: number;
+    if (clips.length === 1) base = at(clips[0]!);
+    else {
+      const a = clips[0]!;
+      const b = clips[clips.length - 1]!;
+      const w = Math.max(0, Math.min(1, (cadence - a.cadence) / (b.cadence - a.cadence || 1)));
+      base = at(a) * (1 - w) + at(b) * w;
+    }
+    return wf > 0 ? base * (1 - wf) + at(fast!) * wf : base;
   }
 
   update(dt: number, s: RunnerState) {
@@ -818,6 +832,7 @@ export class Runner {
     const wR = weight(legPhase(-1));
     // Transverse rotation: the swinging leg's hip comes forward with it
     const mc = this.motion.length > 0;
+    this.motionSpeed = v;
     const pelvisYaw = mc
       ? this.mocap("pelvisYaw", p, cadence) * run * vary(1)
       : -0.1 * Math.cos(2 * Math.PI * (p - 0.85)) * run * vary(1);

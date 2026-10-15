@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "bytes": 21196137,
+  "bytes": 21200981,
   "assets": [
     {
       "id": "ground.lawn",
@@ -1471,9 +1471,9 @@
       "kind": "motion",
       "files": [
         {
-          "name": "motion.jog.33eac7d24d.json",
-          "bytes": 4850,
-          "sha256": "33eac7d24dce48423dbb4838c2b66f02eed6446c7d91a024822b1e2ad0831c1a"
+          "name": "motion.jog.2cae1b01ca.json",
+          "bytes": 4857,
+          "sha256": "2cae1b01cae159802ac2c574d9592e312ad6637bd4ef6e11a6cf158cbc34f8f0"
         }
       ],
       "meta": {
@@ -1482,7 +1482,7 @@
         "cycles": 9
       },
       "credit": {
-        "title": "Subject #35, trials 17, 18, 19, 20, 21, 22, 23, 24, 25, 26",
+        "title": "Trials 35_17, 35_18, 35_19, 35_20, 35_21, 35_22, 35_23, 35_24, 35_25, 35_26",
         "author": "CMU Graphics Lab Motion Capture Database (NSF EIA-0196217)",
         "license": "CMU-Mocap",
         "url": "http://mocap.cs.cmu.edu/search.php?subjectnumber=35"
@@ -1493,9 +1493,9 @@
       "kind": "motion",
       "files": [
         {
-          "name": "motion.fast.bdf438a211.json",
-          "bytes": 4835,
-          "sha256": "bdf438a21136e465a79428bba0f324db6822d9489d3a071cb0efcadbf7218eb1"
+          "name": "motion.fast.fee8c09110.json",
+          "bytes": 4833,
+          "sha256": "fee8c09110ed45b9c9e20cabd0f81c440641f1493f79df9f5dbd4cf0590eef7e"
         }
       ],
       "meta": {
@@ -1504,10 +1504,32 @@
         "cycles": 9
       },
       "credit": {
-        "title": "Subject #16, trials 48, 55, 8, 35, 36, 45, 46, 56",
+        "title": "Trials 16_48, 16_55, 16_08, 16_35, 16_36, 16_45, 16_46, 16_56",
         "author": "CMU Graphics Lab Motion Capture Database (NSF EIA-0196217)",
         "license": "CMU-Mocap",
         "url": "http://mocap.cs.cmu.edu/search.php?subjectnumber=16"
+      }
+    },
+    {
+      "id": "motion.stride",
+      "kind": "motion",
+      "files": [
+        {
+          "name": "motion.stride.491a3030a2.json",
+          "bytes": 4839,
+          "sha256": "491a3030a2197fe50e52b8c4d7ce265774c96c513b322a54634e16122a96bfe6"
+        }
+      ],
+      "meta": {
+        "speed": 3.917,
+        "cadence": 189.4737,
+        "cycles": 6
+      },
+      "credit": {
+        "title": "Trials 102_06, 141_02, 16_49, 75_01, 128_02",
+        "author": "CMU Graphics Lab Motion Capture Database (NSF EIA-0196217)",
+        "license": "CMU-Mocap",
+        "url": "http://mocap.cs.cmu.edu/search.php?subjectnumber=102"
       }
     }
   ]

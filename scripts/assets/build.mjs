@@ -416,26 +416,26 @@ async function build(s, tmp) {
     const r = await packSky(s, tmp);
     ({ files, meta, title, author } = r);
   } else if (s.kind === "motion") {
-    // "35/35_17+35_18+…": one subject's takes, pooled
-    const [subject, list] = s.asset.split("/");
-    const takes = list.split("+");
-    const dir = join(SRC_DIR, "cmu", subject);
-    const asf = await download(
-      `http://mocap.cs.cmu.edu/subjects/${subject}/${subject}.asf`,
-      join(dir, `${subject}.asf`),
-    );
-    const amcs = [];
+    // "35_17+35_18+102_06…": takes (subject_trial), pooled across subjects
+    const takes = s.asset.split("+");
+    const pairs = [];
     for (const take of takes) {
-      const f = await download(
+      const subject = take.split("_")[0];
+      const dir = join(SRC_DIR, "cmu", subject);
+      const asf = await download(
+        `http://mocap.cs.cmu.edu/subjects/${subject}/${subject}.asf`,
+        join(dir, `${subject}.asf`),
+      );
+      const amc = await download(
         `http://mocap.cs.cmu.edu/subjects/${subject}/${take}.amc`,
         join(dir, `${take}.amc`),
       );
-      amcs.push(await readFile(f, "utf8"));
+      pairs.push({ asf: await readFile(asf, "utf8"), amc: await readFile(amc, "utf8") });
     }
     const file = join(tmp, `${s.id}.json`);
-    meta = await processMotion(await readFile(asf, "utf8"), amcs, file);
+    meta = await processMotion(pairs, file);
     files = [file];
-    title = `Subject #${Number(subject)}, trials ${takes.map((t) => Number(t.split("_")[1])).join(", ")}`;
+    title = `Trials ${takes.join(", ")}`;
   } else {
     throw new Error(`unknown kind ${s.kind}`);
   }

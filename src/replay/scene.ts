@@ -584,7 +584,7 @@ export class ReplayScene {
       notify();
     });
     const motion = Promise.all(
-      ["motion.jog", "motion.fast"].map((id) => lib.json<MotionClip>(id)),
+      ["motion.jog", "motion.fast", "motion.stride"].map((id) => lib.json<MotionClip>(id)),
     ).then((clips) => {
       const ok = clips.filter((c): c is MotionClip => c !== null);
       if (!ok.length || this.disposed) return;

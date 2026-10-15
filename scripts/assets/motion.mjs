@@ -156,18 +156,20 @@ function signedAngle(ref, v, axis) {
   return Math.atan2(dot(cross(a, b), axis), dot(a, b));
 }
 
-/** Several takes of one subject: every full stride of each is averaged */
-export async function processMotion(asfText, amcTexts, file) {
-  const asf = parseAsf(asfText);
+/** Takes as [{ asf, amc }] (each with its subject's skeleton): every full stride of each is averaged */
+export async function processMotion(takes, file) {
   const channels = ["pelvisYaw", "pelvisRoll", "chestYaw", "lean", "flexL", "flexR", "abdL", "abdR", "elbowL", "elbowR"];
   const sum = Object.fromEntries(channels.map((c) => [c, new Float64Array(PHASES)]));
   let cycles = 0;
   let meters = 0;
   let seconds = 0;
   let steps = 0;
-  for (const amcText of [].concat(amcTexts)) {
+  const skeletons = new Map();
+  for (const take of takes) {
     try {
-      const r = takeCycles(asf, parseAmc(amcText), sum);
+      let asf = skeletons.get(take.asf);
+      if (!asf) skeletons.set(take.asf, (asf = parseAsf(take.asf)));
+      const r = takeCycles(asf, parseAmc(take.amc), sum);
       cycles += r.cycles;
       meters += r.meters;
       seconds += r.seconds;
@@ -181,7 +183,13 @@ export async function processMotion(asfText, amcTexts, file) {
   const cadence = (steps * 60) / seconds;
   const out = { phases: PHASES, speed: round(speed), cadence: round(cadence), cycles, curves: {} };
   for (const c of channels) {
-    const v = Array.from(sum[c], (x) => x / cycles);
+    const raw = Array.from(sum[c], (x) => x / cycles);
+    // A light circular smoothing (5 taps): few strides leave a little noise
+    const v = raw.map((_, i) => {
+      let t = 0;
+      for (const [o, w] of [[-2, 1], [-1, 2], [0, 3], [1, 2], [2, 1]]) t += raw[(i + o + PHASES) % PHASES] * w;
+      return t / 9;
+    });
     if (c === "lean") {
       const mean = v.reduce((s, x) => s + x, 0) / v.length;
       out.meanLean = round(mean);

@@ -184,18 +184,26 @@ export const SOURCES = [
     keep: "^fire_hydrant(_cap_0[1-3]|_chain)?$",
   },
   // ── Runner motion: CMU running takes (upper-body curves per stride phase),
-  // at two cadences (~161 and ~192 steps/min), blended by the run's cadence ──
+  // at two cadences (~161 and ~192 steps/min), blended by the run's cadence,
+  // and a faster set blended in by speed ──
   {
     id: "motion.jog",
     kind: "motion",
     from: "cmu",
-    asset: "35/35_17+35_18+35_19+35_20+35_21+35_22+35_23+35_24+35_25+35_26",
+    asset: "35_17+35_18+35_19+35_20+35_21+35_22+35_23+35_24+35_25+35_26",
   },
   {
     id: "motion.fast",
     kind: "motion",
     from: "cmu",
-    asset: "16/16_48+16_55+16_08+16_35+16_36+16_45+16_46+16_56",
+    asset: "16_48+16_55+16_08+16_35+16_36+16_45+16_46+16_56",
+  },
+  {
+    // The fastest clean running takes in the database (~3.7–4.1 m/s)
+    id: "motion.stride",
+    kind: "motion",
+    from: "cmu",
+    asset: "102_06+141_02+16_49+75_01+128_02",
   },
 ];
 
@@ -214,7 +222,7 @@ export const LICENSES = {
   cmu: {
     license: "CMU-Mocap",
     site: "http://mocap.cs.cmu.edu",
-    page: (a) => `http://mocap.cs.cmu.edu/search.php?subjectnumber=${a.split("/")[0]}`,
+    page: (a) => `http://mocap.cs.cmu.edu/search.php?subjectnumber=${a.split("_")[0]}`,
     author: "CMU Graphics Lab Motion Capture Database (NSF EIA-0196217)",
   },
 };

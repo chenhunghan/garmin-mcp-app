@@ -63,7 +63,7 @@ export const RUNNER_CREDIT = "Runner clothes: Mindfront, punkduck (MakeHuman com
 
 /**
  * One line naming the sources of the assets on screen, e.g.
- * "Materials, models and sky light: Poly Haven, ambientCG (CC0) · Running motion: CMU Graphics Lab"
+ * "Materials, models and sky light: Poly Haven, ambientCG (CC0) · Running motion: mocap.cs.cmu.edu (…)"
  */
 export function assetCredits(ids: Iterable<string>): string {
   const sites = new Set<string>();
@@ -77,6 +77,7 @@ export function assetCredits(ids: Iterable<string>): string {
   }
   const parts: string[] = [];
   if (sites.size) parts.push(`Materials, models and sky light: ${[...sites].join(", ")} (CC0)`);
-  if (motion) parts.push("Running motion: CMU Graphics Lab Motion Capture Database");
+  // (as CMU asks: data from mocap.cs.cmu.edu, created with funding from NSF EIA-0196217)
+  if (motion) parts.push("Running motion: mocap.cs.cmu.edu (CMU, NSF EIA-0196217)");
   return parts.join(" · ");
 }

@@ -198,6 +198,15 @@ export class Runner {
   private headTarget = new THREE.Quaternion();
   private headEuler = new THREE.Euler();
   private watchParts: THREE.Mesh[] = [];
+  private watchHome: {
+    parent: THREE.Object3D;
+    position: THREE.Vector3;
+    quaternion: THREE.Quaternion;
+    scale: THREE.Vector3;
+  }[] = [];
+  private modelObject: THREE.Object3D | null = null;
+  /** Standing height of the attached model in this skeleton's units (m) */
+  modelHeight = 1.7;
   /** Character model driven by this skeleton (see attachModel) */
   private model: {
     bones: THREE.Bone[];
@@ -589,6 +598,12 @@ export class Runner {
     face.rotation.z = Math.PI / 2;
     face.position.set(0.03, -FOREARM + 0.03, 0);
     this.watchParts.push(strap, face);
+    this.watchHome = this.watchParts.map((p) => ({
+      parent: p.parent!,
+      position: p.position.clone(),
+      quaternion: p.quaternion.clone(),
+      scale: p.scale.clone(),
+    }));
     this.buildHead(hair, cap, lens);
 
     // Back to a neutral standing pose until the first update
@@ -864,9 +879,11 @@ export class Runner {
    */
   attachModel(model: THREE.Object3D) {
     const root = this.root;
-    const keep = { p: root.position.clone(), q: root.quaternion.clone() };
+    this.detachModel();
+    const keep = { p: root.position.clone(), q: root.quaternion.clone(), s: root.scale.clone() };
     root.position.set(0, 0, 0);
     root.quaternion.identity();
+    root.scale.setScalar(1);
     this.restPose();
     root.add(model);
     root.updateMatrixWorld(true);
@@ -876,6 +893,7 @@ export class Runner {
       root.remove(model);
       root.position.copy(keep.p);
       root.quaternion.copy(keep.q);
+      root.scale.copy(keep.s);
       console.warn("[replay] runner model has no game-engine rig; keeping the built-in runner");
       return;
     }
@@ -973,9 +991,37 @@ export class Runner {
       if ((o as THREE.Mesh).isMesh && !inModel.has(o) && !watch.has(o)) o.visible = false;
     });
 
+    // Standing height: crown of the head over the soles
+    const box = new THREE.Box3();
+    model.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (mesh.isMesh && /base|body/i.test(mesh.name)) box.expandByObject(mesh, true);
+    });
+    if (!box.isEmpty()) this.modelHeight = box.max.y - Math.min(box.min.y, 0);
+    this.modelObject = model;
+
     root.position.copy(keep.p);
     root.quaternion.copy(keep.q);
+    root.scale.copy(keep.s);
     root.updateMatrixWorld(true);
+  }
+
+  /** Take the character model off again (the watch goes back on our arm). */
+  detachModel() {
+    if (!this.modelObject) return;
+    this.watchParts.forEach((p, k) => {
+      const home = this.watchHome[k]!;
+      home.parent.add(p);
+      p.position.copy(home.position);
+      p.quaternion.copy(home.quaternion);
+      p.scale.copy(home.scale);
+    });
+    this.modelObject.removeFromParent();
+    this.modelObject = null;
+    this.model = null;
+    this.root.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) o.visible = true;
+    });
   }
 
   private driveModel() {

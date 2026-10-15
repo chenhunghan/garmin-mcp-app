@@ -64,12 +64,14 @@ function loadReplay(activityId: string | number, maxPoints: number): Promise<Rep
 
 async function fetchReplay(activityId: string | number, maxPoints: number): Promise<ReplayData> {
   const client = getClient();
-  const [d, chart, splits, w, zones] = await Promise.allSettled([
+  const [d, chart, splits, w, zones, settings] = await Promise.allSettled([
     details(activityId),
     client.getActivityChartDetails(activityId, maxPoints),
     client.getActivitySplits(activityId),
     weather(activityId),
     client.getActivityHrZones(activityId),
+    // Sex, height and weight shape the 3D runner
+    cached("user-settings", () => client.getUserSettings()),
   ]);
   // The time series is the replay; everything else is optional context
   if (chart.status === "rejected") throw chart.reason;
@@ -81,6 +83,7 @@ async function fetchReplay(activityId: string | number, maxPoints: number): Prom
     splits: val(splits),
     weather: val(w),
     hrZones: val(zones),
+    userSettings: val(settings),
   });
 }
 

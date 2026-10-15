@@ -1,6 +1,8 @@
 """
 Builds the replay's runner model with MPFB (MakeHuman for Blender) and exports
-it as one glTF binary for three.js.
+it as one glTF binary for three.js: a lean runner's build, plus one morph
+target ("heavy") towards a heavier build, so the view can shape the body from
+the athlete's weight and height (Garmin profile) without a model per build.
 
     /Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup \\
         --python scripts/runner-model/build_runner.py -- female src/replay/assets/runner-female.glb
@@ -29,11 +31,11 @@ VARIANTS = {
         "phenotype": {
             "gender": 0.0,
             "age": 0.5,  # ~25 years
-            "muscle": 0.68,
-            "weight": 0.42,
-            "proportions": 0.75,
+            "muscle": 0.62,
+            "weight": 0.22,
+            "proportions": 0.85,
             "height": 0.55,
-            "cupsize": 0.4,
+            "cupsize": 0.3,
             "firmness": 0.6,
             "race": {"asian": 0.34, "caucasian": 0.33, "african": 0.33},
         },
@@ -49,9 +51,9 @@ VARIANTS = {
         "phenotype": {
             "gender": 1.0,
             "age": 0.5,
-            "muscle": 0.68,
-            "weight": 0.42,
-            "proportions": 0.75,
+            "muscle": 0.62,
+            "weight": 0.22,
+            "proportions": 0.85,
             "height": 0.55,
             "cupsize": 0.5,
             "firmness": 0.5,
@@ -69,40 +71,61 @@ VARIANTS = {
 }
 v = VARIANTS[variant]
 
-# Empty scene
-bpy.ops.wm.read_homefile(use_empty=True)
+# The morph target's build: what a heavier athlete (BMI ~30) looks like
+HEAVY = {"weight": 1.0, "muscle": 0.45, "proportions": 0.5}
 
-info = HumanService._create_default_human_info_dict()
-info["phenotype"] = v["phenotype"]
-info["rig"] = "game_engine"
-info["eyes"] = "low-poly/low-poly.mhclo"
-info["eyebrows"] = v["eyebrows"]
-info["eyelashes"] = "eyelashes01/eyelashes01.mhclo"
-info["hair"] = v["hair"]
-info["clothes"] = v["clothes"]
-info["skin_mhmat"] = v["skin"]
-info["skin_material_type"] = "MAKESKIN"
-info["alternative_materials"] = {}
-settings = HumanService.get_default_deserialization_settings()
-settings["subdiv_levels"] = 0
-settings["material_instances"] = "NEVER"
-basemesh = HumanService.deserialize_from_dict(info, settings)
 
-# Bake the body shape (targets are shape keys) into plain geometry
-for obj in [o for o in bpy.data.objects if o.type == "MESH" and o.data.shape_keys]:
-    bpy.context.view_layer.objects.active = obj
-    obj.shape_key_add(name="baked", from_mix=True)
-    keys = obj.data.shape_keys.key_blocks
-    for k in [k for k in keys if k.name != "baked"]:
-        obj.shape_key_remove(k)
-    obj.shape_key_remove(obj.data.shape_keys.key_blocks["baked"])
+def build(phenotype):
+    """A fresh scene with the character; mesh objects keyed by asset (name without suffixes)."""
+    bpy.ops.wm.read_homefile(use_empty=True)
+    info = HumanService._create_default_human_info_dict()
+    info["phenotype"] = phenotype
+    info["rig"] = "game_engine"
+    info["eyes"] = "low-poly/low-poly.mhclo"
+    info["eyebrows"] = v["eyebrows"]
+    info["eyelashes"] = "eyelashes01/eyelashes01.mhclo"
+    info["hair"] = v["hair"]
+    info["clothes"] = v["clothes"]
+    info["skin_mhmat"] = v["skin"]
+    info["skin_material_type"] = "MAKESKIN"
+    info["alternative_materials"] = {}
+    settings = HumanService.get_default_deserialization_settings()
+    settings["subdiv_levels"] = 0
+    settings["material_instances"] = "NEVER"
+    HumanService.deserialize_from_dict(info, settings)
 
-# Subdivision would multiply the triangles: drop it; masks (body hidden under
-# clothes) stay and are applied by the exporter
-for obj in [o for o in bpy.data.objects if o.type == "MESH"]:
-    for m in list(obj.modifiers):
-        if m.type == "SUBSURF":
-            obj.modifiers.remove(m)
+    meshes = {}
+    for obj in [o for o in bpy.data.objects if o.type == "MESH"]:
+        bpy.context.view_layer.objects.active = obj
+        # Bake the body shape (MakeHuman targets are shape keys) into the mesh
+        if obj.data.shape_keys:
+            obj.shape_key_add(name="baked", from_mix=True)
+            for k in [k for k in obj.data.shape_keys.key_blocks if k.name != "baked"]:
+                obj.shape_key_remove(k)
+            obj.shape_key_remove(obj.data.shape_keys.key_blocks["baked"])
+        # No subdivision (triangles); masks (body hidden under clothes) applied
+        # now, since the exporter can't apply modifiers to meshes with morphs
+        for m in list(obj.modifiers):
+            if m.type == "SUBSURF":
+                obj.modifiers.remove(m)
+            elif m.type == "MASK":
+                bpy.ops.object.modifier_apply(modifier=m.name)
+        meshes[obj.name.split(".")[-1] if "." in obj.name else "body"] = obj
+    return meshes
+
+
+heavy_pheno = dict(v["phenotype"], **HEAVY)
+heavy = {k: [vtx.co.copy() for vtx in o.data.vertices] for k, o in build(heavy_pheno).items()}
+lean = build(v["phenotype"])
+for key, obj in lean.items():
+    co = heavy.get(key)
+    if not co or len(co) != len(obj.data.vertices):
+        print("NO MORPH", key, len(co or []), len(obj.data.vertices))
+        continue
+    obj.shape_key_add(name="Basis", from_mix=False)
+    sk = obj.shape_key_add(name="heavy", from_mix=False)
+    for i, c in enumerate(co):
+        sk.data[i].co = c
 
 
 def simple_material(mat):
@@ -137,10 +160,11 @@ def simple_material(mat):
 for mat in bpy.data.materials:
     simple_material(mat)
 
-# Textures at most 1024 px: the runner is a few hundred pixels tall on screen
+# Textures at most 1024 px (skin) / 512 px (the rest): the runner is a few hundred pixels tall
 for img in bpy.data.images:
-    if img.size[0] > 1024 or img.size[1] > 1024:
-        s = 1024 / max(img.size[0], img.size[1])
+    cap = 1024 if "skin" in img.name or "female_diffuse" in img.name or "male_diffuse" in img.name else 512
+    if img.size[0] > cap or img.size[1] > cap:
+        s = cap / max(img.size[0], img.size[1])
         img.scale(max(1, int(img.size[0] * s)), max(1, int(img.size[1] * s)))
 
 for obj in bpy.data.objects:
@@ -151,7 +175,8 @@ bpy.ops.export_scene.gltf(
     export_format="GLB",
     export_apply=True,
     export_skins=True,
-    export_morph=False,
+    export_morph=True,
+    export_morph_normal=False,
     export_animations=False,
     export_image_format="WEBP",
     export_image_quality=82,

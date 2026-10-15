@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  parseAthlete,
   buildReplay,
   clockLabel,
   hrZone,
@@ -146,5 +147,24 @@ describe("playback helpers", () => {
     expect(noon.azimuth).toBeGreaterThan(150);
     expect(noon.azimuth).toBeLessThan(210);
     expect(sunPosition(Date.UTC(2026, 5, 21, 23, 30), 47.37, 8.54).elevation).toBeLessThan(0);
+  });
+});
+
+describe("parseAthlete", () => {
+  it("reads sex, height and weight (grams → kg) from user settings", () => {
+    expect(parseAthlete({ userData: { gender: "FEMALE", height: 165.1, weight: 54300 } })).toEqual({
+      sex: "female",
+      heightCm: 165.1,
+      weightKg: 54.3,
+    });
+  });
+  it("drops implausible values and returns null when nothing is known", () => {
+    expect(parseAthlete({ userData: { gender: "MALE", height: 3, weight: null } })).toEqual({
+      sex: "male",
+      heightCm: null,
+      weightKg: null,
+    });
+    expect(parseAthlete({ userData: {} })).toBeNull();
+    expect(parseAthlete(null)).toBeNull();
   });
 });

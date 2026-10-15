@@ -10,6 +10,7 @@ import { Brackets, HUD_ACCENT, hudBox, hudLabel } from "./replay-hud.tsx";
 import { buildTrack, type Track } from "./replay/track.ts";
 import type { RunMap } from "./geo/types.ts";
 import { CAMERA_LABEL, type CameraMode, type ReplayScene } from "./replay/scene.ts";
+import type { RunnerBody } from "./replay/runner-model.ts";
 
 const RATES = [0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 128];
 const CAMERA_MODES: CameraMode[] = ["chase", "side", "front", "drone", "overview"];
@@ -80,6 +81,16 @@ function ReplayPlayer({ data }: { data: ReplayData }) {
   const [colorBy, setColorBy] = useState<ColorBy>(modes[0] ?? "pace");
   const [camera, setCamera] = useState<CameraMode>("drone");
   const [showMetrics, setShowMetrics] = useState(true);
+  // Which runner: from the Garmin profile (sex, height, weight), or picked
+  const [body, setBody] = useState<RunnerBody>(() => {
+    try {
+      const v = localStorage.getItem("run-coach:runner-body");
+      return v === "female" || v === "male" ? v : "profile";
+    } catch {
+      return "profile";
+    }
+  });
+  const bodyRef = useRef(body);
   // Time under the pointer (timeline or a sparkline): every metric reads it
   const [hover, setHover] = useState<number | null>(null);
   // Plays as soon as the scene is ready (not for viewers who asked for reduced
@@ -163,6 +174,7 @@ function ReplayPlayer({ data }: { data: ReplayData }) {
         const { ReplayScene } = await import("./replay/scene.ts");
         if (disposed) return;
         scene = new ReplayScene(canvas, data, map);
+        scene.body = bodyRef.current;
         const info = await scene.init();
         if (disposed) {
           scene.dispose();
@@ -210,6 +222,16 @@ function ReplayPlayer({ data }: { data: ReplayData }) {
   useEffect(() => sceneRef.current?.setRate(rate), [rate, status]);
   useEffect(() => sceneRef.current?.setColorBy(colorBy), [colorBy, status]);
   useEffect(() => sceneRef.current?.setCameraMode(camera), [camera, status]);
+  useEffect(() => {
+    bodyRef.current = body;
+    try {
+      localStorage.setItem("run-coach:runner-body", body);
+    } catch {
+      // (storage unavailable: the pick lasts for this view)
+    }
+    const s = sceneRef.current;
+    if (s && s.body !== body) void s.setRunnerBody(body);
+  }, [body]);
 
   const togglePlay = useCallback(() => {
     const s = sceneRef.current;
@@ -465,6 +487,35 @@ function ReplayPlayer({ data }: { data: ReplayData }) {
             >
               HUD {showMetrics ? "on" : "off"}
             </button>
+            <div
+              className="flex items-center border border-white/15"
+              role="group"
+              aria-label="Runner"
+            >
+              {(
+                [
+                  ["profile", "Me", "Your sex, height and build from your Garmin profile"],
+                  ["female", "F", "Female runner"],
+                  ["male", "M", "Male runner"],
+                ] as const
+              ).map(([b, label, title]) => (
+                <button
+                  key={b}
+                  type="button"
+                  title={title}
+                  aria-pressed={body === b}
+                  onClick={() => setBody(b)}
+                  className={
+                    "px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors " +
+                    (body === b
+                      ? "bg-white/90 text-black"
+                      : "text-white/55 hover:bg-white/10 hover:text-white")
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div
               className="ml-auto flex items-center border border-white/15 md:ml-0"
               role="group"

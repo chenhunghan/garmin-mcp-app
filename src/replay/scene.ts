@@ -27,7 +27,13 @@ import { buildingsOnPath, mapMatch, treesOffPath } from "./map-match.ts";
 import { buildTerrain, seasonOf, smoothstepJs, type Terrain } from "./terrain.ts";
 import { buildRoute, type RouteMeshes } from "./route.ts";
 import { Runner } from "./runner.ts";
-import { loadRunnerModel } from "./runner-model.ts";
+import {
+  heavyInfluence,
+  loadRunnerModel,
+  runnerSex,
+  shapeRunner,
+  type RunnerBody,
+} from "./runner-model.ts";
 import {
   buildMapLayers,
   firstBuildingHit,
@@ -130,6 +136,10 @@ export class ReplayScene {
   private groundAbs: ((x: number, z: number) => number) | null = null;
   private disposeLater: { dispose(): void }[] = [];
   private forest: Forest | null = null;
+  /** Which runner is shown: from the Garmin profile, or the user's pick */
+  body: RunnerBody = "profile";
+  private bodyLoad = 0;
+  private bodyModel: { object: THREE.Object3D; dispose(): void } | null = null;
   private details: Detail[] = [];
   /**
    * Detail level 0.4–1: how far trees and balconies are drawn. Frames that
@@ -213,14 +223,7 @@ export class ReplayScene {
 
     // The runner's body: the bundled character model, driven by the gait
     // skeleton (falls back to the built-in body if it can't load)
-    const model = await loadRunnerModel();
-    if (model) {
-      this.runner.attachModel(model);
-      model.traverse((o) => {
-        const m = o as THREE.Mesh;
-        if (m.isMesh) this.disposeLater.push(m.geometry, m.material as THREE.Material);
-      });
-    }
+    await this.setRunnerBody(this.body);
     this.buildWorld();
     this.scene.traverse((o) => {
       const m = o as THREE.Mesh;
@@ -921,8 +924,48 @@ export class ReplayScene {
     this.sun.target.updateMatrixWorld();
   }
 
+  /**
+   * Dress the runner: the female or male character (from the profile unless
+   * picked), its build from the athlete's BMI and its size from their height.
+   */
+  async setRunnerBody(body: RunnerBody) {
+    this.body = body;
+    const load = ++this.bodyLoad;
+    const athlete = this.data.athlete ?? null;
+    const model = await loadRunnerModel(runnerSex(body, athlete));
+    if (this.disposed || load !== this.bodyLoad) return;
+    this.bodyModel?.dispose();
+    this.bodyModel = null;
+    if (!model) {
+      this.runner.detachModel();
+      return;
+    }
+    shapeRunner(model, heavyInfluence(athlete));
+    this.runner.attachModel(model);
+    const height = athlete?.heightCm ? athlete.heightCm / 100 : null;
+    this.runner.root.scale.setScalar(
+      height ? THREE.MathUtils.clamp(height / this.runner.modelHeight, 0.86, 1.16) : 1,
+    );
+    model.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh) withCloudShadows(m.material as THREE.Material);
+    });
+    this.bodyModel = {
+      object: model,
+      dispose() {
+        model.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (!m.isMesh) return;
+          m.geometry.dispose();
+          (m.material as THREE.Material).dispose();
+        });
+      },
+    };
+  }
+
   dispose() {
     this.disposed = true;
+    this.bodyModel?.dispose();
     this.renderer?.setAnimationLoop(null);
     this.resizeObserver?.disconnect();
     this.controls?.dispose();

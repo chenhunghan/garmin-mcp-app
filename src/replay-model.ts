@@ -78,6 +78,27 @@ export interface ReplayActivity {
   locationName: string | null;
 }
 
+export interface ReplayAthlete {
+  sex: "female" | "male" | null;
+  heightCm: number | null;
+  weightKg: number | null;
+}
+
+/** Garmin user settings → sex, height and weight (weight comes in grams). */
+export function parseAthlete(settings: unknown): ReplayAthlete | null {
+  const u = (settings as { userData?: Record<string, unknown> } | null)?.userData;
+  if (!u) return null;
+  const g = typeof u.gender === "string" ? u.gender.toUpperCase() : "";
+  const h = typeof u.height === "number" && u.height > 100 && u.height < 250 ? u.height : null;
+  const w =
+    typeof u.weight === "number" && u.weight > 25000 && u.weight < 300000
+      ? Math.round(u.weight / 100) / 10
+      : null;
+  const sex = g === "FEMALE" ? "female" : g === "MALE" ? "male" : null;
+  if (!sex && h === null && w === null) return null;
+  return { sex, heightCm: h, weightKg: w };
+}
+
 export interface ReplayData {
   activity: ReplayActivity;
   weather: ReplayWeather | null;
@@ -86,6 +107,8 @@ export interface ReplayData {
   laps: ReplayLap[];
   /** The track has real GPS positions (not a treadmill/indoor run) */
   hasGps: boolean;
+  /** The runner's body from the Garmin profile (shapes the 3D runner; never shown as numbers) */
+  athlete: ReplayAthlete | null;
   /** Sample count */
   n: number;
   /** Columnar samples; `t` and `d` are always present and complete */
@@ -445,6 +468,7 @@ export function buildReplay(input: {
   splits?: unknown;
   weather?: unknown;
   hrZones?: unknown;
+  userSettings?: unknown;
 }): ReplayData {
   const { channels, n, firstTimestamp } = parseChartDetails(input.chart);
   const activity = parseActivity(input.activityId, input.details);
@@ -455,6 +479,7 @@ export function buildReplay(input: {
     hrZones: parseHrZones(input.hrZones),
     laps: parseLaps(input.splits, channels),
     hasGps: hasGpsTrack(channels),
+    athlete: parseAthlete(input.userSettings),
     n,
     channels,
   };

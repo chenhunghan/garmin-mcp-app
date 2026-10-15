@@ -40,6 +40,8 @@
     "dev:ui": "vite --config vite.config.dev.ts",
     "dev:ui:demo": "GARMIN_DEMO=1 vite --config vite.config.dev.ts",
     "lint": "oxlint",
+    "assets:build": "node scripts/assets/build.mjs",
+    "assets:publish": "node scripts/assets/publish.mjs",
     "fmt": "oxfmt --write src/ packages/",
     "fmt:check": "oxfmt src/ packages/",
     "pack": "npm run build && mcpb pack . garmin-mcp-app.mcpb",

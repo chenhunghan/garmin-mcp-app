@@ -48,7 +48,13 @@ const row = (t: number, d: number, extra: Partial<Record<string, number | null>>
 const chart = {
   metricDescriptors: descriptors,
   // Out of order and with a duplicate timestamp, like auto-lap marks
-  activityDetailMetrics: [row(10, 30), row(0, 0, { lat: 0, lon: 0 }), row(20, 60), row(20, 60), row(30, 90)],
+  activityDetailMetrics: [
+    row(10, 30),
+    row(0, 0, { lat: 0, lon: 0 }),
+    row(20, 60),
+    row(20, 60),
+    row(30, 90),
+  ],
 };
 
 describe("parseChartDetails", () => {
@@ -81,9 +87,20 @@ describe("buildReplay", () => {
   it("maps laps onto the time axis by distance", () => {
     const replay = buildReplay({
       activityId: 1,
-      details: { activityName: "Run", summaryDTO: { startTimeLocal: "2026-10-03T08:00:00.0", startTimeGMT: "2026-10-03T06:00:00.0" } },
+      details: {
+        activityName: "Run",
+        summaryDTO: {
+          startTimeLocal: "2026-10-03T08:00:00.0",
+          startTimeGMT: "2026-10-03T06:00:00.0",
+        },
+      },
       chart,
-      splits: { lapDTOs: [{ distance: 45, averageSpeed: 3 }, { distance: 45, averageSpeed: 3 }] },
+      splits: {
+        lapDTOs: [
+          { distance: 45, averageSpeed: 3 },
+          { distance: 45, averageSpeed: 3 },
+        ],
+      },
     });
     expect(replay.laps.map((l) => [l.startT, l.endT])).toEqual([
       [0, 15],
@@ -112,7 +129,14 @@ describe("buildReplay", () => {
 
 describe("weather and zones", () => {
   it("converts °F and mph", () => {
-    const w = parseWeather({ temp: 50, apparentTemp: 46, relativeHumidity: 70, windSpeed: 10, windDirection: 180, weatherTypeDTO: { desc: "Light Rain" } });
+    const w = parseWeather({
+      temp: 50,
+      apparentTemp: 46,
+      relativeHumidity: 70,
+      windSpeed: 10,
+      windDirection: 180,
+      weatherTypeDTO: { desc: "Light Rain" },
+    });
     expect(w).toMatchObject({ tempC: 10, windKph: 16.1, windFromDeg: 180, condition: "rain" });
   });
 

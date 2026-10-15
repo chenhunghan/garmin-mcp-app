@@ -255,3 +255,94 @@ export function treesOffPath(
   }
   return out;
 }
+
+/**
+ * A test for "something is built or worn here" (where no grass grows): within
+ * a line's half width (+ margin) of the run's path, roads and rivers, or
+ * inside a building footprint. Lines are bucketed in a 16 m grid.
+ */
+export function groundBlocker(input: {
+  path?: { x: ArrayLike<number>; z: ArrayLike<number>; halfWidth: number };
+  lines: { pts: ArrayLike<number>; halfWidth: number }[];
+  footprints: { pts: number[] }[];
+}): (x: number, z: number) => boolean {
+  const cell = 16;
+  type Seg = { ax: number; az: number; bx: number; bz: number; hw: number };
+  const segs = new Map<string, Seg[]>();
+  const addSeg = (sg: Seg) => {
+    const pad = sg.hw;
+    for (
+      let cx = Math.floor((Math.min(sg.ax, sg.bx) - pad) / cell);
+      cx <= Math.floor((Math.max(sg.ax, sg.bx) + pad) / cell);
+      cx++
+    ) {
+      for (
+        let cz = Math.floor((Math.min(sg.az, sg.bz) - pad) / cell);
+        cz <= Math.floor((Math.max(sg.az, sg.bz) + pad) / cell);
+        cz++
+      ) {
+        const key = `${cx},${cz}`;
+        let list = segs.get(key);
+        if (!list) segs.set(key, (list = []));
+        list.push(sg);
+      }
+    }
+  };
+  for (const l of input.lines) {
+    for (let i = 2; i < l.pts.length; i += 2)
+      addSeg({
+        ax: l.pts[i - 2]!,
+        az: l.pts[i - 1]!,
+        bx: l.pts[i]!,
+        bz: l.pts[i + 1]!,
+        hw: l.halfWidth,
+      });
+  }
+  if (input.path) {
+    const { x, z, halfWidth } = input.path;
+    for (let i = 1; i < x.length; i++)
+      addSeg({ ax: x[i - 1]!, az: z[i - 1]!, bx: x[i]!, bz: z[i]!, hw: halfWidth });
+  }
+  const boxes = new Map<
+    string,
+    { pts: number[]; x0: number; x1: number; z0: number; z1: number }[]
+  >();
+  for (const f of input.footprints) {
+    let x0 = Infinity;
+    let x1 = -Infinity;
+    let z0 = Infinity;
+    let z1 = -Infinity;
+    for (let i = 0; i < f.pts.length; i += 2) {
+      x0 = Math.min(x0, f.pts[i]!);
+      x1 = Math.max(x1, f.pts[i]!);
+      z0 = Math.min(z0, f.pts[i + 1]!);
+      z1 = Math.max(z1, f.pts[i + 1]!);
+    }
+    const b = { pts: f.pts, x0, x1, z0, z1 };
+    for (let cx = Math.floor(x0 / cell); cx <= Math.floor(x1 / cell); cx++) {
+      for (let cz = Math.floor(z0 / cell); cz <= Math.floor(z1 / cell); cz++) {
+        const key = `${cx},${cz}`;
+        let list = boxes.get(key);
+        if (!list) boxes.set(key, (list = []));
+        list.push(b);
+      }
+    }
+  }
+  return (px, pz) => {
+    const key = `${Math.floor(px / cell)},${Math.floor(pz / cell)}`;
+    for (const sg of segs.get(key) ?? []) {
+      const vx = sg.bx - sg.ax;
+      const vz = sg.bz - sg.az;
+      const l2 = vx * vx + vz * vz || 1;
+      const t = Math.max(0, Math.min(1, ((px - sg.ax) * vx + (pz - sg.az) * vz) / l2));
+      const dx = px - sg.ax - vx * t;
+      const dz = pz - sg.az - vz * t;
+      if (dx * dx + dz * dz < sg.hw * sg.hw) return true;
+    }
+    for (const b of boxes.get(key) ?? []) {
+      if (px < b.x0 || px > b.x1 || pz < b.z0 || pz > b.z1) continue;
+      if (insidePolygon(px, pz, b.pts)) return true;
+    }
+    return false;
+  };
+}

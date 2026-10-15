@@ -200,9 +200,9 @@ describe("metrics", () => {
       delta: -2,
       status: { level: "critical" },
     });
-    expect((duration.details as { stages: { deep: { percent: number } } }).stages.deep.percent).toBe(
-      17,
-    );
+    expect(
+      (duration.details as { stages: { deep: { percent: number } } }).stages.deep.percent,
+    ).toBe(17);
     expect(sleepMetrics({}).score.missing).toMatch(/No sleep/);
   });
 
@@ -264,7 +264,12 @@ describe("metrics", () => {
       aerobicTrainingEffect: 3,
       trainingLoad: 100,
     });
-    expect(last7Days).toEqual({ activities: 2, distanceKm: 15, durationMin: 70, trainingLoad: 100 });
+    expect(last7Days).toEqual({
+      activities: 2,
+      distanceKm: 15,
+      durationMin: 70,
+      trainingLoad: 100,
+    });
   });
 });
 
@@ -312,7 +317,9 @@ describe("buildBriefing", () => {
   it("builds self-contained questions from the numbers", () => {
     const qs = briefingQuestions(b);
     expect(qs).toHaveLength(3);
-    expect(qs[0]).toBe("Should I train hard today given my training readiness of 70 and HRV of 45 ms?");
+    expect(qs[0]).toBe(
+      "Should I train hard today given my training readiness of 70 and HRV of 45 ms?",
+    );
     expect(qs[1]).toContain("sleep score 64 last night");
     expect(qs[2]).toContain("55 bpm, +5 bpm vs my 7-day average");
     const past = briefingQuestions({ ...b, isToday: false });

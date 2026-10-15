@@ -72,6 +72,8 @@ export interface LandCover {
   x0: number;
   z0: number;
   size: number;
+  /** The mapped land kind at a point (null where nothing is mapped) */
+  kindAt(x: number, z: number): AreaKind | null;
 }
 
 /** Rasterize land-cover polygons into a texture over a square of the ground. */
@@ -108,7 +110,40 @@ export function landCoverTexture(
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.anisotropy = 8;
   texture.flipY = false;
-  return { texture, x0, z0, size };
+
+  // The same polygons as kind indices (1-based, in the red channel), for
+  // lookups on the CPU (where grass grows)
+  const M = 1024;
+  const kc = document.createElement("canvas");
+  kc.width = kc.height = M;
+  const kctx = kc.getContext("2d", { willReadFrequently: true })!;
+  const km = M / size;
+  LAND_ORDER.forEach((kind, idx) => {
+    kctx.fillStyle = `rgb(${idx + 1},0,0)`;
+    for (const a of map.areas) {
+      if (a.kind !== kind || a.pts.length < 6) continue;
+      kctx.beginPath();
+      for (let i = 0; i < a.pts.length; i += 2) {
+        const px = (a.pts[i]! - x0) * km;
+        const py = (a.pts[i + 1]! - z0) * km;
+        if (i === 0) kctx.moveTo(px, py);
+        else kctx.lineTo(px, py);
+      }
+      kctx.closePath();
+      kctx.fill();
+    }
+  });
+  const kinds = kctx.getImageData(0, 0, M, M).data;
+  const kindAt = (x: number, z: number): AreaKind | null => {
+    const i = Math.floor(((x - x0) / size) * M);
+    const j = Math.floor(((z - z0) / size) * M);
+    if (i < 0 || j < 0 || i >= M || j >= M) return null;
+    const k = (j * M + i) * 4;
+    // (anti-aliased edges blend indices: only trust fully covered pixels)
+    if (kinds[k + 3]! < 250) return null;
+    return LAND_ORDER[kinds[k]! - 1] ?? null;
+  };
+  return { texture, x0, z0, size, kindAt };
 }
 
 /** Make every triangle of a ground-hugging mesh face up (winding-agnostic). */

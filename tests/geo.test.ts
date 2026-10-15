@@ -73,7 +73,15 @@ describe("projection and tiles", () => {
       bytes[i * 2] = q & 255;
       bytes[i * 2 + 1] = q >> 8;
     });
-    const grid = { x0: 0, z0: 0, step: 10, nx: 2, nz: 2, base: 100, data: Buffer.from(bytes).toString("base64") };
+    const grid = {
+      x0: 0,
+      z0: 0,
+      step: 10,
+      nx: 2,
+      nz: 2,
+      base: 100,
+      data: Buffer.from(bytes).toString("base64"),
+    };
     const h = decodeGrid(grid);
     expect([...h].map((v) => +v.toFixed(1))).toEqual(values);
     expect(sampleGrid(grid, h, 5, 5)).toBeCloseTo((100 + 100.5 + 101 + 102.3) / 4, 5);
@@ -94,9 +102,21 @@ describe("OpenStreetMap", () => {
       elements: [
         { type: "way", tags: { highway: "residential" }, geometry: square(46.2, 8.5).slice(0, 2) },
         { type: "way", tags: { highway: "path" }, geometry: square(46.2, 8.5).slice(0, 2) },
-        { type: "way", tags: { highway: "track", surface: "asphalt" }, geometry: square(46.2, 8.5).slice(0, 2) },
-        { type: "way", tags: { highway: "footway", tunnel: "yes" }, geometry: square(46.2, 8.5).slice(0, 2) },
-        { type: "way", tags: { building: "yes", "building:levels": "4" }, geometry: square(46.201, 8.501) },
+        {
+          type: "way",
+          tags: { highway: "track", surface: "asphalt" },
+          geometry: square(46.2, 8.5).slice(0, 2),
+        },
+        {
+          type: "way",
+          tags: { highway: "footway", tunnel: "yes" },
+          geometry: square(46.2, 8.5).slice(0, 2),
+        },
+        {
+          type: "way",
+          tags: { building: "yes", "building:levels": "4" },
+          geometry: square(46.201, 8.501),
+        },
         { type: "way", tags: { natural: "wood" }, geometry: square(46.202, 8.502) },
         { type: "way", tags: { landuse: "meadow" }, geometry: square(46.203, 8.503) },
         { type: "way", tags: { waterway: "stream" }, geometry: square(46.204, 8.504).slice(0, 3) },
@@ -143,9 +163,21 @@ describe("OpenStreetMap", () => {
     const f = parseOverpass(
       {
         elements: [
-          { type: "node", lat: 46.2, lon: 8.5, tags: { natural: "tree", leaf_type: "needleleaved", height: "12" } },
+          {
+            type: "node",
+            lat: 46.2,
+            lon: 8.5,
+            tags: { natural: "tree", leaf_type: "needleleaved", height: "12" },
+          },
           { type: "node", lat: 46.2001, lon: 8.5, tags: { natural: "tree", genus: "Roystonea" } },
-          { type: "way", tags: { natural: "tree_row" }, geometry: [{ lat: 46.2, lon: 8.5 }, { lat: 46.2, lon: 8.5005 }] },
+          {
+            type: "way",
+            tags: { natural: "tree_row" },
+            geometry: [
+              { lat: 46.2, lon: 8.5 },
+              { lat: 46.2, lon: 8.5005 },
+            ],
+          },
         ],
       },
       p,

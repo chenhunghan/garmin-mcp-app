@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildingsOnPath, insidePolygon, mapMatch, treesOffPath } from "../src/replay/map-match.ts";
+import {
+  buildingsOnPath,
+  insidePolygon,
+  mapMatch,
+  treesOffPath,
+  groundBlocker,
+} from "../src/replay/map-match.ts";
 import type { Road } from "../src/geo/types.ts";
 
 /** A straight GPS line along z, `offset` m east of x = 0. */
@@ -61,5 +67,21 @@ describe("treesOffPath", () => {
     const z = [0, 0, 0, 0];
     const trees = [15, 0.5, 8, 1, 15, 4, 9, 0];
     expect(treesOffPath(x, z, trees)).toEqual([15, 4, 9, 0]);
+  });
+});
+
+describe("groundBlocker", () => {
+  it("blocks the path, roads (by half width) and building footprints", () => {
+    const blocked = groundBlocker({
+      path: { x: [0, 50], z: [0, 0], halfWidth: 1 },
+      lines: [{ pts: [0, 20, 50, 20], halfWidth: 3 }],
+      footprints: [{ pts: [30, 30, 40, 30, 40, 40, 30, 40] }],
+    });
+    expect(blocked(10, 0.5)).toBe(true);
+    expect(blocked(10, 1.5)).toBe(false);
+    expect(blocked(10, 22.5)).toBe(true);
+    expect(blocked(10, 23.5)).toBe(false);
+    expect(blocked(35, 35)).toBe(true);
+    expect(blocked(45, 35)).toBe(false);
   });
 });

@@ -81,8 +81,179 @@ function crown(lumps: number, detail: number, center: THREE.Vector3, radius: num
 }
 
 function broadleaf(near: boolean) {
-  const c = crown(near ? 7 : 1, near ? 1 : 0, new THREE.Vector3(0, 0.64, 0), 0.3);
-  return near ? mergeGeometries([trunk(0.05, 0.03, 0.5, 6, BARK), c])! : c;
+  if (near) return leafyBroadleaf();
+  return crown(1, 0, new THREE.Vector3(0, 0.64, 0), 0.3);
+}
+
+/** UV of the leaf atlas's solid corner: trunks and the crown's core sample it (opaque) */
+const SOLID_UV = 0.985;
+
+function withSolidUv(g: THREE.BufferGeometry) {
+  const n = (g.attributes.position as THREE.BufferAttribute).count;
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(n * 2).fill(SOLID_UV), 2));
+  return g;
+}
+
+/**
+ * A broadleaf tree for close range (after the stylized-scene references): a
+ * trunk with a few limbs, a dark core, and clusters of leaf cards cut out by
+ * the generated leaf texture. Card normals point away from the crown's
+ * middle, so the crown shades as one soft mass with a ragged, leafy edge.
+ */
+function leafyBroadleaf() {
+  const center = new THREE.Vector3(0, 0.64, 0);
+  const R = 0.3;
+  const parts: THREE.BufferGeometry[] = [withSolidUv(trunk(0.05, 0.03, 0.5, 7, BARK))];
+  const rnd = (k: number) => jitter(k * 1.91, k * 0.73, 2.2) * 0.5 + 0.5;
+  // Cluster centers: one on top, a ring around, a few lower
+  const clusters: THREE.Vector3[] = [new THREE.Vector3(0, 0.84, 0)];
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + rnd(i) * 0.6;
+    clusters.push(
+      new THREE.Vector3(
+        Math.cos(a) * R * 0.62,
+        0.66 + (rnd(i + 9) - 0.4) * 0.16,
+        Math.sin(a) * R * 0.62,
+      ),
+    );
+  }
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2 + 0.5;
+    clusters.push(new THREE.Vector3(Math.cos(a) * R * 0.4, 0.5, Math.sin(a) * R * 0.4));
+  }
+  // Limbs from the trunk towards the ring clusters
+  for (const c of clusters.slice(1, 7)) {
+    const from = new THREE.Vector3(0, 0.42, 0);
+    const dir = c.clone().sub(from);
+    const len = dir.length() * 0.85;
+    const limb = new THREE.CylinderGeometry(0.008, 0.016, len, 5, 1, true).translate(0, len / 2, 0);
+    limb.applyQuaternion(
+      new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize()),
+    );
+    limb.translate(from.x, from.y, from.z);
+    parts.push(withSolidUv(paint(limb.toNonIndexed(), () => BARK)));
+  }
+  // A dark core, so the crown isn't see-through in the middle
+  const core = crown(1, 1, center, R * 0.62);
+  const cc = core.attributes.color as THREE.BufferAttribute;
+  for (let i = 0; i < cc.count; i++)
+    cc.setXYZ(i, cc.getX(i) * 0.55, cc.getY(i) * 0.55, cc.getZ(i) * 0.55);
+  parts.push(withSolidUv(core));
+  // Leaf cards
+  const pos: number[] = [];
+  const nor: number[] = [];
+  const col: number[] = [];
+  const uvs: number[] = [];
+  let k = 0;
+  const q = new THREE.Quaternion();
+  const e = new THREE.Euler();
+  const corner = new THREE.Vector3();
+  for (const c of clusters) {
+    const cards = c.y > 0.8 ? 16 : 13;
+    for (let i = 0; i < cards; i++, k++) {
+      const off = new THREE.Vector3(
+        rnd(k) - 0.5,
+        rnd(k + 101) - 0.5,
+        rnd(k + 202) - 0.5,
+      ).multiplyScalar(0.2);
+      const p = c.clone().add(off);
+      const size = 0.2 + rnd(k + 303) * 0.1;
+      e.set(rnd(k + 404) * Math.PI, rnd(k + 505) * Math.PI * 2, rnd(k + 606) * Math.PI);
+      q.setFromEuler(e);
+      const quad = [
+        [-0.5, -0.5, 0, 0],
+        [0.5, -0.5, 1, 0],
+        [0.5, 0.5, 1, 1],
+        [-0.5, 0.5, 0, 1],
+      ] as const;
+      // Which quarter of the atlas (four leaf sprigs) this card shows
+      const su = (k % 2) * 0.47;
+      const sv = (Math.floor(k / 2) % 2) * 0.47;
+      for (const o of [0, 1, 2, 0, 2, 3]) {
+        const [x, y, u, v] = quad[o]!;
+        corner
+          .set(x * size, y * size, 0)
+          .applyQuaternion(q)
+          .add(p);
+        pos.push(corner.x, corner.y, corner.z);
+        const n = corner.clone().sub(center).normalize();
+        nor.push(n.x, n.y, n.z);
+        const t = THREE.MathUtils.clamp((corner.y - (center.y - R)) / (R * 2.2), 0, 1);
+        const cc = LEAF_DARK.clone().lerp(LEAF, 0.3 + 0.7 * t);
+        col.push(cc.r, cc.g, cc.b);
+        uvs.push(su + u * 0.46, sv + v * 0.46);
+      }
+    }
+  }
+  const cardsGeo = new THREE.BufferGeometry();
+  cardsGeo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  cardsGeo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+  cardsGeo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  cardsGeo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  parts.push(cardsGeo);
+  // Same attributes everywhere (mergeGeometries needs that)
+  const keep = ["position", "normal", "color", "uv"];
+  const ready = parts.map((g0) => {
+    const g = g0.index ? g0.toNonIndexed() : g0;
+    for (const name of Object.keys(g.attributes)) if (!keep.includes(name)) g.deleteAttribute(name);
+    if (!g.attributes.uv) withSolidUv(g);
+    return g;
+  });
+  return mergeGeometries(ready)!;
+}
+
+/**
+ * Leaf atlas (generated): four sprigs of leaves in grey (the vertex color
+ * tints them), cut out by alpha, and an opaque corner for trunks and cores.
+ */
+let leafAtlas: THREE.CanvasTexture | null = null;
+function leafTexture() {
+  if (leafAtlas) return leafAtlas;
+  const N = 512;
+  const c = document.createElement("canvas");
+  c.width = c.height = N;
+  const ctx = c.getContext("2d")!;
+  let seed = 7;
+  const r = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
+  for (let cell = 0; cell < 4; cell++) {
+    const ox = (cell % 2) * N * 0.47;
+    const oy = Math.floor(cell / 2) * N * 0.47;
+    const S = N * 0.46;
+    // A twig through the cell, leaves along it and scattered round
+    for (let i = 0; i < 46; i++) {
+      const x = ox + S * (0.14 + r() * 0.72);
+      const y = oy + S * (0.14 + r() * 0.72);
+      const len = S * (0.09 + r() * 0.07);
+      const wid = len * (0.38 + r() * 0.16);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(r() * Math.PI * 2);
+      const v = Math.round(150 + r() * 105);
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.beginPath();
+      ctx.moveTo(-len / 2, 0);
+      ctx.quadraticCurveTo(0, -wid, len / 2, 0);
+      ctx.quadraticCurveTo(0, wid, -len / 2, 0);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(60,60,60,0.35)`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-len / 2, 0);
+      ctx.lineTo(len / 2, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  // (top right of the canvas: the texture is flipped on upload, so v = 0.985)
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(N * 0.96, 0, N * 0.04, N * 0.04);
+  leafAtlas = new THREE.CanvasTexture(c);
+  leafAtlas.colorSpace = THREE.SRGBColorSpace;
+  leafAtlas.anisotropy = 4;
+  return leafAtlas;
 }
 
 function conifer(near: boolean) {
@@ -144,12 +315,13 @@ function palm(near: boolean) {
 /** Leaves sway a little in the wind (more towards the top) */
 export const treeWind = uniform(0.5);
 
-function treeMaterial() {
+function treeMaterial(leafy = false) {
   const mat = new THREE.MeshStandardNodeMaterial({
     vertexColors: true,
     roughness: 0.92,
     metalness: 0,
     side: THREE.DoubleSide,
+    ...(leafy ? { map: leafTexture(), alphaTest: 0.5 } : {}),
   });
   const phase = float(instanceIndex).mul(1.73);
   const h2 = positionLocal.y.mul(positionLocal.y);
@@ -223,7 +395,7 @@ export class Forest {
     for (let kind = 0; kind < 3; kind++) {
       const cap = Math.max(1, perKind[kind]!);
       const make = (near: boolean) => {
-        const mat = treeMaterial();
+        const mat = treeMaterial(kind === 0 && near);
         this.mats.push(mat);
         const mesh = new THREE.InstancedMesh(shapes[kind]!(near), mat, cap);
         mesh.count = 0;

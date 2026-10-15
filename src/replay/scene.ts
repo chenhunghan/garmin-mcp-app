@@ -23,7 +23,8 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { hrZone, locate, sunPosition, valueAt, type ReplayData } from "../replay-model.ts";
 import { ZONE_COLORS, defaultZones, sampleColors, type ColorBy } from "./colors.ts";
 import { buildTrack, measureDense, type Track } from "./track.ts";
-import { buildingsOnPath, mapMatch, treesOffPath } from "./map-match.ts";
+import { buildingsOnPath, groundBlocker, mapMatch, treesOffPath } from "./map-match.ts";
+import { Grass, grassLight } from "./grass.ts";
 import { buildTerrain, seasonOf, smoothstepJs, type Terrain } from "./terrain.ts";
 import { buildRoute, type RouteMeshes } from "./route.ts";
 import { Runner } from "./runner.ts";
@@ -136,6 +137,7 @@ export class ReplayScene {
   private groundAbs: ((x: number, z: number) => number) | null = null;
   private disposeLater: { dispose(): void }[] = [];
   private forest: Forest | null = null;
+  private grass: Grass | null = null;
   /** Which runner is shown: from the Garmin profile, or the user's pick */
   body: RunnerBody = "profile";
   private bodyLoad = 0;
@@ -367,6 +369,29 @@ export class ReplayScene {
         scene.add(this.forest.group);
         this.disposeLater.push(this.forest);
       }
+    }
+    // Grass on the green ground (not under snow), off paths, roads and buildings
+    if (snowCover < 0.4) {
+      const m = this.map && groundAbs ? this.map : null;
+      const blocked = groundBlocker({
+        path: { x: track.dense.x, z: track.dense.z, halfWidth: 1.15 },
+        lines: m
+          ? [
+              ...m.roads.map((r) => ({ pts: r.pts, halfWidth: r.width / 2 + 0.35 })),
+              ...m.rivers.map((r) => ({ pts: r.pts, halfWidth: r.width / 2 + 0.6 })),
+            ]
+          : [],
+        footprints: m?.buildings ?? [],
+      });
+      this.grass = new Grass({
+        heightAt: this.terrain.heightAt,
+        kindAt: landCover ? landCover.kindAt : m ? () => null : undefined,
+        blocked,
+        season,
+      });
+      grassLight.dry.value = season === "autumn" ? 0.3 : season === "winter" ? 0.45 : 0;
+      scene.add(this.grass.mesh);
+      this.disposeLater.push(this.grass);
     }
     this.route = buildRoute(data, track, this.terrain.heightAt);
     scene.add(this.route.group);
@@ -642,6 +667,12 @@ export class ReplayScene {
     cloudLight.cover.value = THREE.MathUtils.clamp(this.cloud * 0.9, 0.05, 0.85);
     cloudLight.strength.value = 0.55 * sunUp * (1 - smoothstepJs(0.75, 1, this.cloud));
     treeWind.value = 0.3 + Math.hypot(this.wind.x, this.wind.y) * 1.6;
+    // Grass leans downwind; a breeze even on a still day
+    const wl = Math.hypot(this.wind.x, this.wind.y);
+    grassLight.wind.value
+      .set(this.wind.x, this.wind.y)
+      .divideScalar(wl || 1)
+      .multiplyScalar(0.25 + wl * 0.9);
     // Facades: lit rooms come on before it's fully dark; glass mirrors the sky
     facadeLight.night.value = 1 - smoothstepJs(-4, 4, elevation);
     facadeLight.day.value = day;
@@ -691,6 +722,7 @@ export class ReplayScene {
   private updateDetails(now: number) {
     const cam = this.camera.position;
     this.forest?.update(cam, this.quality, now);
+    this.grass?.update(cam, this.quality, now);
     if (now - this.lastDetailAt < 200) return;
     this.lastDetailAt = now;
     for (const d of this.details) {

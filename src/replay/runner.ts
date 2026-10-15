@@ -965,23 +965,33 @@ export class Runner {
       driverPelvisRest: root.worldToLocal(wp(this.pelvis)),
     };
 
-    // The watch moves to the model's left wrist, keeping its place on the arm
-    const forearm = bone("lowerarm_l")!;
-    const hand = bone("hand_l")!;
-    const entry = map.get(forearm);
-    if (entry) {
-      const shift = wp(hand).sub(wrist(leftArm));
-      const frame = new THREE.Matrix4().compose(
-        wp(forearm),
-        entry.rest,
-        forearm.getWorldScale(new THREE.Vector3()),
-      );
-      const inv = frame.clone().invert();
-      for (const part of this.watchParts) {
-        const m = part.matrixWorld.clone().premultiply(new THREE.Matrix4().makeTranslation(shift));
-        forearm.add(part);
-        inv.clone().multiply(m).decompose(part.position, part.quaternion, part.scale);
-      }
+    // The watch goes on the model's left wrist, set in the forearm bone's own
+    // frame: its axis runs to the hand (the hand's local position), the face
+    // on the outside of the arm, where it was on ours
+    const forearm = bone("lowerarm_l");
+    const hand = bone("hand_l");
+    const entry = forearm && map.get(forearm);
+    if (forearm && hand && entry) {
+      const axis = hand.position.clone().normalize();
+      const len = hand.position.length();
+      // Outside of our arm in the world → the bone's frame (as posed at rest)
+      const out = new THREE.Vector3(1, 0, 0)
+        .applyQuaternion(leftArm.elbow.getWorldQuaternion(new THREE.Quaternion()))
+        .applyQuaternion(entry.rest.clone().invert());
+      out.addScaledVector(axis, -out.dot(axis)).normalize();
+      // Sizes in meters, whatever the bone's scale
+      const k = 1 / forearm.getWorldScale(new THREE.Vector3()).x;
+      const at = axis.clone().multiplyScalar(len - 0.045 * k);
+      const [strap, face] = this.watchParts as [THREE.Mesh, THREE.Mesh];
+      forearm.add(strap, face);
+      // Strap: the torus lies around its Z axis → around the bone
+      strap.position.copy(at);
+      strap.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), axis);
+      strap.scale.set(1.12 * k, 0.95 * k, 1.1 * k);
+      // Face: the cylinder's Y axis points out of the arm, just above the strap
+      face.position.copy(at).addScaledVector(out, 0.031 * k);
+      face.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), out);
+      face.scale.setScalar(k);
     }
     // Hide the built-in body (skinned body and clothes, head pieces, shoes)
     const inModel = new Set<THREE.Object3D>();

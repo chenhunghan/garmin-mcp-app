@@ -480,8 +480,16 @@ export function buildTerrain(
     drop: number,
     chunkCells: number,
     strideFor: (dist: number) => number,
+    /** Not drawn inside this rectangle (another lattice covers it) */
+    hole?: { x0: number; z0: number; x1: number; z1: number },
   ) => {
     const grid = new Grid(x0, z0, extent / res, res);
+    const inHole = (i: number, j: number) => {
+      if (!hole) return false;
+      const x = x0 + i * grid.step;
+      const z = z0 + j * grid.step;
+      return x > hole.x0 && x < hole.x1 && z > hole.z0 && z < hole.z1;
+    };
     grid.chunkCells = chunkCells;
     const r = res + 1;
     const pd = new Float32Array(r * r);
@@ -539,6 +547,11 @@ export function buildTerrain(
             const p10 = vi(a + 1, b);
             const p01 = vi(a, b + 1);
             const p11 = vi(a + 1, b + 1);
+            const i0 = ci + a * stride;
+            const j0 = cj + b * stride;
+            const i1 = i0 + stride;
+            const j1 = j0 + stride;
+            if (inHole(i0, j0) && inHole(i1, j0) && inHole(i0, j1) && inHole(i1, j1)) continue;
             index.push(p00, p01, p10, p10, p01, p11);
           }
         }
@@ -552,12 +565,18 @@ export function buildTerrain(
         for (let k = 0; k < border.length; k++) {
           const [a0, b0] = border[k]!;
           const [a1, b1] = border[(k + 1) % border.length]!;
+          if (
+            inHole(ci + a0 * stride, cj + b0 * stride) &&
+            inHole(ci + a1 * stride, cj + b1 * stride)
+          )
+            continue;
           const t0 = vi(a0, b0);
           const t1 = vi(a1, b1);
           const s0 = verts + k;
           const s1 = verts + ((k + 1) % border.length);
           index.push(t0, s0, t1, t1, s0, s1, t0, t1, s0, t1, s1, s0);
         }
+        if (!index.length) continue;
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
         geo.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
@@ -574,7 +593,11 @@ export function buildTerrain(
   };
 
   // Route area: 3 m cells by the path, coarser away from it. Horizon: a
-  // coarse lattice a little lower underneath, so the route area always wins
+  // coarse lattice a little lower, with a hole where the route area is (its
+  // cells span ~100 m: across a valley, or where the path's bed is cut into
+  // a slope, they rose through the route area and swallowed the runner's
+  // legs). The hole stops a few coarse cells short of the route area's edge,
+  // so the two overlap there instead of leaving a crack.
   const innerExtent = span + 600;
   const innerRes = Math.min(1080, Math.max(240, Math.ceil(innerExtent / 3 / 8) * 8));
   const inner = lattice(
@@ -587,8 +610,22 @@ export function buildTerrain(
     40,
     (d) => (d < 60 ? 1 : d < 250 ? 2 : d < 600 ? 4 : 8),
   );
-  const outer = lattice(center.x - size / 2, center.z - size / 2, size, 320, false, 0.8, 40, (d) =>
-    d < 1500 ? 2 : 4,
+  const margin = (4 * size) / 320;
+  const outer = lattice(
+    center.x - size / 2,
+    center.z - size / 2,
+    size,
+    320,
+    false,
+    0.8,
+    40,
+    (d) => (d < 1500 ? 2 : 4),
+    {
+      x0: center.x - innerExtent / 2 + margin,
+      z0: center.z - innerExtent / 2 + margin,
+      x1: center.x + innerExtent / 2 - margin,
+      z1: center.z + innerExtent / 2 - margin,
+    },
   );
 
   return {

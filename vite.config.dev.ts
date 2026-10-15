@@ -13,6 +13,8 @@ export default defineConfig({
   define: {
     __DEV_UI__: "true",
   },
+  // The replay's runner model (src/replay/assets) is imported as an inlined asset
+  assetsInclude: ["**/*.glb"],
   plugins: [tailwindcss(), react(), devPlugin()],
   server: {
     port: 5173,

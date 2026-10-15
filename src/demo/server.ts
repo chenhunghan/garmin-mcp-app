@@ -82,6 +82,6 @@ export function startDemoMode(): void {
   });
   state.__garminDemo = { dir };
   console.log(
-    "[demo] Demo mode: Garmin is answered with a fictional athlete's data (no requests leave this machine)",
+    "[demo] Demo mode: Garmin is answered with a fictional athlete's data (no Garmin requests leave this machine; the replay's optional real map fetches elevation and OpenStreetMap data)",
   );
 }

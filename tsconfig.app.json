@@ -35,6 +35,10 @@
     "src/briefing-view.tsx",
     "src/training-week-view.tsx",
     "src/dashboard-view.tsx",
+    "src/run-replay-view.tsx",
+    "src/metric-lanes.tsx",
+    "src/replay-hud.tsx",
+    "src/replay/**/*.ts",
     "src/lib/**/*.ts",
     "src/components/**/*.tsx",
     "src/env.d.ts"

@@ -27,6 +27,7 @@ import { WorkoutsView } from "./workouts-view.tsx";
 import { BriefingView } from "./briefing-view.tsx";
 import { TrainingWeekView } from "./training-week-view.tsx";
 import { DashboardView } from "./dashboard-view.tsx";
+import { RunReplayView } from "./run-replay-view.tsx";
 import "./app.css";
 
 type AuthState = "checking" | "login" | "mfa" | "authenticated";
@@ -155,6 +156,7 @@ const VALID_VIEWS = new Set([
   "briefing",
   "week",
   "dashboard",
+  "replay",
 ]);
 
 export function GarminApp() {
@@ -276,6 +278,7 @@ export function GarminApp() {
             "briefing",
             "week",
             "dashboard",
+            "replay",
           ]),
         );
       }
@@ -319,6 +322,21 @@ export function GarminApp() {
 
   useHostStyles(app, app?.getHostContext());
 
+  // Display mode (inline / fullscreen), for views that can use the whole window
+  const [displayMode, setDisplayModeState] = useState<"inline" | "fullscreen" | "pip">("inline");
+  const [availableModes, setAvailableModes] = useState<string[]>([]);
+  useEffect(() => {
+    if (!app || !isConnected) return;
+    const sync = () => {
+      const ctx = app.getHostContext();
+      if (ctx?.displayMode) setDisplayModeState(ctx.displayMode);
+      setAvailableModes(ctx?.availableDisplayModes ?? []);
+    };
+    sync();
+    app.addEventListener("hostcontextchanged", sync);
+    return () => app.removeEventListener("hostcontextchanged", sync);
+  }, [app, isConnected]);
+
   // Ask Claude / share what's on screen, when the host supports it
   const caps = isConnected ? app?.getHostCapabilities() : undefined;
   const actions = useMemo<AppActions>(
@@ -336,8 +354,14 @@ export function GarminApp() {
           ...(data && { structuredContent: data }),
         });
       },
+      displayMode,
+      canFullscreen: availableModes.includes("fullscreen"),
+      setDisplayMode: async (mode) => {
+        const result = await appRef.current?.requestDisplayMode({ mode });
+        if (result?.mode) setDisplayModeState(result.mode);
+      },
     }),
-    [callTool, caps, app, isConnected],
+    [callTool, caps, app, isConnected, displayMode, availableModes],
   );
 
   useEffect(() => {
@@ -415,6 +439,7 @@ export function GarminApp() {
             {visibleCharts?.has("workouts") && <WorkoutsView callTool={callTool} args={toolArgs} />}
             {visibleCharts?.has("briefing") && <BriefingView callTool={callTool} args={toolArgs} />}
             {visibleCharts?.has("week") && <TrainingWeekView callTool={callTool} args={toolArgs} />}
+            {visibleCharts?.has("replay") && <RunReplayView callTool={callTool} args={toolArgs} />}
             {visibleCharts?.has("dashboard") && (
               <DashboardView
                 key={JSON.stringify(toolArgs ?? null)}

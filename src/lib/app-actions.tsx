@@ -26,6 +26,11 @@ export interface AppActions {
    * next message; each call overwrites the previous one.
    */
   shareContext: (text: string, data?: Record<string, unknown>) => Promise<void>;
+  /** How the host shows the app ("inline" in the chat, or "fullscreen"). */
+  displayMode: "inline" | "fullscreen" | "pip";
+  /** Host can switch the app to fullscreen and back. */
+  canFullscreen: boolean;
+  setDisplayMode: (mode: "inline" | "fullscreen") => Promise<void>;
 }
 
 const noop = async () => {};
@@ -37,6 +42,9 @@ export const AppActionsContext = createContext<AppActions>({
   ask: noop,
   canShareContext: false,
   shareContext: noop,
+  displayMode: "inline",
+  canFullscreen: false,
+  setDisplayMode: noop,
 });
 
 /** Name the assistant after the host, e.g. "Claude Desktop" → "Claude". */

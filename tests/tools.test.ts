@@ -100,6 +100,9 @@ const toolArgs: Record<string, Record<string, unknown>> = {
       { type: "cooldown", duration: "lap.button" },
     ],
   },
+  "show-run-replay": { activityId: ctx.activityId },
+  "garmin-get-run-replay": { activityId: ctx.activityId, maxPoints: 100 },
+  "garmin-run-map-settings": {},
   "show-performance-dashboard": {
     metrics: ["restingHR", "hrv"],
     range: "4w",
@@ -113,6 +116,8 @@ const untested: Record<string, string> = {
   "garmin-login": "needs SSO; covered by sso.test.ts",
   "garmin-submit-mfa": "needs SSO; covered by sso.test.ts",
   "garmin-logout": "clears tokens",
+  "garmin-get-run-map":
+    "fetches AWS elevation tiles and OpenStreetMap; parsing is unit-tested in geo.test.ts",
   "create-workout": "write operation, no recording",
   "update-workout": "write operation, no recording",
   "delete-workout": "write operation, no recording",

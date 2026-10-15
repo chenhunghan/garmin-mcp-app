@@ -49,7 +49,11 @@ describe("buildTrainingWeek", () => {
       ],
       {
         11: { workoutName: "Easy 30", estimatedDurationInSecs: 1800 },
-        12: { workoutName: "6x800", estimatedDurationInSecs: 3000, estimatedDistanceInMeters: 9000 },
+        12: {
+          workoutName: "6x800",
+          estimatedDurationInSecs: 3000,
+          estimatedDistanceInMeters: 9000,
+        },
         13: { workoutName: "Lap run", estimatedDurationInSecs: null },
       },
     );

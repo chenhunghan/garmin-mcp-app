@@ -44,7 +44,13 @@ function simulateToolCall() {
   const params = new URLSearchParams(location.search);
   const tool = params.get("tool");
   if (!tool) return;
-  const args = JSON.parse(params.get("args") ?? "{}");
+  // `args=` (empty) or no args at all means no arguments
+  let args: unknown = {};
+  try {
+    args = JSON.parse(params.get("args") || "{}");
+  } catch {
+    console.error(`[dev host] ?args= is not valid JSON: ${params.get("args")}`);
+  }
   void callServerTool(tool, args).then((result) => {
     window.postMessage(
       { jsonrpc: "2.0", method: "ui/notifications/tool-result", params: result },

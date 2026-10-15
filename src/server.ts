@@ -12,6 +12,7 @@ import { GARMIN_ICONS } from "./tools/openai.js";
 import { registerBriefingTools } from "./tools/briefing.js";
 import { formatLocalDate, mondayOf, registerWeekTools } from "./tools/week.js";
 import { registerDashboardTools } from "./tools/dashboard.js";
+import { registerReplayTools } from "./tools/replay.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -56,6 +57,7 @@ export function createServer(version: string) {
   registerBriefingTools(server, resourceUri);
   registerWeekTools(server, resourceUri);
   registerDashboardTools(server, resourceUri);
+  registerReplayTools(server, resourceUri);
 
   // --- Prompts ---
 

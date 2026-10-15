@@ -33,6 +33,7 @@ import {
   type SurfaceSet,
 } from "./surfaces.ts";
 import { lampAt } from "./furniture.ts";
+import { GlowTrail } from "./glow-trail.ts";
 import { Line2 } from "three/addons/lines/webgpu/Line2.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
 import { locate, timeAtDistance, type ReplayData } from "../replay-model.ts";
@@ -51,6 +52,13 @@ export interface RouteMeshes {
   setFar(far: boolean): void;
   /** The worn trail in scanned materials (asset pack), or generated */
   setSurfaces(set: SurfaceSet | null): void;
+  /** Each frame: the glowing wake behind the runner (hip: its height above the path) */
+  update(
+    cam: THREE.Vector3,
+    t: number,
+    hip: number,
+    ground: (x: number, z: number) => number,
+  ): void;
   dispose(): void;
 }
 
@@ -180,7 +188,15 @@ export function buildRoute(
   const group = new THREE.Group();
   group.name = "route";
   group.add(trail.mesh);
-  group.add(doneMesh, aheadMesh);
+  // The route itself isn't drawn on the ground any more (ground ribbons got
+  // cut by the terrain and sank into it): behind the runner it's a glowing
+  // wake at hip height, from afar a line drawn over everything
+  const sampleColors = new Float32Array(n * 3).fill(1);
+  const glow = new GlowTrail(track, () => sampleColors);
+  group.add(glow.group);
+  let progressIndex = 0;
+  void doneMesh;
+  void aheadMesh;
 
   // Overview line: a constant-width line a little above the ground
   const linePts: number[] = [];
@@ -205,17 +221,21 @@ export function buildRoute(
     vertexColors: true,
     linewidth: 4,
     worldUnits: false,
-    depthTest: true,
+    // Over everything, like a map overlay: never cut by hills or buildings
+    depthTest: false,
+    depthWrite: false,
+    transparent: true,
   });
   const line = new Line2(lineGeo, lineMat);
   line.computeLineDistances();
   line.visible = false;
-  line.renderOrder = 3;
+  line.renderOrder = 10;
   group.add(line);
 
   const disposables: { dispose(): void }[] = [
     trail.geo,
     trail.mat,
+    glow,
     geo,
     aheadGeo,
     done,
@@ -249,6 +269,7 @@ export function buildRoute(
         colors[k + 2] = c.b;
       }
       colorAttr.needsUpdate = true;
+      for (let k = 0; k < n; k++) sampleColors.set(colors.subarray(k * 6, k * 6 + 3), k * 3);
       lineGeo.setColors(
         lineIdx.flatMap((i) => [colors[i * 6]!, colors[i * 6 + 1]!, colors[i * 6 + 2]!]),
       );
@@ -259,8 +280,12 @@ export function buildRoute(
     setSurfaces(set) {
       trail.setSurfaces(set);
     },
+    update(cam, t, hip, ground) {
+      glow.update(progressIndex, hip, cam, t, ground);
+    },
     setProgress(i) {
       const di = track.denseIndex(Math.floor(i), i - Math.floor(i));
+      progressIndex = di;
       const a = Math.min(n - 1, Math.floor(di));
       const b = Math.min(n - 1, a + 1);
       progress.value = (path.s[a]! + (path.s[b]! - path.s[a]!) * (di - a)) / WIDTH;

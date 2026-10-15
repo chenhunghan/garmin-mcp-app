@@ -1138,6 +1138,25 @@ export class Runner {
   }
 
   /** World position of the head (for breath puffs and camera targets). */
+  /**
+   * The lowest the soles reach below the ground (m, ≥ 0): heel and toe of
+   * both feet checked against `groundAt`. The scene lifts the runner by it,
+   * so a foot never sinks into the ground whatever the data says.
+   */
+  soleDeficit(groundAt: (x: number, z: number) => number): number {
+    this.root.updateMatrixWorld(true);
+    let worst = 0;
+    const p = this.tmpSole;
+    for (const leg of this.legs) {
+      for (const z of [-HEEL_BACK, BALL_FWD + 0.05]) {
+        leg.ankle.localToWorld(p.set(0, -ANKLE_H, z));
+        worst = Math.max(worst, groundAt(p.x, p.z) + 0.008 - p.y);
+      }
+    }
+    return worst;
+  }
+  private tmpSole = new THREE.Vector3();
+
   headWorld(out: THREE.Vector3): THREE.Vector3 {
     return this.head.getWorldPosition(out).add(new THREE.Vector3(0, 0.08, 0));
   }

@@ -54,6 +54,7 @@ import { G, GROUND_IDS, SurfaceSet, WALL_IDS } from "./surfaces.ts";
 import { SKY_IDS, SkyLight, skyWeights } from "./sky-light.ts";
 import { growLooks } from "./ez-trees.ts";
 import { StreetFurniture, lampLight, placeFurniture } from "./furniture.ts";
+import { drapeKeepOut } from "./drape.ts";
 import type { AreaKind, Surface } from "../geo/types.ts";
 import type { MapLayers } from "./map-layers.ts";
 
@@ -710,6 +711,13 @@ export class ReplayScene {
     for (const e of this.effects) e.update(dt, this.camera, this.wind);
     this.updateFog();
     this.updateDetails(now);
+    // The glowing wake behind the runner, at hip height (scaled with the runner)
+    this.route.update(
+      this.camera.position,
+      this.time,
+      0.95 * this.runner.root.scale.y,
+      this.terrain.heightAt,
+    );
     // Clouds drift with the run's wind (in replay time, so a seek lands on the same sky)
     driftClouds(this.wind.x * 11, this.wind.y * 11, this.time);
     this.updateShadow();
@@ -747,6 +755,7 @@ export class ReplayScene {
     const z = lerp(d.z[k]!, d.z[k2]!, ff);
     const y = Math.max(lerp(d.y[k]!, d.y[k2]!, ff), this.terrain.heightAt(x, z)) + 0.05;
     this.runnerPos.set(x, y, z);
+    drapeKeepOut.value.copy(this.runnerPos);
     this.heading = lerp(d.heading[k]!, d.heading[k2]!, ff);
     const root = this.runner.root;
     root.position.copy(this.runnerPos);
@@ -778,12 +787,30 @@ export class ReplayScene {
       cadence: valueAt(c.cad, at),
       gct: valueAt(c.gct, at),
       vo: valueAt(c.vo, at),
-      grade: lerp(track.grade[i]!, track.grade[j]!, f),
+      // The slope of the ground as drawn (the watch's grade is barometric
+      // and disagrees with the terrain: feet planted for it sank or floated)
+      grade: THREE.MathUtils.clamp(
+        (this.terrain.heightAt(x + Math.sin(this.heading) * 1.5, z + Math.cos(this.heading) * 1.5) -
+          this.terrain.heightAt(
+            x - Math.sin(this.heading) * 1.5,
+            z - Math.cos(this.heading) * 1.5,
+          )) /
+          3,
+        -0.3,
+        0.3,
+      ),
       curvature,
       hr,
       zoneColor: this.zoneColors[zone]!,
       rate: this.playing ? this.rate : 1,
     });
+    // Never into the ground: lift the runner by whatever a sole dips below it
+    // (roads lie 5–8 cm above the terrain: allow for them)
+    const sink = this.runner.soleDeficit((gx, gz) => this.terrain.heightAt(gx, gz) + 0.035);
+    if (sink > 0) {
+      root.position.y += sink;
+      root.updateMatrixWorld(true);
+    }
     this.route.setProgress(i + f);
 
     if (animDt > 0) {

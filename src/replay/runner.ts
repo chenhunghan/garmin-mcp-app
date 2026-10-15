@@ -176,8 +176,30 @@ let meshCache: {
   socks: THREE.BufferGeometry;
 } | null = null;
 
+/** Upper-body curves of a running stride from motion capture (scripts/assets/motion.mjs) */
+export interface MotionClip {
+  phases: number;
+  speed: number;
+  cadence: number;
+  curves: Record<
+    | "pelvisYaw"
+    | "pelvisRoll"
+    | "chestYaw"
+    | "lean"
+    | "flexL"
+    | "flexR"
+    | "abdL"
+    | "abdR"
+    | "elbowL"
+    | "elbowR",
+    number[]
+  >;
+}
+
 export class Runner {
   readonly root = new THREE.Group();
+  /** Motion-captured upper body, by cadence (useMotion) */
+  private motion: MotionClip[] = [];
   private pelvis = new THREE.Bone();
   private spine = new THREE.Bone();
   private chest = new THREE.Bone();
@@ -724,6 +746,34 @@ export class Runner {
     return { thigh, knee, ankle: -target.pitch - thigh - knee };
   }
 
+  /**
+   * Play the trunk and arms from motion capture (the legs stay on the
+   * cadence, ground contact and bounce): clips are blended by the run's
+   * cadence and sampled at the stride phase.
+   */
+  useMotion(clips: MotionClip[]) {
+    this.motion = clips
+      .filter((c) => c.curves && c.phases > 1)
+      .sort((a, b) => a.cadence - b.cadence);
+  }
+
+  /** Motion-capture channel at stride phase p, blended between clips by cadence */
+  private mocap(name: keyof MotionClip["curves"], p: number, cadence: number): number {
+    const clips = this.motion;
+    const at = (c: MotionClip) => {
+      const v = c.curves[name];
+      const x = (((p % 1) + 1) % 1) * c.phases;
+      const i = Math.floor(x);
+      const f = x - i;
+      return v[i % c.phases]! * (1 - f) + v[(i + 1) % c.phases]! * f;
+    };
+    if (clips.length === 1) return at(clips[0]!);
+    const a = clips[0]!;
+    const b = clips[clips.length - 1]!;
+    const w = Math.max(0, Math.min(1, (cadence - a.cadence) / (b.cadence - a.cadence || 1)));
+    return at(a) * (1 - w) + at(b) * w;
+  }
+
   update(dt: number, s: RunnerState) {
     // Smooth the speed so GPS noise doesn't jolt the gait
     this.smoothSpeed +=
@@ -767,10 +817,15 @@ export class Runner {
     const wL = weight(legPhase(1));
     const wR = weight(legPhase(-1));
     // Transverse rotation: the swinging leg's hip comes forward with it
-    const pelvisYaw = -0.1 * Math.cos(2 * Math.PI * (p - 0.85)) * run * vary(1);
+    const mc = this.motion.length > 0;
+    const pelvisYaw = mc
+      ? this.mocap("pelvisYaw", p, cadence) * run * vary(1)
+      : -0.1 * Math.cos(2 * Math.PI * (p - 0.85)) * run * vary(1);
     this.pelvis.rotation.y = pelvisYaw;
     // Obliquity: the swing side drops while the other leg carries the weight
-    this.pelvis.rotation.z = 0.055 * (wL - wR) * run;
+    this.pelvis.rotation.z = mc
+      ? this.mocap("pelvisRoll", p, cadence) * run
+      : 0.055 * (wL - wR) * run;
 
     // Legs: the planted foot by IK (stays put, rolls heel → toe); the swing leg
     // follows the running curves, bent to start and end exactly at the IK poses
@@ -817,9 +872,17 @@ export class Runner {
     const targetLean =
       (0.13 + 0.028 * v + Math.max(-0.08, Math.min(0.12, s.grade * 0.7))) * run + 0.02;
     this.lean += (targetLean - this.lean) * (1 - Math.exp(-dt * 4));
-    this.spine.rotation.x = this.lean + 0.018 * Math.cos(2 * Math.PI * q) * run;
-    this.spine.rotation.y = -pelvisYaw * 0.8;
-    this.chest.rotation.y = -pelvisYaw * 1.1 - 0.05 * Math.cos(2 * Math.PI * (p - 0.85)) * run;
+    if (mc) {
+      // Captured: the trunk's bounce in pitch, and the chest turning against the pelvis
+      this.spine.rotation.x = this.lean + this.mocap("lean", p, cadence) * run;
+      const twist = this.mocap("chestYaw", p, cadence) * run;
+      this.spine.rotation.y = twist * 0.4;
+      this.chest.rotation.y = twist * 0.6;
+    } else {
+      this.spine.rotation.x = this.lean + 0.018 * Math.cos(2 * Math.PI * q) * run;
+      this.spine.rotation.y = -pelvisYaw * 0.8;
+      this.chest.rotation.y = -pelvisYaw * 1.1 - 0.05 * Math.cos(2 * Math.PI * (p - 0.85)) * run;
+    }
     this.chest.rotation.z = -this.pelvis.rotation.z * 0.6;
 
     // Head: steady and level, eyes on the path ahead, whatever the trunk does
@@ -848,6 +911,21 @@ export class Runner {
       arm.shoulder.rotation.y = -arm.side * (0.12 + 0.12 * (f + 1) * 0.5) * run;
       const elbow = 12 + (66 + 14 * fast + 22 * (f + 1) * 0.5) * run;
       arm.elbow.rotation.x = -elbow * RAD_;
+      if (mc) {
+        // Captured swing, wider the faster the run; blends to the rest pose when not running
+        const L = arm.side === 1;
+        const gain = (0.9 + 0.35 * fast) * vary(5);
+        const flexC = this.mocap(L ? "flexL" : "flexR", p, cadence) * gain;
+        const abdC = this.mocap(L ? "abdL" : "abdR", p, cadence);
+        const elbowC = this.mocap(L ? "elbowL" : "elbowR", p, cadence);
+        arm.shoulder.rotation.x = -flexC * run + arm.shoulder.rotation.x * (1 - run);
+        arm.shoulder.rotation.z =
+          arm.side * (0.06 + abdC) * run + arm.shoulder.rotation.z * (1 - run);
+        // (the take's elbows are bent a little more than most runners'; and
+        // with our upper-arm twist, hands would end up in front of the chest)
+        arm.elbow.rotation.x = -(elbowC * 0.88 * run + 12 * RAD_ * (1 - run));
+        arm.shoulder.rotation.y *= 0.5;
+      }
     }
 
     // Lean into corners: tan(lean) = v²·curvature / g

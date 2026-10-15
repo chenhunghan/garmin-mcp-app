@@ -8,24 +8,32 @@ sets it from the athlete's BMI and scales the runner to their height.
 
 ## License
 
-Every asset in the model is **CC0 1.0** (public domain dedication), so it can ship
-inside this MIT app without attribution requirements:
+The models ship inside this MIT app. Most assets are **CC0 1.0**; the running clothes
+from the MakeHuman community are **CC BY** and are credited under the replay ("Runner
+clothes: Mindfront, punkduck"):
+
+- Male tank top `mindfront_tank_top_01` and shorts `mindfront_male_swimming_trunks_02`
+  (repainted plain navy): Mindfront, CC BY (shirts03, pants03 packs).
+- Running shoes `punkduck_running_shoes_01` (both): punkduck, CC BY (shoes02 pack).
+- Low socks `joepal_crude_low_socks` (both): joepal, CC0 (underwear04 pack).
+
+The rest is CC0:
 
 - Base mesh, rig (game_engine), skin `young_caucasian_female`, eyes, eyebrows,
-  eyelashes, hair `ponytail01`, clothes `female_sportsuit01` and `shoes05`:
+  eyelashes, hair `ponytail01`, clothes `female_sportsuit01`:
   MakeHuman system assets — https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html
   (CC0 since MakeHuman 1.2.0, see https://github.com/makehumancommunity/makehuman/blob/master/LICENSE.md)
-- Male: skin `young_caucasian_male`, hair `short02`, `shoes06` (system assets),
-  `elvs_crude_t-shirt_male` (shirts01) and `cortu_jeans_shorts` (pants01), all CC0.
+- Male: skin `young_caucasian_male`, hair `short02` (system assets), CC0.
 
-Only use CC0 packs here (`*_cc0.zip`); community CC-BY assets would need credits.
+Never use non-commercial (NC) assets; a CC-BY asset needs its author added to the
+credit line (`RUNNER_CREDIT` in `src/replay-assets.ts`) and here.
 
 ## Rebuild
 
 1. Install Blender 4.2+ and the MPFB extension:
    `Blender --online-mode -c extension install --enable mpfb`
-2. Download the CC0 packs (`makehuman_system_assets_cc0.zip`, `shirts01_cc0.zip`,
-   `pants01_cc0.zip`, `shoes01_cc0.zip`) from
+2. Download the packs (`makehuman_system_assets_cc0.zip`, `underwear04_cc0.zip`,
+   `shirts03_ccby.zip`, `pants03_ccby.zip`, `shoes02_ccby.zip`) from
    https://static.makehumancommunity.org/assets/assetpacks.html and load them in MPFB
    (Apply assets → Library settings → Load pack from zip file).
 3. For `female` and `male`:

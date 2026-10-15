@@ -11,7 +11,7 @@ import { buildTrack, type Track } from "./replay/track.ts";
 import type { RunMap } from "./geo/types.ts";
 import { CAMERA_LABEL, type CameraMode, type ReplayScene } from "./replay/scene.ts";
 import type { RunnerBody } from "./replay/runner-model.ts";
-import { assetCredits } from "./replay-assets.ts";
+import { RUNNER_CREDIT, assetCredits } from "./replay-assets.ts";
 
 /** base64 → bytes, without fetch() (a host's CSP may forbid data: URLs) */
 function fromBase64(b64: string): Uint8Array {
@@ -632,9 +632,13 @@ function ReplayPlayer({ data }: { data: ReplayData }) {
           </div>
         </div>
       )}
-      {(realMapShown && map?.attribution.length) || mapNote || assetIds.length ? (
+      {status === "ready" || mapNote ? (
         <div className="text-[11px] text-muted-foreground">
-          {[realMapShown ? map?.attribution.join(" · ") : null, assetCredits(assetIds) || null]
+          {[
+            realMapShown ? map?.attribution.join(" · ") : null,
+            assetCredits(assetIds) || null,
+            RUNNER_CREDIT,
+          ]
             .filter(Boolean)
             .join(" · ")}
           {mapNote && <span className="ml-2">{mapNote}</span>}

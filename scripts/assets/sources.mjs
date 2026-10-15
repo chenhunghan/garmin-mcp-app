@@ -183,6 +183,20 @@ export const SOURCES = [
     tris: 1500,
     keep: "^fire_hydrant(_cap_0[1-3]|_chain)?$",
   },
+  // ── Runner motion: CMU running takes (upper-body curves per stride phase),
+  // at two cadences (~161 and ~192 steps/min), blended by the run's cadence ──
+  {
+    id: "motion.jog",
+    kind: "motion",
+    from: "cmu",
+    asset: "35/35_17+35_18+35_19+35_20+35_21+35_22+35_23+35_24+35_25+35_26",
+  },
+  {
+    id: "motion.fast",
+    kind: "motion",
+    from: "cmu",
+    asset: "16/16_48+16_55+16_08+16_35+16_36+16_45+16_46+16_56",
+  },
 ];
 
 export const LICENSES = {

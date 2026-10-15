@@ -7,11 +7,11 @@ the athlete's weight and height (Garmin profile) without a model per build.
     /Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup \\
         --python scripts/runner-model/build_runner.py -- female src/replay/assets/runner-female.glb
 
-Needs the MPFB extension and these CC0 asset packs loaded into it (see README.md):
-makehuman_system_assets, shirts01, pants01, shoes01.
+Needs the MPFB extension and these asset packs loaded into it (see README.md):
+makehuman_system_assets, underwear04 (CC0), shirts03, pants03, shoes02 (CC-BY).
 
-Every asset used is CC0 (MakeHuman system assets and CC0 community packs), so
-the exported model can ship inside the app.
+The CC-BY clothes (Mindfront's tank top and trunks, punkduck's running shoes)
+are credited in the app and in README.md; everything else is CC0.
 """
 import os
 import sys
@@ -44,7 +44,8 @@ VARIANTS = {
         "eyebrows": "eyebrow001/eyebrow001.mhclo",
         "clothes": [
             "female_sportsuit01/female_sportsuit01.mhclo",
-            "shoes05/shoes05.mhclo",
+            "joepal_crude_low_socks/joepal_crude_low_socks.mhclo",
+            "punkduck_running_shoes_01/punkduck_running_shoes_01.mhclo",
         ],
     },
     "male": {
@@ -63,9 +64,10 @@ VARIANTS = {
         "hair": "short02/short02.mhclo",
         "eyebrows": "eyebrow001/eyebrow001.mhclo",
         "clothes": [
-            "elvs_crude_t-shirt_male/elvs_crude_t-shirt_male.mhclo",
-            "cortu_jeans_shorts/cortu_jeans_shorts.mhclo",
-            "shoes06/shoes06.mhclo",
+            "mindfront_tank_top_01/mindfront_tank_top_01.mhclo",
+            "mindfront_male_swimming_trunks_02/mindfront_male_swimming_trunks_02.mhclo",
+            "joepal_crude_low_socks/joepal_crude_low_socks.mhclo",
+            "punkduck_running_shoes_01/punkduck_running_shoes_01.mhclo",
         ],
     },
 }
@@ -128,6 +130,11 @@ for key, obj in lean.items():
         sk.data[i].co = c
 
 
+# Materials to repaint a plain color (texture dropped, normal map kept), by name:
+# the trunks come in orange paisley; runners' shorts are mostly plain and dark
+RECOLOR = {"swimming_trunks": (0.035, 0.05, 0.09)}
+
+
 def simple_material(mat):
     """MPFB's node materials → one Principled BSDF with the diffuse (and normal) image, for glTF."""
     if not mat or not mat.use_nodes:
@@ -142,7 +149,11 @@ def simple_material(mat):
     bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
     nt.links.new(bsdf.outputs["BSDF"], outn.inputs["Surface"])
     bsdf.inputs["Roughness"].default_value = 0.6
-    if diffuse:
+    recolor = next((c for k, c in RECOLOR.items() if k in mat.name.lower()), None)
+    if recolor:
+        bsdf.inputs["Base Color"].default_value = (*recolor, 1.0)
+        bsdf.inputs["Roughness"].default_value = 0.75
+    elif diffuse:
         t = nt.nodes.new("ShaderNodeTexImage")
         t.image = diffuse
         nt.links.new(t.outputs["Color"], bsdf.inputs["Base Color"])

@@ -58,6 +58,9 @@ export function assetFile(name: string): AssetFile | undefined {
   return byFile.get(name);
 }
 
+/** The runner models' clothes under CC BY (scripts/runner-model/README.md); the rest is CC0 */
+export const RUNNER_CREDIT = "Runner clothes: Mindfront, punkduck (MakeHuman community, CC BY)";
+
 /**
  * One line naming the sources of the assets on screen, e.g.
  * "Materials, models and sky light: Poly Haven, ambientCG (CC0) · Running motion: CMU Graphics Lab"

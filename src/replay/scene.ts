@@ -28,7 +28,7 @@ import { Grass, grassLight, type GrassSite } from "./grass.ts";
 import { FLOWER_IDS, Flowers } from "./flowers.ts";
 import { buildTerrain, seasonOf, smoothstepJs, type Terrain } from "./terrain.ts";
 import { buildRoute, type RouteMeshes } from "./route.ts";
-import { Runner } from "./runner.ts";
+import { Runner, type MotionClip } from "./runner.ts";
 import {
   heavyInfluence,
   loadRunnerModel,
@@ -579,7 +579,15 @@ export class ReplayScene {
       this.updateSun(true);
       notify();
     });
-    await Promise.allSettled([ground, skies, walls, trees, models, meadow]);
+    const motion = Promise.all(
+      ["motion.jog", "motion.fast"].map((id) => lib.json<MotionClip>(id)),
+    ).then((clips) => {
+      const ok = clips.filter((c): c is MotionClip => c !== null);
+      if (!ok.length || this.disposed) return;
+      this.runner.useMotion(ok);
+      notify();
+    });
+    await Promise.allSettled([ground, skies, walls, trees, models, meadow, motion]);
   }
 
   private setupCamera() {

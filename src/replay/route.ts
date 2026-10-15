@@ -437,7 +437,7 @@ function trailMesh(
       );
       mat.colorNode = s.color;
       mat.emissiveNode = s.color.mul(lampAt(p));
-      mat.roughnessNode = max(s.rough, float(0.62));
+      mat.roughnessNode = max(s.rough, float(0.85));
       mat.normalNode = transformNormalToView(groundNormal(normalWorld, s.tilt, near));
       // The scanned trail shows through by its height map at the frayed edges
       const center = smoothstep(float(0.5), float(0.2), abs(sub(uv().x, 0.5)).add(fray));

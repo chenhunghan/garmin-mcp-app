@@ -24,7 +24,8 @@ import { hrZone, locate, sunPosition, valueAt, type ReplayData } from "../replay
 import { ZONE_COLORS, defaultZones, sampleColors, type ColorBy } from "./colors.ts";
 import { buildTrack, measureDense, type Track } from "./track.ts";
 import { buildingsOnPath, groundBlocker, mapMatch, treesOffPath } from "./map-match.ts";
-import { Grass, grassLight } from "./grass.ts";
+import { Grass, grassLight, type GrassSite } from "./grass.ts";
+import { FLOWER_IDS, Flowers } from "./flowers.ts";
 import { buildTerrain, seasonOf, smoothstepJs, type Terrain } from "./terrain.ts";
 import { buildRoute, type RouteMeshes } from "./route.ts";
 import { Runner } from "./runner.ts";
@@ -168,6 +169,8 @@ export class ReplayScene {
   private grass: Grass | null = null;
   private layers: MapLayers | null = null;
   private furniture: StreetFurniture | null = null;
+  private grassSite: GrassSite | null = null;
+  private flowers: Flowers | null = null;
   /** Map way each dense path sample was snapped to (−1: none) */
   private matchedWay: Int32Array | null = null;
   /** Fetches files of the asset pack (scanned materials, sky light, models); set before init() */
@@ -441,12 +444,13 @@ export class ReplayScene {
           : [],
         footprints: m?.buildings ?? [],
       });
-      this.grass = new Grass({
+      this.grassSite = {
         heightAt: this.terrain.heightAt,
         kindAt: landCover ? landCover.kindAt : m ? () => null : undefined,
         blocked,
         season,
-      });
+      };
+      this.grass = new Grass(this.grassSite);
       grassLight.dry.value = season === "autumn" ? 0.3 : season === "winter" ? 0.45 : 0;
       scene.add(this.grass.mesh);
       this.disposeLater.push(this.grass);
@@ -522,6 +526,23 @@ export class ReplayScene {
           notify();
         })
       : null;
+    const grass = this.grass;
+    const site = this.grassSite;
+    const meadow = grass
+      ? Promise.all([
+          lib.atlas("grass.blades").then((atlas) => {
+            if (!atlas || this.disposed) return;
+            grass.useAtlas(atlas);
+            withCloudShadows(grass.mesh.material as THREE.Material);
+          }),
+          Promise.all(FLOWER_IDS.map((id) => lib.model(id))).then((models) => {
+            if (this.disposed || !site || models.every((m) => !m)) return;
+            this.flowers = new Flowers(site, models);
+            this.scene.add(this.flowers.group);
+            this.disposeLater.push(this.flowers);
+          }),
+        ]).then(notify)
+      : null;
     const furniture = this.furniture;
     const models = furniture
       ? furniture.useModels(lib).then((ids) => {
@@ -558,7 +579,7 @@ export class ReplayScene {
       this.updateSun(true);
       notify();
     });
-    await Promise.allSettled([ground, skies, walls, trees, models]);
+    await Promise.allSettled([ground, skies, walls, trees, models, meadow]);
   }
 
   private setupCamera() {
@@ -875,6 +896,7 @@ export class ReplayScene {
     this.forest?.update(cam, this.quality, now);
     this.furniture?.update(cam);
     this.grass?.update(cam, this.quality, now);
+    this.flowers?.update(cam, this.quality, now);
     if (now - this.lastDetailAt < 200) return;
     this.lastDetailAt = now;
     for (const d of this.details) {

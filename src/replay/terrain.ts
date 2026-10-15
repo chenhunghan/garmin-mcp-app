@@ -805,7 +805,7 @@ function groundMaterial(snow: number, landCover: LandCover | null, season: Seaso
       snowMix,
     );
     // (Some scans' roughness reads glossy, ~0.3 for grass: ground is never that smooth)
-    mat.roughnessNode = mix(max(s.rough, float(0.62)), float(0.6), snowMix);
+    mat.roughnessNode = mix(max(s.rough, float(0.88)), float(0.6), snowMix);
     mat.aoNode = mix(float(1), s.ao, near.mul(0.85));
     mat.normalNode = transformNormalToView(
       groundNormal(normalWorld, s.tilt, near.mul(float(1).sub(snowMix.mul(0.7)))),

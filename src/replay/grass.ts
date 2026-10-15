@@ -81,11 +81,16 @@ function rng(seed: number) {
   };
 }
 
-/** One tuft: `blades` curved, tapered blades, 1 m tall (scaled per instance). */
-function tuftGeometry(blades = 7, segments = 3) {
+/**
+ * One tuft: `blades` curved blades, 1 m tall (scaled per instance). Without
+ * an atlas they're tapered strips; with one (scanned grass blades, asset
+ * pack), each is a quad as wide as its atlas piece, cut out by the alpha.
+ */
+function tuftGeometry(blades = 7, segments = 3, rects?: number[][]) {
   const pos: number[] = [];
   const nor: number[] = [];
   const uvs: number[] = [];
+  const along: number[] = [];
   const idx: number[] = [];
   const r = rng(17);
   for (let b = 0; b < blades; b++) {
@@ -98,7 +103,9 @@ function tuftGeometry(blades = 7, segments = 3) {
     const fz = Math.sin(face);
     const lean = 0.18 + r() * 0.25; // outwards, more at the tip
     const h = 0.75 + r() * 0.25;
-    const w = 0.05 + r() * 0.025;
+    const rect = rects?.length ? rects[Math.floor(r() * rects.length)]! : null;
+    // An atlas blade keeps its proportions (its image includes some margin)
+    const w = rect ? (h * rect[2]!) / rect[3]! : 0.05 + r() * 0.025;
     const base = pos.length / 3;
     for (let sgm = 0; sgm <= segments; sgm++) {
       const t = sgm / segments;
@@ -106,11 +113,14 @@ function tuftGeometry(blades = 7, segments = 3) {
       const bend = lean * t * t;
       const cx = ox + Math.cos(a) * bend;
       const cz = oz + Math.sin(a) * bend;
-      const half = (w / 2) * (1 - t * 0.92);
+      const half = rect ? w / 2 : (w / 2) * (1 - t * 0.92);
       pos.push(cx - fx * half, y, cz - fz * half, cx + fx * half, y, cz + fz * half);
       // Facing out from the tuft (the shader tilts it up)
       nor.push(Math.cos(a), 0.3, Math.sin(a), Math.cos(a), 0.3, Math.sin(a));
-      uvs.push(0, t, 1, t);
+      if (rect)
+        uvs.push(rect[0]!, rect[1]! + t * rect[3]!, rect[0]! + rect[2]!, rect[1]! + t * rect[3]!);
+      else uvs.push(0, t, 1, t);
+      along.push(t, t);
       if (sgm < segments) {
         const k = base + sgm * 2;
         idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
@@ -121,6 +131,7 @@ function tuftGeometry(blades = 7, segments = 3) {
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
   g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  g.setAttribute("aT", new THREE.Float32BufferAttribute(along, 1));
   g.setIndex(idx);
   return g;
 }
@@ -132,15 +143,16 @@ export const grassLight = {
   radius: uniform(RADIUS),
 };
 
-function grassMaterial() {
+function grassMaterial(atlas?: THREE.Texture) {
   const mat = new THREE.MeshStandardNodeMaterial({
     side: THREE.DoubleSide,
     roughness: 0.85,
     metalness: 0,
+    ...(atlas ? { alphaTest: 0.45 } : {}),
   });
   const P = attribute("aPos", "vec4");
   const S = attribute("aShape", "vec4");
-  const t = uv().y;
+  const t = attribute("aT", "float");
   const ang = P.w;
   const ca = cos(ang);
   const sa = sin(ang);
@@ -183,9 +195,18 @@ function grassMaterial() {
   const tip = mix(mix(tipA, vec3(0.3, 0.48, 0.09), patch), tipB, dry);
   const seedTint = float(0.88).add(S.w.mul(0.24));
   const ao = mix(float(0.55), float(1), smoothstep(0, 0.55, t));
-  mat.colorNode = mix(root, tip, smoothstep(0, 1, t))
-    .mul(seedTint)
-    .mul(ao);
+  if (atlas) {
+    // Scanned blades: their own color, warmed and paled where it's dry,
+    // darker towards the roots (the tuft shades itself)
+    const blade = texture(atlas, uv());
+    const own = mix(blade.rgb, blade.rgb.mul(vec3(1.35, 1.12, 0.55)), dry.mul(0.8));
+    mat.colorNode = own.mul(mix(float(0.62), float(1.05), smoothstep(0, 0.8, t))).mul(seedTint);
+    mat.opacityNode = blade.a;
+  } else {
+    mat.colorNode = mix(root, tip, smoothstep(0, 1, t))
+      .mul(seedTint)
+      .mul(ao);
+  }
   // Light through the blades near the tips (back-lit grass glows), and the
   // street lamps' light at night, like the ground under them
   mat.emissiveNode = tip
@@ -196,7 +217,7 @@ function grassMaterial() {
 }
 
 export class Grass {
-  readonly mesh: THREE.InstancedMesh;
+  mesh: THREE.InstancedMesh;
   private pos: THREE.InstancedBufferAttribute;
   private shape: THREE.InstancedBufferAttribute;
   private chunks = new Map<string, Float32Array>();
@@ -213,14 +234,42 @@ export class Grass {
     this.shape.setUsage(THREE.DynamicDrawUsage);
     geo.setAttribute("aPos", this.pos);
     geo.setAttribute("aShape", this.shape);
-    const mat = grassMaterial();
-    this.mesh = new THREE.InstancedMesh(geo, mat, CAP);
-    this.mesh.name = "grass";
-    this.mesh.count = 0;
-    this.mesh.frustumCulled = false;
-    this.mesh.castShadow = false;
-    this.mesh.receiveShadow = true;
-    this.mesh.matrixAutoUpdate = false;
+    this.mesh = this.makeMesh(geo, grassMaterial());
+  }
+
+  /**
+   * Switch to scanned grass blades (asset pack): a new mesh with its own
+   * buffers replaces the old one, which is freed whole (three frees every
+   * buffer a disposed geometry's draws used, the instance matrix included,
+   * so nothing can be carried over).
+   */
+  useAtlas(atlas: { a: THREE.Texture; rects: number[][] }) {
+    const old = this.mesh;
+    const geo = tuftGeometry(7, 3, atlas.rects);
+    this.pos = new THREE.InstancedBufferAttribute(new Float32Array(this.pos.array), 4);
+    this.shape = new THREE.InstancedBufferAttribute(new Float32Array(this.shape.array), 4);
+    this.pos.setUsage(THREE.DynamicDrawUsage);
+    this.shape.setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute("aPos", this.pos);
+    geo.setAttribute("aShape", this.shape);
+    this.mesh = this.makeMesh(geo, grassMaterial(atlas.a));
+    this.mesh.count = old.count;
+    old.parent?.add(this.mesh);
+    old.parent?.remove(old);
+    old.geometry.dispose();
+    (old.material as THREE.Material).dispose();
+    old.dispose();
+  }
+
+  private makeMesh(geo: THREE.BufferGeometry, mat: THREE.Material) {
+    const mesh = new THREE.InstancedMesh(geo, mat, CAP);
+    mesh.name = "grass";
+    mesh.count = 0;
+    mesh.frustumCulled = false;
+    mesh.castShadow = false;
+    mesh.receiveShadow = true;
+    mesh.matrixAutoUpdate = false;
+    return mesh;
   }
 
   /** The tufts of one chunk (generated once). */

@@ -428,7 +428,7 @@ export function buildMapLayers(
       const edge = smoothstep(0.62, 1, abs(attribute("aAcross", "float")));
       roadMat.colorNode = s.color.mul(float(1).sub(edge.mul(0.22)));
       roadMat.emissiveNode = roadMat.colorNode.mul(lampAt(p));
-      roadMat.roughnessNode = max(s.rough, float(0.55));
+      roadMat.roughnessNode = max(s.rough, float(0.72));
       roadMat.aoNode = mix(float(1), s.ao, near.mul(0.8));
       roadMat.normalNode = transformNormalToView(groundNormal(normalWorld, s.tilt, near));
     }

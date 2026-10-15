@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "bytes": 20564436,
+  "bytes": 21186452,
   "assets": [
     {
       "id": "ground.lawn",
@@ -875,51 +875,69 @@
       "kind": "model",
       "files": [
         {
-          "name": "plant.flowers.fe7bc07920.glb",
-          "bytes": 127956,
-          "sha256": "fe7bc07920251617e7c6ecb05fd4d206586ca145643a2771ecbc50dd91906d30"
+          "name": "plant.flowers.59a34ea257.glb",
+          "bytes": 352596,
+          "sha256": "59a34ea257cde7347bc2a810dde6595c2436db84aa043bd96c22e1ab5ff0dd39"
         }
       ],
       "meta": {
         "variants": [
           {
-            "width": 0.217,
-            "depth": 0.25,
-            "height": 0.267,
-            "tris": 496
-          },
-          {
-            "width": 0.182,
-            "depth": 0.204,
-            "height": 0.191,
-            "tris": 495
-          },
-          {
-            "width": 0.216,
-            "depth": 0.158,
-            "height": 0.179,
-            "tris": 611
-          },
-          {
-            "width": 0.194,
-            "depth": 0.193,
-            "height": 0.168,
-            "tris": 234
-          },
-          {
-            "width": 0.111,
-            "depth": 0.166,
-            "height": 0.147,
+            "width": 0.138,
+            "depth": 0.133,
+            "height": 0.044,
             "tris": 200
+          },
+          {
+            "width": 0.215,
+            "depth": 0.269,
+            "height": 0.049,
+            "tris": 200
+          },
+          {
+            "width": 0.238,
+            "depth": 0.186,
+            "height": 0.069,
+            "tris": 199
+          },
+          {
+            "width": 0.246,
+            "depth": 0.266,
+            "height": 0.103,
+            "tris": 200
+          },
+          {
+            "width": 0.341,
+            "depth": 0.328,
+            "height": 0.164,
+            "tris": 493
+          },
+          {
+            "width": 0.271,
+            "depth": 0.289,
+            "height": 0.126,
+            "tris": 418
+          },
+          {
+            "width": 0.316,
+            "depth": 0.307,
+            "height": 0.114,
+            "tris": 380
+          },
+          {
+            "width": 0.239,
+            "depth": 0.186,
+            "height": 0.114,
+            "tris": 292
           }
         ],
-        "sourceTris": 3053
+        "sourceTris": 14340
       },
       "credit": {
-        "title": "Flower Empodium",
-        "author": "Jenelle van Heerden, Rico Cilliers",
+        "title": "Flower Gazania",
+        "author": "James Ray Cock, Jenelle van Heerden",
         "license": "CC0-1.0",
-        "url": "https://polyhaven.com/a/flower_empodium"
+        "url": "https://polyhaven.com/a/flower_gazania"
       }
     },
     {
@@ -927,18 +945,78 @@
       "kind": "model",
       "files": [
         {
-          "name": "plant.sorrel.a70794c9ff.glb",
-          "bytes": 120504,
-          "sha256": "a70794c9ff393b4087d596a0240623b5b4d5ea80af09222ce19e11c7403d2114"
+          "name": "plant.sorrel.46fb7279ab.glb",
+          "bytes": 152960,
+          "sha256": "46fb7279abfcf49cc80125dc1b506664461766448b694b978c3b4f8eb360fe99"
         }
       ],
       "meta": {
         "variants": [
           {
-            "width": 0.352,
-            "depth": 0.146,
+            "width": 0.015,
+            "depth": 0.013,
             "height": 0.058,
-            "tris": 1599
+            "tris": 148
+          },
+          {
+            "width": 0.073,
+            "depth": 0.059,
+            "height": 0.049,
+            "tris": 299
+          },
+          {
+            "width": 0.038,
+            "depth": 0.055,
+            "height": 0.056,
+            "tris": 255
+          },
+          {
+            "width": 0.042,
+            "depth": 0.039,
+            "height": 0.035,
+            "tris": 205
+          },
+          {
+            "width": 0.061,
+            "depth": 0.049,
+            "height": 0.054,
+            "tris": 715
+          },
+          {
+            "width": 0.064,
+            "depth": 0.051,
+            "height": 0.045,
+            "tris": 362
+          },
+          {
+            "width": 0.032,
+            "depth": 0.045,
+            "height": 0.023,
+            "tris": 255
+          },
+          {
+            "width": 0.021,
+            "depth": 0.018,
+            "height": 0.037,
+            "tris": 71
+          },
+          {
+            "width": 0.017,
+            "depth": 0.026,
+            "height": 0.036,
+            "tris": 71
+          },
+          {
+            "width": 0.027,
+            "depth": 0.024,
+            "height": 0.041,
+            "tris": 63
+          },
+          {
+            "width": 0.024,
+            "depth": 0.022,
+            "height": 0.045,
+            "tris": 67
           }
         ],
         "sourceTris": 3319
@@ -948,6 +1026,64 @@
         "author": "Rico Cilliers",
         "license": "CC0-1.0",
         "url": "https://polyhaven.com/a/shrub_sorrel_01"
+      }
+    },
+    {
+      "id": "plant.periwinkle",
+      "kind": "model",
+      "files": [
+        {
+          "name": "plant.periwinkle.112163b4fd.glb",
+          "bytes": 364920,
+          "sha256": "112163b4fda5f3fdc638f478caf42c10e1ee0581a99cf99260aa6a3218348a32"
+        }
+      ],
+      "meta": {
+        "variants": [
+          {
+            "width": 0.156,
+            "depth": 0.184,
+            "height": 0.268,
+            "tris": 358
+          },
+          {
+            "width": 0.102,
+            "depth": 0.09,
+            "height": 0.166,
+            "tris": 200
+          },
+          {
+            "width": 0.167,
+            "depth": 0.147,
+            "height": 0.307,
+            "tris": 466
+          },
+          {
+            "width": 0.232,
+            "depth": 0.225,
+            "height": 0.414,
+            "tris": 794
+          },
+          {
+            "width": 0.11,
+            "depth": 0.141,
+            "height": 0.208,
+            "tris": 268
+          },
+          {
+            "width": 0.261,
+            "depth": 0.32,
+            "height": 0.401,
+            "tris": 982
+          }
+        ],
+        "sourceTris": 34350
+      },
+      "credit": {
+        "title": "Periwinkle Plant",
+        "author": "Amal Kumar",
+        "license": "CC0-1.0",
+        "url": "https://polyhaven.com/a/periwinkle_plant"
       }
     },
     {

@@ -102,6 +102,18 @@ describe("street furniture", () => {
     expect(lamps.every((l) => Math.abs(l.z) > 1)).toBe(true);
   });
 
+  it("keeps lamps 15 m apart across parallel lit ways", async () => {
+    const { placeFurniture } = await import("../src/replay/furniture.ts");
+    const street = { cls: "minor" as const, paved: true, width: 7, lit: true, pts: [0, 0, 100, 0] };
+    const sidewalk = { cls: "path" as const, paved: true, width: 2, lit: true, pts: [0, 6, 100, 6] };
+    const lamps = placeFurniture([], [sidewalk, street]);
+    for (const a of lamps)
+      for (const b of lamps)
+        if (a !== b) expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThanOrEqual(15);
+    // The street's lamps were placed first
+    expect(lamps.filter((l) => Math.abs(l.z) < 5).length).toBe(4);
+  });
+
   it("puts no lamps on unlit ways", async () => {
     const { placeFurniture } = await import("../src/replay/furniture.ts");
     const road = { cls: "path" as const, paved: true, width: 2, pts: [0, 0, 100, 0] };

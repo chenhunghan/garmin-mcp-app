@@ -198,9 +198,34 @@ export function placeFurniture(furniture: number[], roads: Road[]): Item[] {
     const yaw = dir >= 0 ? Math.PI - (dir * Math.PI) / 180 : facingRoad(segs, x, z);
     items.push({ kind, x, z, yaw });
   }
-  // Lamps along lit ways, at the edge, alternating sides on wide roads
+  // Lamps along lit ways, at the edge, alternating sides on wide roads. A
+  // street and its sidewalks are often each tagged lit: a lamp keeps 15 m
+  // from every other (mapped ones included), or the pools merge into bands
+  const MIN_GAP = 15;
+  const near = new Map<string, number[]>();
+  const key = (x: number, z: number) => `${Math.floor(x / MIN_GAP)},${Math.floor(z / MIN_GAP)}`;
+  const taken = (x: number, z: number) => {
+    const cx = Math.floor(x / MIN_GAP);
+    const cz = Math.floor(z / MIN_GAP);
+    for (let i = -1; i <= 1; i++)
+      for (let j = -1; j <= 1; j++) {
+        const l = near.get(`${cx + i},${cz + j}`);
+        if (!l) continue;
+        for (let k = 0; k < l.length; k += 2)
+          if ((l[k]! - x) ** 2 + (l[k + 1]! - z) ** 2 < MIN_GAP * MIN_GAP) return true;
+      }
+    return false;
+  };
+  const mark = (x: number, z: number) => {
+    const k = key(x, z);
+    let l = near.get(k);
+    if (!l) near.set(k, (l = []));
+    l.push(x, z);
+  };
+  for (const it of items) if (it.kind === "street_lamp") mark(it.x, it.z);
   let lamps = 0;
-  for (const r of roads) {
+  // Wider (busier) ways first: their lamps win over a footway's beside them
+  for (const r of [...roads].sort((a, b) => b.width - a.width)) {
     if (!r.lit || r.pts.length < 4) continue;
     let carry = LAMP_EVERY / 2;
     let side = 1;
@@ -218,6 +243,8 @@ export function placeFurniture(furniture: number[], roads: Road[]): Item[] {
         // Perpendicular (−uz, ux); the lamp leans out over the way
         const px = ax + ux * s - uz * off * side;
         const pz = az + uz * s + ux * off * side;
+        if (taken(px, pz)) continue;
+        mark(px, pz);
         items.push({ kind: "street_lamp", x: px, z: pz, yaw: Math.atan2(uz * side, -ux * side) });
         lamps++;
         if (r.width > 7) side = -side;

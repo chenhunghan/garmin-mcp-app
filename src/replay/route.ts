@@ -20,6 +20,7 @@ import {
   smoothstep,
   sub,
   transformNormalToView,
+  uniform,
   uv,
   vec3,
 } from "three/tsl";
@@ -141,7 +142,12 @@ export function buildRoute(
     polygonOffsetUnits: -4,
   });
   drape(done, 0.26);
-  done.opacityNode = edge.mul(0.78);
+  // The split between traveled and ahead, at the runner's distance along the
+  // ribbon (in ribbon widths, like uv.y): a soft hand-over just past the feet
+  // (drawn per pixel, not on segment boundaries, which left a gap under them)
+  const progress = uniform(0);
+  const handOver = smoothstep(progress.sub(0.15 / WIDTH), progress.add(0.45 / WIDTH), uv().y);
+  done.opacityNode = edge.mul(0.78).mul(float(1).sub(handOver));
   done.emissiveNode = mul(THREE.TSL.vertexColor(), 0.08);
 
   const ahead = new THREE.MeshStandardNodeMaterial({
@@ -153,7 +159,7 @@ export function buildRoute(
     polygonOffsetUnits: -4,
   });
   drape(ahead, 0.24);
-  ahead.opacityNode = edge.mul(0.18);
+  ahead.opacityNode = edge.mul(0.18).mul(handOver);
 
   // Same buffers, separate draw ranges: traveled [0, k), ahead [k, end)
   const aheadGeo = new THREE.BufferGeometry();
@@ -255,9 +261,14 @@ export function buildRoute(
     },
     setProgress(i) {
       const di = track.denseIndex(Math.floor(i), i - Math.floor(i));
-      const k = Math.max(0, Math.min(totalIdx, Math.ceil(di) * 6));
-      geo.setDrawRange(0, k);
-      aheadGeo.setDrawRange(k, totalIdx - k);
+      const a = Math.min(n - 1, Math.floor(di));
+      const b = Math.min(n - 1, a + 1);
+      progress.value = (path.s[a]! + (path.s[b]! - path.s[a]!) * (di - a)) / WIDTH;
+      // Draw ranges overlap by a few segments around the hand-over
+      const k0 = Math.max(0, Math.min(totalIdx, (Math.floor(di) - 2) * 6));
+      const k1 = Math.max(0, Math.min(totalIdx, (Math.ceil(di) + 2) * 6));
+      geo.setDrawRange(0, k1);
+      aheadGeo.setDrawRange(k0, totalIdx - k0);
     },
     dispose() {
       for (const d of disposables) d.dispose();

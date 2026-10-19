@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.9.1...garmin-mcp-app-v0.10.0) (2026-10-15)
+
+
+### Features
+
+* 3D run replay with real terrain, OpenStreetMap city and a MakeHuman runner ([#46](https://github.com/chenhunghan/garmin-mcp-app/issues/46)) ([b9edb71](https://github.com/chenhunghan/garmin-mcp-app/commit/b9edb71b29e50cb3f15e5d1be1e967dc181baeb1))
+
+
+### Bug Fixes
+
+* **deps:** bump shell-quote ([#45](https://github.com/chenhunghan/garmin-mcp-app/issues/45)) ([4c9277a](https://github.com/chenhunghan/garmin-mcp-app/commit/4c9277a71f92defc36ce3f74af7e5f01c2f36ce8))
+
 ## [0.9.1](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.9.0...garmin-mcp-app-v0.9.1) (2026-10-08)
 
 

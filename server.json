@@ -8,12 +8,12 @@
     "source": "github"
   },
   "websiteUrl": "https://github.com/chenhunghan/garmin-mcp-app#readme",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "garmin-mcp-app",
-      "version": "0.9.1",
+      "version": "0.10.0",
       "transport": {
         "type": "stdio"
       }

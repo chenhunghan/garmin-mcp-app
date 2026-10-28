@@ -8,20 +8,43 @@ import { SignInRequiredError, type ServerDeps } from "../deps.js";
 import { cacheGeoFetch, cacheReadAsset } from "./cache.js";
 import { Sealer } from "./crypto.js";
 import { vaultOf, type Env } from "./env.js";
-import { garminLogin, garminMfa } from "./signin.js";
+import { WrongAccountError, garminLogin, garminMfa } from "./signin.js";
 import { createSignInLink } from "./signin-link.js";
+import { LIMITS } from "./vault.js";
 
 /** Garmin requests per tool call: the Workers free plan allows 50 subrequests. */
 const GARMIN_REQUEST_BUDGET = 40;
+
+/**
+ * app.html (~6.5 MB) decoded once per isolate: it only changes with a deploy,
+ * and decoding it on every `resources/read` costs CPU time the free plan
+ * hardly has.
+ */
+let appHtml: Promise<string> | undefined;
+
+function loadAppHtml(env: Env, origin: string): Promise<string> {
+  appHtml ??= (async () => {
+    const res = await env.ASSETS.fetch(new URL("/app.html", origin));
+    if (!res.ok) throw new Error(`app.html is missing from the static assets (${res.status})`);
+    return res.text();
+  })().catch((err: unknown) => {
+    appHtml = undefined;
+    throw err;
+  });
+  return appHtml;
+}
 
 export async function remoteDeps(env: Env, origin: string): Promise<ServerDeps> {
   const vault = vaultOf(env);
   const timeZone = await vault.getTimeZone();
   let client: GarminClient | undefined;
-  const signInLink = () => createSignInLink(vault, new Sealer(env.TOKEN_ENCRYPTION_KEY), origin);
+  const signInRequired = async () =>
+    new SignInRequiredError(
+      await createSignInLink(vault, new Sealer(env.TOKEN_ENCRYPTION_KEY), origin),
+      LIMITS.signInMs / 60_000,
+    );
 
   return {
-    mode: "remote",
     getClient: () =>
       (client ??= new GarminClient({
         storage: {
@@ -36,11 +59,7 @@ export async function remoteDeps(env: Env, origin: string): Promise<ServerDeps> 
     },
     geoFetch: cacheGeoFetch,
     readAsset: cacheReadAsset,
-    loadAppHtml: async () => {
-      const res = await env.ASSETS.fetch(new URL("/app.html", origin));
-      if (!res.ok) throw new Error(`app.html is missing from the static assets (${res.status})`);
-      return res.text();
-    },
+    loadAppHtml: () => loadAppHtml(env, origin),
     auth: {
       issueLoginKey: () => vault.issueLoginKey(),
       login: async (email, encryptedPassword) => {
@@ -53,15 +72,22 @@ export async function remoteDeps(env: Env, origin: string): Promise<ServerDeps> 
         return { status: "success" };
       },
       submitMfa: async (code) => {
-        const state = await vault.takeAppMfa();
+        const state = await vault.getAppMfa();
         if (!state) throw new Error("The sign-in expired, please start again");
-        await garminMfa(vault, code, state);
+        try {
+          await garminMfa(vault, code, state);
+        } catch (err) {
+          // A mistyped code can be entered again; another account can't
+          if (err instanceof WrongAccountError) await vault.clearAppMfa();
+          throw err;
+        }
+        await vault.clearAppMfa();
       },
       // A request can't wait for the user: hand the app's form and a link back instead
       waitForSignIn: async () => {
-        throw new SignInRequiredError(await signInLink());
+        throw await signInRequired();
       },
-      signInLink,
+      signInRequired,
     },
     garminRequestBudget: GARMIN_REQUEST_BUDGET,
     timeZone,

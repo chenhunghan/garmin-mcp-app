@@ -4,7 +4,7 @@
  */
 import { constants, publicEncrypt } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { Sealer, constantTimeEqual, keyBytes } from "../src/worker/crypto.ts";
+import { Sealer, UnsealError, constantTimeEqual, keyBytes } from "../src/worker/crypto.ts";
 import { LIMITS, Vault, type Tokens, type VaultStorage } from "../src/worker/vault.ts";
 
 const KEY = "a".repeat(64);
@@ -23,12 +23,18 @@ function mapStorage(): VaultStorage & { map: Map<string, unknown> } {
   };
 }
 
-function setup(opts: { refresh?: (t: Tokens) => Promise<Tokens> } = {}) {
+function setup(
+  opts: {
+    refresh?: (t: Tokens) => Promise<Tokens>;
+    key?: string;
+    storage?: ReturnType<typeof mapStorage>;
+  } = {},
+) {
   let now = 1_700_000_000_000;
-  const storage = mapStorage();
+  const storage = opts.storage ?? mapStorage();
   const vault = new Vault(
     storage,
-    { passphrase: "correct horse battery staple", encryptionKey: KEY },
+    { passphrase: "correct horse battery staple", encryptionKey: opts.key ?? KEY },
     () => now,
     opts.refresh,
   );
@@ -76,8 +82,12 @@ describe("crypto", () => {
     expect(await s.verify("garbage")).toBeNull();
   });
 
-  it("rejects a short encryption key", async () => {
+  it("rejects a short encryption key when it's first used", async () => {
     await expect(keyBytes("too short")).rejects.toThrow(/openssl rand -hex 32/);
+    // Nothing is derived (or rejected unhandled) until a call needs the key
+    const s = new Sealer("too short");
+    await expect(s.seal("x", 1)).rejects.toThrow(/at least 32 characters/);
+    await expect(s.open("x", "a.b")).rejects.not.toBeInstanceOf(UnsealError);
     expect(await keyBytes("f".repeat(64))).toHaveLength(32);
     expect(await keyBytes("x".repeat(40))).toHaveLength(32);
   });
@@ -111,6 +121,28 @@ describe("Vault", () => {
     expect(await vault.checkPassphrase("correct horse battery staple")).toEqual({ ok: true });
   });
 
+  it("locks out only the client that failed", async () => {
+    const { vault } = setup();
+    for (let i = 0; i < LIMITS.maxFailures; i++) await vault.checkPassphrase("wrong", "attacker");
+    expect((await vault.checkPassphrase("correct horse battery staple", "attacker")).ok).toBe(
+      false,
+    );
+    expect(await vault.checkPassphrase("correct horse battery staple", "owner")).toEqual({
+      ok: true,
+    });
+  });
+
+  it("rate-limits per bucket within a window", async () => {
+    const { vault, advance } = setup();
+    expect(await vault.rateLimit("a", 2, 60_000)).toEqual({ ok: true });
+    expect(await vault.rateLimit("a", 2, 60_000)).toEqual({ ok: true });
+    advance(10_000);
+    expect(await vault.rateLimit("a", 2, 60_000)).toEqual({ ok: false, retryAfterMs: 50_000 });
+    expect(await vault.rateLimit("b", 2, 60_000)).toEqual({ ok: true });
+    advance(50_000);
+    expect(await vault.rateLimit("a", 2, 60_000)).toEqual({ ok: true });
+  });
+
   it("a success resets the failure count", async () => {
     const { vault } = setup();
     for (let i = 1; i < LIMITS.maxFailures; i++) await vault.checkPassphrase("wrong");
@@ -132,11 +164,30 @@ describe("Vault", () => {
     expect(await vault.loadTokens()).toBeNull();
   });
 
-  it("binds the first Garmin account and rejects others", async () => {
+  it("drops tokens sealed under a previous key instead of failing", async () => {
+    const { vault, storage } = setup();
+    await vault.saveTokens(tokens(2e9));
+    const rotated = setup({ storage, key: "b".repeat(64) }).vault;
+    expect(await rotated.loadTokens()).toBeNull();
+    expect(storage.map.has("tokens")).toBe(false);
+  });
+
+  it("keeps tokens when the key is missing (a configuration error, not a rotation)", async () => {
+    const { vault, storage } = setup();
+    await vault.saveTokens(tokens(2e9));
+    const unset = new Vault(storage, { passphrase: "p" });
+    await expect(unset.loadTokens()).rejects.toThrow(/TOKEN_ENCRYPTION_KEY/);
+    expect(storage.map.has("tokens")).toBe(true);
+  });
+
+  it("binds the first Garmin account and rejects others until the owner switches", async () => {
     const { vault } = setup();
     expect(await vault.bindOwner("123")).toBe(true);
     expect(await vault.bindOwner("123")).toBe(true);
     expect(await vault.bindOwner("456")).toBe(false);
+    await vault.setOwner("456");
+    expect(await vault.bindOwner("456")).toBe(true);
+    expect(await vault.bindOwner("123")).toBe(false);
   });
 
   it("refreshes expiring tokens once for concurrent requests", async () => {
@@ -159,10 +210,33 @@ describe("Vault", () => {
     expect(calls).toBe(1);
   });
 
+  it("a refresh finishing after a logout doesn't sign back in", async () => {
+    let release!: () => void;
+    const { vault, now } = setup({
+      refresh: async (t) => {
+        await new Promise<void>((r) => (release = r));
+        return { ...t, oauth2: { ...t.oauth2, access_token: "new", expires_at: 2e9 } };
+      },
+    });
+    await vault.saveTokens(tokens(now() / 1000 + 30));
+    const refreshing = vault.freshTokens();
+    await new Promise((r) => setTimeout(r, 0));
+    await vault.clearTokens();
+    release();
+    expect(await refreshing).toBeNull();
+    expect(await vault.loadTokens()).toBeNull();
+  });
+
   it("keeps sign-ins for 10 minutes, sealed", async () => {
     const { vault, storage, advance } = setup();
     const mfaState = { signinParams: {}, cookies: "SESSION=secret-cookie", csrfToken: "c" };
-    await vault.putSignIn("t1", { kind: "signin", browser: "h", stage: "mfa", mfaState, attempts: 0 });
+    await vault.putSignIn("t1", {
+      kind: "signin",
+      browser: "h",
+      stage: "mfa",
+      mfaState,
+      attempts: 0,
+    });
     expect(JSON.stringify([...storage.map])).not.toContain("secret-cookie");
     expect((await vault.getSignIn("t1"))?.mfaState).toEqual(mfaState);
     advance(LIMITS.signInMs);
@@ -177,18 +251,26 @@ describe("Vault", () => {
     expect([...storage.map.keys()].filter((k) => k.startsWith("tx:"))).toEqual(["tx:new"]);
   });
 
-  it("uses the in-app MFA state once", async () => {
-    const { vault } = setup();
+  it("keeps the in-app MFA state until it's cleared or expires", async () => {
+    const { vault, advance } = setup();
     const state = { signinParams: {}, cookies: "{}", csrfToken: "c" };
     await vault.putAppMfa(state);
-    expect(await vault.takeAppMfa()).toEqual(state);
-    expect(await vault.takeAppMfa()).toBeNull();
+    expect(await vault.getAppMfa()).toEqual(state);
+    expect(await vault.getAppMfa()).toEqual(state);
+    await vault.clearAppMfa();
+    expect(await vault.getAppMfa()).toBeNull();
+    await vault.putAppMfa(state);
+    advance(LIMITS.signInMs);
+    expect(await vault.getAppMfa()).toBeNull();
   });
 
-  it("link nonces work once and expire after 10 minutes", async () => {
+  it("link nonces work once and expire after 10 minutes; looking doesn't use them", async () => {
     const { vault, advance } = setup();
     const a = await vault.issueLinkNonce();
+    expect(await vault.peekLinkNonce(a.nonce)).toBe(true);
+    expect(await vault.peekLinkNonce(a.nonce)).toBe(true);
     expect(await vault.consumeLinkNonce(a.nonce)).toBe(true);
+    expect(await vault.peekLinkNonce(a.nonce)).toBe(false);
     expect(await vault.consumeLinkNonce(a.nonce)).toBe(false);
     const b = await vault.issueLinkNonce();
     advance(LIMITS.signInMs);

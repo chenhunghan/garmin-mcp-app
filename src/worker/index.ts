@@ -9,15 +9,42 @@ import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import { createMcpHandler } from "@modelcontextprotocol/server";
 import pkg from "../../package.json" with { type: "json" };
 import { createServer } from "../server.js";
-import { handleAuthorize, handleSignInLink } from "./authorize.js";
+import { clientKey, handleAuthorize, handleSignInLink } from "./authorize.js";
 import { remoteDeps } from "./deps.js";
-import type { Env } from "./env.js";
+import { vaultOf, type Env } from "./env.js";
 import { landing } from "./landing.js";
 
 export { GarminVault } from "./vault-do.js";
 
 /** Grants live while they're used: each refresh extends them by this much. */
 const GRANT_IDLE_TTL = 60 * 86_400;
+
+/**
+ * Client registrations each write to KV (free plan: 1,000 writes a day, which
+ * token refreshes need too). A person connects a few apps; a script could
+ * use up the day's writes.
+ */
+const REGISTRATIONS = {
+  perIp: { limit: 10, windowMs: 3_600_000 },
+  all: { limit: 50, windowMs: 86_400_000 },
+};
+
+async function limitRegistration(request: Request, env: Env): Promise<Response | null> {
+  const vault = vaultOf(env);
+  const { perIp, all } = REGISTRATIONS;
+  for (const r of [
+    await vault.rateLimit(`register:${await clientKey(request)}`, perIp.limit, perIp.windowMs),
+    await vault.rateLimit("register", all.limit, all.windowMs),
+  ]) {
+    if (!r.ok) {
+      return Response.json(
+        { error: "too_many_requests", error_description: "Too many client registrations" },
+        { status: 429, headers: { "Retry-After": String(Math.ceil(r.retryAfterMs / 1000)) } },
+      );
+    }
+  }
+  return null;
+}
 
 const mcp: ExportedHandler<Env> & { fetch: NonNullable<ExportedHandler<Env>["fetch"]> } = {
   async fetch(request, env) {
@@ -65,7 +92,12 @@ function providerFor(origin: string): OAuthProvider<Env> {
 }
 
 export default {
-  fetch(request, env, ctx) {
-    return providerFor(new URL(request.url).origin).fetch(request, env, ctx);
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    if (url.pathname === "/register" && request.method === "POST") {
+      const refused = await limitRegistration(request, env);
+      if (refused) return refused;
+    }
+    return providerFor(url.origin).fetch(request, env, ctx);
   },
 } satisfies ExportedHandler<Env>;

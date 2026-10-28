@@ -29,6 +29,7 @@ input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border
 input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 button { margin-top: 18px; width: 100%; padding: 10px 12px; border: 0; border-radius: 8px;
   background: var(--fg); color: var(--card); font: inherit; font-weight: 600; cursor: pointer; }
+button.secondary { margin-top: 10px; background: transparent; color: var(--fg); border: 1px solid var(--border); }
 .error { color: var(--error); font-size: 14px; margin: 0 0 12px; }
 code, .url { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
 .url { display: block; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;

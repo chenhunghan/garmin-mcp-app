@@ -1,4 +1,5 @@
 /** `/`: the connector URL to paste into Claude or ChatGPT, and how. */
+import { keyBytes } from "./crypto.js";
 import type { Env } from "./env.js";
 import { escapeHtml, page, sha256Base64 } from "./html.js";
 
@@ -11,9 +12,17 @@ export async function landing(request: Request, env: Env, version: string): Prom
     !env.OWNER_PASSPHRASE && "OWNER_PASSPHRASE",
     !env.TOKEN_ENCRYPTION_KEY && "TOKEN_ENCRYPTION_KEY",
   ].filter(Boolean) as string[];
+  const badKey =
+    env.TOKEN_ENCRYPTION_KEY !== undefined &&
+    (await keyBytes(env.TOKEN_ENCRYPTION_KEY).then(
+      () => false,
+      () => true,
+    ));
   const warning = missing.length
     ? `<p class="error" role="alert">Not ready: set the secret${missing.length > 1 ? "s" : ""} ${missing.map((m) => `<code>${m}</code>`).join(" and ")} in the Cloudflare dashboard (Worker → Settings → Variables and Secrets).</p>`
-    : "";
+    : badKey
+      ? `<p class="error" role="alert">Not ready: <code>TOKEN_ENCRYPTION_KEY</code> is too short. Use 64 hex characters (<code>openssl rand -hex 32</code>) or at least 32 characters.</p>`
+      : "";
   return page({
     title: "Your Run Coach",
     body: `<h1>Your Run Coach is running</h1>${warning}

@@ -83,7 +83,7 @@ export function notAuthenticated(err: SignInRequiredError): string {
 
 /** Sign-in advice for tools that can't wait: a one-time link where there is one. */
 export async function signInRequired(deps: ServerDeps): Promise<SignInRequiredError | null> {
-  return deps.auth.signInLink ? new SignInRequiredError(await deps.auth.signInLink()) : null;
+  return deps.auth.signInRequired ? deps.auth.signInRequired() : null;
 }
 
 function readinessForContext(raw: unknown, date: string) {

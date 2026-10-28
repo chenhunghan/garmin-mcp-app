@@ -38,16 +38,16 @@ export interface AuthAdapter {
    * through the app. Remote: throws SignInRequiredError (requests can't wait).
    */
   waitForSignIn(): Promise<void>;
-  /** Remote: a one-time sign-in page, for clients that can't show the app. */
-  signInLink?(): Promise<string>;
+  /** Remote: the error with a one-time sign-in page, for clients that can't show the app. */
+  signInRequired?(): Promise<SignInRequiredError>;
 }
 
 /** Garmin isn't signed in and the request can't wait for it. */
 export class SignInRequiredError extends Error {
   readonly signInUrl: string;
-  constructor(signInUrl: string) {
+  constructor(signInUrl: string, validMinutes: number) {
     super(
-      `Not signed in to Garmin Connect. Sign in with the form in the app, or open ${signInUrl} (valid for 10 minutes), then try again.`,
+      `Not signed in to Garmin Connect. Sign in with the form in the app, or open ${signInUrl} (valid for ${validMinutes} minutes), then try again.`,
     );
     this.name = "SignInRequiredError";
     this.signInUrl = signInUrl;
@@ -55,7 +55,6 @@ export class SignInRequiredError extends Error {
 }
 
 export interface ServerDeps {
-  mode: "local" | "remote";
   /** Garmin client bound to this server's token storage. */
   getClient(): GarminClient;
   settings: {
@@ -68,8 +67,6 @@ export interface ServerDeps {
   /** The bundled app (dist/app.html). */
   loadAppHtml(): Promise<string>;
   auth: AuthAdapter;
-  /** Extra `_meta` for the UI resource. */
-  resourceMeta?: Record<string, unknown>;
   /**
    * Most Garmin requests one tool call may make (Workers free plan: 50
    * subrequests per request). Unlimited when absent.

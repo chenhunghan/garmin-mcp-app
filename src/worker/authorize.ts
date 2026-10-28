@@ -4,17 +4,25 @@
  * verification code — the Garmin step is skipped when the vault already has
  * tokens. `/signin?t=…` (a one-time link) is the Garmin step alone, for when
  * Garmin's sign-in expired. Each sign-in lives in the vault for 10 minutes,
- * bound to the browser that started it by a cookie.
+ * bound to the browser that started it by a cookie. Nothing else is written
+ * before the passphrase (or, for a link, the owner's Garmin sign-in) is right,
+ * and starting sign-ins is rate-limited per IP.
  */
 import { AuthorizationError, type AuthRequest } from "@cloudflare/workers-oauth-provider";
 import { Sealer, randomId } from "./crypto.js";
 import { vaultOf, type Env, type VaultStub } from "./env.js";
 import { escapeHtml, page } from "./html.js";
-import { redeemSignInLink } from "./signin-link.js";
+import { checkSignInLink } from "./signin-link.js";
 import { WrongAccountError, garminLogin, garminMfa } from "./signin.js";
 import { LIMITS, type SignInTransaction } from "./vault.js";
 
 const COOKIE = "__Host-rc-";
+
+/** Sign-ins one IP may start per 10 minutes: plenty for a person, little for a script. */
+const STARTS_PER_IP = 20;
+
+/** Where Claude and ChatGPT send people back to; anything else gets a warning. */
+const KNOWN_HOSTS = new Set(["claude.ai", "claude.com", "chatgpt.com", "chat.openai.com"]);
 
 export async function handleAuthorize(request: Request, env: Env): Promise<Response> {
   if (request.method === "POST") return continueSignIn(request, env);
@@ -31,7 +39,13 @@ export async function handleAuthorize(request: Request, env: Env): Promise<Respo
   return startSignIn(request, env, {
     kind: "authorize",
     authRequest,
-    client: { name: consent.clientDomain ?? consent.clientName, host: consent.redirectHost },
+    client: {
+      // A registered client's name is whatever it said: only a CIMD domain is verified
+      name: consent.clientDomain ?? consent.clientName,
+      verified: consent.clientDomain !== undefined,
+      host: consent.redirectHost,
+      known: !consent.redirectIsLoopback && KNOWN_HOSTS.has(consent.redirectHost),
+    },
     stage: "passphrase",
   });
 }
@@ -40,13 +54,10 @@ export async function handleSignInLink(request: Request, env: Env): Promise<Resp
   if (request.method === "POST") return continueSignIn(request, env);
   const token = new URL(request.url).searchParams.get("t") ?? "";
   const sealer = new Sealer(env.TOKEN_ENCRYPTION_KEY);
-  if (!(await redeemSignInLink(vaultOf(env), sealer, token))) {
-    return errorPage(
-      "This sign-in link has expired or was already used. Ask again in your chat for a new one.",
-      410,
-    );
-  }
-  return startSignIn(request, env, { kind: "signin", stage: "garmin" });
+  // Opening the link doesn't use it up (previews, reloads): signing in does
+  const linkNonce = await checkSignInLink(vaultOf(env), sealer, token);
+  if (!linkNonce) return linkUsedPage();
+  return startSignIn(request, env, { kind: "signin", stage: "garmin", linkNonce });
 }
 
 async function startSignIn(
@@ -54,14 +65,24 @@ async function startSignIn(
   env: Env,
   start: Omit<SignInTransaction, "browser" | "attempts">,
 ): Promise<Response> {
+  const vault = vaultOf(env);
+  const limit = await vault.rateLimit(
+    `start:${await clientKey(request)}`,
+    STARTS_PER_IP,
+    LIMITS.signInMs,
+  );
+  if (!limit.ok) return tooManyPage(limit.retryAfterMs);
   const id = randomId();
   const secret = randomId();
-  const tx: SignInTransaction = { ...start, browser: await sha256Hex(secret), attempts: 0 };
-  const vault = vaultOf(env);
-  await vault.putSignIn(id, tx);
-  // The owner's own browser: "today" for the tools is their day, not UTC's
+  // Kept with the sign-in; it becomes "today" for the tools once it's the owner's
   const timeZone = (request.cf as { timezone?: string } | undefined)?.timezone;
-  if (timeZone && isTimeZone(timeZone)) await vault.setTimeZone(timeZone);
+  const tx: SignInTransaction = {
+    ...start,
+    ...(timeZone && isTimeZone(timeZone) && { timeZone }),
+    browser: await sha256Hex(secret),
+    attempts: 0,
+  };
+  await vault.putSignIn(id, tx);
   const res = render(id, tx);
   res.headers.append(
     "Set-Cookie",
@@ -81,7 +102,10 @@ async function continueSignIn(request: Request, env: Env): Promise<Response> {
   }
 
   if (tx.stage === "passphrase") {
-    const check = await vault.checkPassphrase(String(form.get("passphrase") ?? ""));
+    const check = await vault.checkPassphrase(
+      String(form.get("passphrase") ?? ""),
+      await clientKey(request),
+    );
     if (!check.ok) {
       const error = check.retryAfterMs
         ? `Too many wrong passphrases. Try again in ${Math.ceil(check.retryAfterMs / 60_000)} minutes.`
@@ -95,6 +119,24 @@ async function continueSignIn(request: Request, env: Env): Promise<Response> {
     return render(id, tx);
   }
 
+  if (tx.stage === "switch") {
+    // The owner (passphrase checked) signed in with another Garmin account
+    if (form.get("switch") === "yes" && tx.switchTo) {
+      await vault.setOwner(tx.switchTo.garminId);
+      await vault.saveTokens(tx.switchTo.tokens);
+      return finish(env, vault, id, tx);
+    }
+    tx.stage = "garmin";
+    delete tx.switchTo;
+    await vault.putSignIn(id, tx);
+    return render(id, tx);
+  }
+
+  // Another tab finished with this link meanwhile
+  if (tx.linkNonce && !(await vault.peekLinkNonce(tx.linkNonce))) {
+    await vault.deleteSignIn(id);
+    return linkUsedPage();
+  }
   if (tx.attempts >= LIMITS.maxAttempts) {
     await vault.deleteSignIn(id);
     return errorPage("Too many attempts. Start again.", 429);
@@ -119,6 +161,14 @@ async function continueSignIn(request: Request, env: Env): Promise<Response> {
     }
   } catch (err) {
     if (err instanceof WrongAccountError) {
+      // Only the passphrase holder may move this server to another account
+      if (tx.kind === "authorize") {
+        tx.stage = "switch";
+        tx.switchTo = { garminId: err.garminId, tokens: err.tokens };
+        delete tx.mfaState;
+        await vault.putSignIn(id, tx);
+        return render(id, tx);
+      }
       await vault.deleteSignIn(id);
       return errorPage(err.message, 403);
     }
@@ -136,6 +186,9 @@ async function finish(
   tx: SignInTransaction,
 ): Promise<Response> {
   await vault.deleteSignIn(id);
+  if (tx.linkNonce) await vault.consumeLinkNonce(tx.linkNonce);
+  // The owner's own browser: "today" for the tools is their day, not UTC's
+  if (tx.timeZone) await vault.setTimeZone(tx.timeZone);
   const clear = `${COOKIE}${id}=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0`;
   if (tx.kind === "authorize") {
     const request = tx.authRequest!;
@@ -161,10 +214,14 @@ async function finish(
 
 function render(id: string, tx: SignInTransaction, error?: string): Response {
   const err = error ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : "";
-  const who =
-    tx.kind === "authorize" && tx.client
-      ? `<div class="who"><strong>${escapeHtml(tx.client.name)}</strong> wants to use your Run Coach. When you're done, you go back to <strong>${escapeHtml(tx.client.host)}</strong>.</div>`
-      : "";
+  const c = tx.kind === "authorize" ? tx.client : undefined;
+  const who = c
+    ? `<div class="who"><strong>${escapeHtml(c.name)}</strong>${c.verified ? "" : ` <span class="muted">(name not verified)</span>`} wants to use your Run Coach. When you're done, you go back to <strong>${escapeHtml(c.host)}</strong>.</div>${
+        c.known
+          ? ""
+          : `<p class="error" role="alert">${escapeHtml(c.host)} isn't Claude or ChatGPT. Continue only if you're connecting an app there yourself: whoever runs it gets access to your Garmin data.</p>`
+      }`
+    : "";
   const hidden = `<input type="hidden" name="tx" value="${escapeHtml(id)}">`;
   const action = tx.kind === "authorize" ? "/authorize" : "/signin";
   let title: string;
@@ -183,6 +240,11 @@ function render(id: string, tx: SignInTransaction, error?: string): Response {
 <label for="password">Garmin password</label>
 <input id="password" name="password" type="password" autocomplete="current-password" required>
 <button type="submit">Sign in</button>`;
+  } else if (tx.stage === "switch") {
+    title = "Another Garmin account";
+    fields = `<p>This Run Coach is linked to another Garmin account. Switch it to the account you just signed in with? Every app connected to it will then see this account's data.</p>
+<button type="submit" name="switch" value="yes">Switch to this account</button>
+<button type="submit" name="switch" value="no" class="secondary">Sign in with the linked account</button>`;
   } else {
     title = "Verification code";
     fields = `<p class="muted">Garmin sent you a verification code.</p>
@@ -207,12 +269,31 @@ function errorPage(message: string, status: number): Response {
   });
 }
 
+function linkUsedPage(): Response {
+  return errorPage(
+    "This sign-in link has expired or was already used. Ask again in your chat for a new one.",
+    410,
+  );
+}
+
+function tooManyPage(retryAfterMs: number): Response {
+  return errorPage(
+    `Too many sign-ins started from your network. Try again in ${Math.ceil(retryAfterMs / 60_000)} minutes.`,
+    429,
+  );
+}
+
 function redirectOrigin(tx: SignInTransaction): string[] {
   try {
     return [new URL(tx.authRequest!.redirectUri).origin];
   } catch {
     return [];
   }
+}
+
+/** Who's asking, for rate limits: the IP, hashed (the records expire within a day). */
+export async function clientKey(request: Request): Promise<string> {
+  return (await sha256Hex(request.headers.get("CF-Connecting-IP") ?? "")).slice(0, 32);
 }
 
 function isTimeZone(timeZone: string): boolean {

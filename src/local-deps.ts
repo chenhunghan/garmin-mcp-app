@@ -18,7 +18,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function localDeps(): ServerDeps {
   return {
-    mode: "local",
     getClient,
     settings: { read: readSettings, update: updateSettings },
     geoFetch: cachedFetch,

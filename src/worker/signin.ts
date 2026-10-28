@@ -13,7 +13,11 @@ export interface SignInVault {
 }
 
 export class WrongAccountError extends Error {
-  constructor() {
+  /** The account that signed in and its tokens: the owner may switch to it (authorize page) */
+  constructor(
+    readonly garminId: string,
+    readonly tokens: Tokens,
+  ) {
     super("This Run Coach is linked to another Garmin account. Sign in with that account.");
     this.name = "WrongAccountError";
   }
@@ -44,6 +48,7 @@ export async function garminMfa(vault: SignInVault, code: string, mfaState: MfaS
 async function keep(vault: SignInVault, client: GarminClient, tokens: Tokens | null) {
   const profile = (await client.getUserProfile()) as { profileId?: unknown } | null;
   if (!tokens || profile?.profileId == null) throw new Error("Couldn't read the Garmin account");
-  if (!(await vault.bindOwner(String(profile.profileId)))) throw new WrongAccountError();
+  const garminId = String(profile.profileId);
+  if (!(await vault.bindOwner(garminId))) throw new WrongAccountError(garminId, tokens);
   await vault.saveTokens(tokens);
 }

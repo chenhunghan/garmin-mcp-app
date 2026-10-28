@@ -1,7 +1,8 @@
 /**
  * The self-hosted server's state, kept in one Durable Object (vault-do.ts):
  * Garmin tokens, the owner's Garmin account, settings, sign-ins in progress,
- * one-time sign-in links, the in-app login key and passphrase lockout.
+ * one-time sign-in links, the in-app login key, passphrase lockout and rate
+ * limits.
  * Everything secret is sealed with AES-GCM (TOKEN_ENCRYPTION_KEY) before it
  * is stored. A plain class over a storage interface, so it's testable in Node.
  */
@@ -14,7 +15,7 @@ import {
 } from "garmin-connect";
 import type { AuthRequest } from "@cloudflare/workers-oauth-provider";
 import type { Settings } from "../deps.js";
-import { Sealer, constantTimeEqual, randomId } from "./crypto.js";
+import { Sealer, UnsealError, constantTimeEqual, randomId } from "./crypto.js";
 
 /** The subset of DurableObjectStorage the vault uses. */
 export interface VaultStorage {
@@ -34,18 +35,27 @@ export interface SignInTransaction {
   kind: "authorize" | "signin";
   /** authorize: the parsed OAuth request to complete */
   authRequest?: AuthRequest;
-  /** authorize: who's asking, shown on every step */
-  client?: { name: string; host: string };
+  /**
+   * authorize: who's asking, shown on every step. `verified`: the name is a
+   * CIMD domain; `known`: the redirect goes to Claude or ChatGPT.
+   */
+  client?: { name: string; verified: boolean; host: string; known: boolean };
   /** SHA-256 of the cookie that binds the sign-in to one browser */
   browser: string;
-  stage: "passphrase" | "garmin" | "mfa";
+  stage: "passphrase" | "garmin" | "mfa" | "switch";
   mfaState?: MfaState;
+  /** signin: the one-time link's nonce, used up when the sign-in succeeds */
+  linkNonce?: string;
+  /** authorize: the time zone of the browser, kept once the passphrase is right */
+  timeZone?: string;
+  /** authorize, stage "switch": another Garmin account signed in, waiting for confirmation */
+  switchTo?: { garminId: string; tokens: Tokens };
   /** Garmin password attempts so far */
   attempts: number;
 }
 
 export const LIMITS = {
-  /** Wrong passphrases before a lockout */
+  /** Wrong passphrases from one client (IP) before it's locked out */
   maxFailures: 5,
   lockoutMs: 15 * 60_000,
   /** Sign-ins in progress, MFA states and one-time links */
@@ -61,9 +71,13 @@ type Expiring = { exp: number; sealed: string };
 
 export type PassphraseResult = { ok: true } | { ok: false; retryAfterMs?: number };
 
+export type RateResult = { ok: true } | { ok: false; retryAfterMs: number };
+
 export class Vault {
   private sealer: Sealer;
   private refreshing: Promise<Tokens | null> | undefined;
+  /** Bumped when tokens are saved or cleared, so a slow refresh can't overwrite that */
+  private tokenGeneration = 0;
 
   constructor(
     private storage: VaultStorage,
@@ -77,42 +91,73 @@ export class Vault {
 
   // ── Owner passphrase ──────────────────────────────
 
-  /** Constant-time check; 5 failures lock it for 15 minutes. */
-  async checkPassphrase(input: string): Promise<PassphraseResult> {
+  /**
+   * Constant-time check; 5 failures lock that client out for 15 minutes.
+   * Per client (a hash of the IP), so nobody can lock the owner out.
+   */
+  async checkPassphrase(input: string, client = ""): Promise<PassphraseResult> {
     const passphrase = this.secrets.passphrase;
     if (!passphrase) return { ok: false };
-    const state = (await this.storage.get<{ failures: number; lockedUntil?: number }>(
-      "passphrase",
-    )) ?? { failures: 0 };
+    const key = `passphrase:${client}`;
+    const state = (await this.storage.get<{ failures: number; lockedUntil?: number }>(key)) ?? {
+      failures: 0,
+    };
     const now = this.now();
     if (state.lockedUntil && state.lockedUntil > now) {
       return { ok: false, retryAfterMs: state.lockedUntil - now };
     }
     if (await constantTimeEqual(input, passphrase)) {
-      await this.storage.delete("passphrase");
+      await this.storage.delete(key);
       return { ok: true };
     }
     const failures = (state.lockedUntil ? 0 : state.failures) + 1;
+    await this.sweep("passphrase:");
     if (failures >= LIMITS.maxFailures) {
-      await this.storage.put("passphrase", { failures: 0, lockedUntil: now + LIMITS.lockoutMs });
+      const lockedUntil = now + LIMITS.lockoutMs;
+      await this.storage.put(key, { failures: 0, lockedUntil, exp: lockedUntil });
       return { ok: false, retryAfterMs: LIMITS.lockoutMs };
     }
-    await this.storage.put("passphrase", { failures });
+    await this.storage.put(key, { failures, exp: now + LIMITS.lockoutMs });
     return { ok: false };
+  }
+
+  // ── Rate limits ───────────────────────────────────
+
+  /** Counts one event in `bucket`; refused once `limit` is reached within the window. */
+  async rateLimit(bucket: string, limit: number, windowMs: number): Promise<RateResult> {
+    const key = `rate:${bucket}`;
+    const now = this.now();
+    const rec = await this.storage.get<{ count: number; exp: number }>(key);
+    const current = rec && rec.exp > now ? rec : { count: 0, exp: now + windowMs };
+    if (current.count >= limit) return { ok: false, retryAfterMs: current.exp - now };
+    await this.sweep("rate:");
+    await this.storage.put(key, { count: current.count + 1, exp: current.exp });
+    return { ok: true };
   }
 
   // ── Garmin tokens and owner ───────────────────────
 
+  /** The tokens; null when there are none or they can't be opened (the key changed). */
   async loadTokens(): Promise<Tokens | null> {
     const sealed = await this.storage.get<string>("tokens");
-    return sealed ? this.sealer.open<Tokens>("tokens", sealed) : null;
+    if (!sealed) return null;
+    try {
+      return await this.sealer.open<Tokens>("tokens", sealed);
+    } catch (err) {
+      if (!(err instanceof UnsealError)) throw err;
+      // Sealed under another TOKEN_ENCRYPTION_KEY: useless now, sign in again
+      await this.storage.delete("tokens");
+      return null;
+    }
   }
 
   async saveTokens(tokens: Tokens): Promise<void> {
+    this.tokenGeneration++;
     await this.storage.put("tokens", await this.sealer.seal("tokens", tokens));
   }
 
   async clearTokens(): Promise<void> {
+    this.tokenGeneration++;
     await this.storage.delete("tokens");
   }
 
@@ -124,8 +169,11 @@ export class Vault {
     this.refreshing ??= (async () => {
       const tokens = await this.loadTokens();
       if (!tokens || tokens.oauth2.expires_at - 60 > this.now() / 1000) return tokens;
+      const generation = this.tokenGeneration;
       try {
         const fresh = await this.refresh(tokens);
+        // Signed out or in again meanwhile: that wins over this refresh
+        if (generation !== this.tokenGeneration) return this.loadTokens();
         await this.saveTokens(fresh);
         return fresh;
       } catch {
@@ -149,6 +197,11 @@ export class Vault {
       return true;
     }
     return owner === garminId;
+  }
+
+  /** Links this server to another Garmin account (the owner confirmed it with the passphrase). */
+  async setOwner(garminId: string): Promise<void> {
+    await this.storage.put("owner", garminId);
   }
 
   // ── Settings ──────────────────────────────────────
@@ -186,15 +239,17 @@ export class Vault {
     await this.storage.delete(`tx:${id}`);
   }
 
-  /** The in-app sign-in's MFA state (one at a time), until the code is submitted. */
+  /** The in-app sign-in's MFA state (one at a time), until a code is accepted. */
   async putAppMfa(state: MfaState): Promise<void> {
     await this.putExpiring("app-mfa", state, LIMITS.signInMs);
   }
 
-  async takeAppMfa(): Promise<MfaState | null> {
-    const state = await this.getExpiring<MfaState>("app-mfa");
+  getAppMfa(): Promise<MfaState | null> {
+    return this.getExpiring<MfaState>("app-mfa");
+  }
+
+  async clearAppMfa(): Promise<void> {
     await this.storage.delete("app-mfa");
-    return state;
   }
 
   // ── One-time sign-in links ────────────────────────
@@ -206,6 +261,12 @@ export class Vault {
     await this.sweep("link:");
     await this.storage.put(`link:${nonce}`, { exp });
     return { nonce, exp };
+  }
+
+  /** True while the nonce is unexpired and unused. */
+  async peekLinkNonce(nonce: string): Promise<boolean> {
+    const rec = await this.storage.get<{ exp: number }>(`link:${nonce}`);
+    return !!rec && rec.exp > this.now();
   }
 
   /** True once per unexpired nonce. */
@@ -272,7 +333,13 @@ export class Vault {
       await this.storage.delete(key);
       return null;
     }
-    return this.sealer.open<T>(key, rec.sealed);
+    try {
+      return await this.sealer.open<T>(key, rec.sealed);
+    } catch (err) {
+      if (!(err instanceof UnsealError)) throw err;
+      await this.storage.delete(key);
+      return null;
+    }
   }
 
   /** Deletes expired records under a prefix, so abandoned sign-ins don't pile up. */

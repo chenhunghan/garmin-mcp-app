@@ -25,6 +25,7 @@ export {
   clean,
   fetchMetricSeries,
   isMetricKey,
+  metricRequests,
   normalize,
   pagesBackwards,
   seriesRange,

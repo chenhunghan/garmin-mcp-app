@@ -11,6 +11,7 @@ import { formatLocalDate, mondayOf, registerWeekTools } from "./tools/week.js";
 import { registerDashboardTools } from "./tools/dashboard.js";
 import { registerReplayTools } from "./tools/replay.js";
 import type { ServerDeps } from "./deps.js";
+import { today } from "./today.js";
 
 /**
  * The MCP server, with `deps` for where it runs: `localDeps()` for the stdio
@@ -44,7 +45,6 @@ export function createServer(version: string, deps: ServerDeps) {
             // ChatGPT (openai/mcp-extensions): the app works inline and fullscreen;
             // other hosts ignore this key
             "openai/ui": { availableDisplayModes: ["inline", "fullscreen"] },
-            ...deps.resourceMeta,
           },
         },
       ],
@@ -73,7 +73,7 @@ export function createServer(version: string, deps: ServerDeps) {
       }),
     },
     ({ date }) => {
-      const resolvedDate = date || new Date().toISOString().split("T")[0];
+      const resolvedDate = date || today(deps.timeZone);
 
       return {
         description: "Plan your next run",
@@ -189,16 +189,14 @@ The app already shows every number, so don't list them all.`,
       }),
     },
     ({ startDate, goal }) => {
-      // Default: this week if today is Monday, else the coming week
-      const today = new Date();
-      const todayStr = formatLocalDate(today);
+      // Default: this week if today is Monday, else the coming week (today in the user's time zone)
+      const todayStr = today(deps.timeZone);
+      const [y, m, d] = todayStr.split("-").map(Number);
       const weekStart = startDate
         ? mondayOf(startDate)
-        : today.getDay() === 1
+        : mondayOf(todayStr) === todayStr
           ? todayStr
-          : mondayOf(
-              formatLocalDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7)),
-            );
+          : mondayOf(formatLocalDate(new Date(y!, m! - 1, d! + 7)));
 
       return {
         description: "Plan your training week",

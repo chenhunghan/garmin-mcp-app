@@ -16,8 +16,11 @@ export class GarminVault extends DurableObject<Env> {
     });
   }
 
-  checkPassphrase(input: string) {
-    return this.vault.checkPassphrase(input);
+  checkPassphrase(input: string, client: string) {
+    return this.vault.checkPassphrase(input, client);
+  }
+  rateLimit(bucket: string, limit: number, windowMs: number) {
+    return this.vault.rateLimit(bucket, limit, windowMs);
   }
   loadTokens() {
     return this.vault.loadTokens();
@@ -33,6 +36,9 @@ export class GarminVault extends DurableObject<Env> {
   }
   bindOwner(garminId: string) {
     return this.vault.bindOwner(garminId);
+  }
+  setOwner(garminId: string) {
+    return this.vault.setOwner(garminId);
   }
   getSettings() {
     return this.vault.getSettings();
@@ -58,11 +64,17 @@ export class GarminVault extends DurableObject<Env> {
   putAppMfa(state: MfaState) {
     return this.vault.putAppMfa(state);
   }
-  takeAppMfa() {
-    return this.vault.takeAppMfa();
+  getAppMfa() {
+    return this.vault.getAppMfa();
+  }
+  clearAppMfa() {
+    return this.vault.clearAppMfa();
   }
   issueLinkNonce() {
     return this.vault.issueLinkNonce();
+  }
+  peekLinkNonce(nonce: string) {
+    return this.vault.peekLinkNonce(nonce);
   }
   consumeLinkNonce(nonce: string) {
     return this.vault.consumeLinkNonce(nonce);

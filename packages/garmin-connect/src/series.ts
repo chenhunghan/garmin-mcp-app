@@ -191,6 +191,33 @@ export function pagesBackwards(
   return pages;
 }
 
+/**
+ * The most Garmin requests fetching `metric` over `range` can take (see the
+ * request plan above), and what it shares them with: sleep score and sleep
+ * duration read the same pages.
+ */
+export function metricRequests(
+  metric: MetricKey,
+  range: SeriesRange,
+): { shared: string; requests: number } {
+  const pages = pagesBackwards(range.start, range.end).length;
+  switch (metric) {
+    case "sleepScore":
+    case "sleepDuration":
+      return { shared: "sleep", requests: pages };
+    case "steps":
+    case "stress":
+      return { shared: metric, requests: range.granularity === "weekly" ? 1 : pages };
+    case "bodyBattery":
+      return { shared: metric, requests: pages };
+    case "restingHR":
+      // + the profile, for the display name in the URL
+      return { shared: metric, requests: 2 };
+    default:
+      return { shared: metric, requests: 1 };
+  }
+}
+
 // ── Normalizers: raw Garmin response → points ─────────────────────────────
 
 type Obj = Record<string, unknown>;

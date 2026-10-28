@@ -32,7 +32,26 @@ the stdio bundle contains nothing from `src/worker/`.
   tokens: connecting a second client (ChatGPT after Claude) needs only the passphrase.
 - **Browser binding:** each sign-in is a vault record keyed by a random id in
   the form, plus a `__Host-` cookie whose SHA-256 is stored with it. The pages
-  show the client's name and redirect host (from `describeConsent`).
+  show the client's name and redirect host (from `describeConsent`); a
+  registered client's name is marked "not verified" (only a CIMD domain is),
+  and a redirect host other than Claude's or ChatGPT's gets a warning.
+- **Nothing written for strangers:** before the passphrase is right (or, for a
+  one-time link, the owner's Garmin sign-in succeeded) a visit only creates its
+  10-minute sign-in record. The browser's time zone rides in that record and
+  is saved when the sign-in finishes.
+- **Rate limits in the vault, per IP (hashed):** wrong passphrases lock out the
+  IP that sent them, not the owner (5 per 15 min); starting sign-ins (20 per
+  10 min); client registrations (10 per hour per IP, 50 a day in all — each
+  writes to KV, whose free plan allows 1,000 writes a day that token refreshes
+  also need).
+- **One-time links are used up by signing in, not by opening them:** link
+  previews, scanners and reloads would otherwise spend them.
+- **Switching the Garmin account:** the first account to sign in becomes the
+  owner. On `/authorize` (passphrase already checked) signing in with another
+  account offers to switch to it; a one-time link refuses it.
+- **A changed TOKEN_ENCRYPTION_KEY** makes the sealed records unreadable: they're
+  dropped (sign in to Garmin again), while a missing or short key fails loudly
+  and the landing page says so.
 - **`form-action` must include the client's redirect origin**: browsers apply it
   to the redirect after the last form POST, which goes to claude.ai/chatgpt.com.
 - **Sign-in through the AuthAdapter.** `garmin-login`/`garmin-submit-mfa` call
@@ -52,9 +71,10 @@ the stdio bundle contains nothing from `src/worker/`.
 - **`resourceMeta` / Claude `ui.domain`: not sent.** The app makes no network
   requests and is fully self-contained, so it needs no dedicated origin; the
   resource keeps `resourceDomains: []`, `connectDomains: []`.
-- **Free-plan limits:** the dashboard fetches at most `floor(40 / pages)` metrics
-  per call (worst case one Garmin request per 28-day page) and returns the rest
-  in `deferred`, which the view requests next. The replay's real map is off
+- **Free-plan limits:** the dashboard fetches the metrics whose worst-case
+  requests fit in 40 (`metricRequests`: one per 28-day page for paged metrics,
+  shared sleep pages counted once) and returns the rest in `deferred`, which the
+  view requests next. `app.html` is decoded once per isolate. The replay's real map is off
   (`realMapUnavailable`): it fans out to dozens of tile requests and decodes them
   on the CPU. Moving it into the browser is future work (needs CSP `connectDomains`).
 - **Cache API is best-effort:** on `*.workers.dev` it stores nothing, so map data
@@ -86,7 +106,9 @@ the stdio bundle contains nothing from `src/worker/`.
 - [ ] S5: UI rendering on Claude web, Claude desktop (remote connector), Claude iOS/Android, ChatGPT web; text fallback everywhere.
 - [ ] Wrong passphrase rejected, lockout, second Garmin account rejected (also covered by `test:worker`).
 - [ ] Garmin token revoked → sign-in form where the UI renders, working one-time link elsewhere, no reconnect.
-- [ ] No tool exceeds the free plan's CPU limit (replay data, briefing).
+- [ ] No tool exceeds the free plan's CPU limit (replay data, briefing), nor
+      `resources/read` of the 6.5 MB `app.html` (serializing it took 14–19 ms
+      on a laptop; the test serves a stub).
 - [ ] `.mcpb` and ChatGPT desktop plugin behave exactly as v0.10.0.
 - [ ] Production Worker shows no stored logs; `run-coach-dev` does.
 - [ ] Signing in remotely doesn't sign out local clients (separate tokens).

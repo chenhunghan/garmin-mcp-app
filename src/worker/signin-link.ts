@@ -1,13 +1,15 @@
 /**
  * One-time Garmin sign-in links, for clients that can't show the app's form
  * (or when Garmin's sign-in expired): `/signin?t=…`, HMAC-signed, valid for
- * 10 minutes, usable once. Connecting the client again is never needed.
+ * 10 minutes, used up by the first sign-in it completes (opening it doesn't:
+ * link previews and reloads would spend it). Connecting the client again is
+ * never needed.
  */
 import type { Sealer } from "./crypto.js";
 
 export interface LinkVault {
   issueLinkNonce(): Promise<{ nonce: string; exp: number }>;
-  consumeLinkNonce(nonce: string): Promise<boolean>;
+  peekLinkNonce(nonce: string): Promise<boolean>;
 }
 
 export async function createSignInLink(
@@ -20,23 +22,23 @@ export async function createSignInLink(
   return `${origin}/signin?t=${encodeURIComponent(token)}`;
 }
 
-/** True once for a valid, unexpired link token. */
-export async function redeemSignInLink(
+/** The link's nonce while the link is valid, unexpired and unused; else null. */
+export async function checkSignInLink(
   vault: LinkVault,
   sealer: Sealer,
   token: string,
   now = Date.now(),
-): Promise<boolean> {
+): Promise<string | null> {
   const payload = await sealer.verify(token);
-  if (!payload) return false;
+  if (!payload) return null;
   let claim: { n?: unknown; exp?: unknown };
   try {
     claim = JSON.parse(payload) as typeof claim;
   } catch {
-    return false;
+    return null;
   }
   if (typeof claim.n !== "string" || typeof claim.exp !== "number" || claim.exp <= now) {
-    return false;
+    return null;
   }
-  return vault.consumeLinkNonce(claim.n);
+  return (await vault.peekLinkNonce(claim.n)) ? claim.n : null;
 }

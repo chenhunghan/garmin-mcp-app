@@ -33,42 +33,54 @@ export async function keyBytes(secret: string | undefined): Promise<Uint8Array> 
     return Uint8Array.from(s.match(/../g)!, (h) => parseInt(h, 16));
   }
   if (s.length < 32) {
-    throw new Error("TOKEN_ENCRYPTION_KEY must be 64 hex characters (openssl rand -hex 32)");
+    throw new Error(
+      "TOKEN_ENCRYPTION_KEY must be 64 hex characters (openssl rand -hex 32) or at least 32 characters",
+    );
   }
   return new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(s)));
 }
 
+/** A sealed value that can't be opened: tampered with, or sealed under another key. */
+export class UnsealError extends Error {
+  constructor(name: string) {
+    super(`Can't open the sealed "${name}" (was TOKEN_ENCRYPTION_KEY changed?)`);
+    this.name = "UnsealError";
+  }
+}
+
 /** Encrypts JSON values with AES-256-GCM; each record is bound to its name. */
 export class Sealer {
-  private aes: Promise<CryptoKey>;
-  private hmac: Promise<CryptoKey>;
+  private keys: Promise<{ aes: CryptoKey; hmac: CryptoKey }> | undefined;
 
-  constructor(secret: string | undefined) {
-    const bytes = keyBytes(secret);
-    // Separate keys per purpose, derived from the one secret
-    const derive = async (label: string) =>
-      new Uint8Array(
-        await crypto.subtle.sign(
-          "HMAC",
-          await crypto.subtle.importKey(
-            "raw",
-            await bytes,
-            { name: "HMAC", hash: "SHA-256" },
-            false,
-            ["sign"],
-          ),
-          enc.encode(label),
-        ),
+  constructor(private secret: string | undefined) {}
+
+  /** Derived on first use, so a missing or short key fails the call that needs it. */
+  private derive(): Promise<{ aes: CryptoKey; hmac: CryptoKey }> {
+    this.keys ??= (async () => {
+      const base = await crypto.subtle.importKey(
+        "raw",
+        await keyBytes(this.secret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"],
       );
-    this.aes = derive("run-coach:aes-gcm").then((k) =>
-      crypto.subtle.importKey("raw", k, "AES-GCM", false, ["encrypt", "decrypt"]),
-    );
-    this.hmac = derive("run-coach:hmac").then((k) =>
-      crypto.subtle.importKey("raw", k, { name: "HMAC", hash: "SHA-256" }, false, [
-        "sign",
-        "verify",
-      ]),
-    );
+      // Separate keys per purpose, derived from the one secret
+      const sub = async (label: string) =>
+        new Uint8Array(await crypto.subtle.sign("HMAC", base, enc.encode(label)));
+      const [aes, hmac] = await Promise.all([
+        sub("run-coach:aes-gcm").then((k) =>
+          crypto.subtle.importKey("raw", k, "AES-GCM", false, ["encrypt", "decrypt"]),
+        ),
+        sub("run-coach:hmac").then((k) =>
+          crypto.subtle.importKey("raw", k, { name: "HMAC", hash: "SHA-256" }, false, [
+            "sign",
+            "verify",
+          ]),
+        ),
+      ]);
+      return { aes, hmac };
+    })();
+    return this.keys;
   }
 
   /** `iv.ciphertext`, base64url; a fresh random 96-bit IV per call. */
@@ -76,27 +88,35 @@ export class Sealer {
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const ct = await crypto.subtle.encrypt(
       { name: "AES-GCM", iv, additionalData: enc.encode(name) },
-      await this.aes,
+      (await this.derive()).aes,
       enc.encode(JSON.stringify(value)),
     );
     return `${toBase64Url(iv)}.${toBase64Url(new Uint8Array(ct))}`;
   }
 
-  /** The sealed value, or throws if it was tampered with or sealed under another name. */
+  /**
+   * The sealed value. Throws UnsealError if it was tampered with or sealed
+   * under another name or key; a missing or short key throws as usual.
+   */
   async open<T>(name: string, sealed: string): Promise<T> {
+    const { aes } = await this.derive();
     const [iv, ct] = sealed.split(".");
-    if (!iv || !ct) throw new Error("Malformed sealed value");
-    const pt = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: fromBase64Url(iv), additionalData: enc.encode(name) },
-      await this.aes,
-      fromBase64Url(ct),
-    );
-    return JSON.parse(dec.decode(pt)) as T;
+    try {
+      if (!iv || !ct) throw new Error("Malformed sealed value");
+      const pt = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: fromBase64Url(iv), additionalData: enc.encode(name) },
+        aes,
+        fromBase64Url(ct),
+      );
+      return JSON.parse(dec.decode(pt)) as T;
+    } catch {
+      throw new UnsealError(name);
+    }
   }
 
   /** `payload.signature`, base64url. */
   async sign(payload: string): Promise<string> {
-    const sig = await crypto.subtle.sign("HMAC", await this.hmac, enc.encode(payload));
+    const sig = await crypto.subtle.sign("HMAC", (await this.derive()).hmac, enc.encode(payload));
     return `${toBase64Url(enc.encode(payload))}.${toBase64Url(new Uint8Array(sig))}`;
   }
 
@@ -104,9 +124,10 @@ export class Sealer {
   async verify(signed: string): Promise<string | null> {
     const [payload, sig] = signed.split(".");
     if (!payload || !sig) return null;
+    const { hmac } = await this.derive();
     try {
       const bytes = fromBase64Url(payload);
-      const ok = await crypto.subtle.verify("HMAC", await this.hmac, fromBase64Url(sig), bytes);
+      const ok = await crypto.subtle.verify("HMAC", hmac, fromBase64Url(sig), bytes);
       return ok ? dec.decode(bytes) : null;
     } catch {
       return null;

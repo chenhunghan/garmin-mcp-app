@@ -6,6 +6,7 @@
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { build } from "esbuild";
 import { describe, expect, it } from "vitest";
 
 const LOCAL_ONLY = [
@@ -22,7 +23,9 @@ const src = new URL("../src/", import.meta.url).pathname;
 const files = [
   "server.ts",
   ...readdirSync(join(src, "tools")).map((f) => `tools/${f}`),
-  ...["run-map.ts", "dem.ts", "osm.ts"].map((f) => `geo/${f}`),
+  ...["run-map.ts", "dem.ts", "osm.ts", "png.ts", "request.ts"].map((f) => `geo/${f}`),
+  // The Worker gets Node only through nodejs_compat; its own code uses none
+  ...readdirSync(join(src, "worker")).map((f) => `worker/${f}`),
 ];
 
 describe("ServerDeps", () => {
@@ -37,4 +40,30 @@ describe("ServerDeps", () => {
       expect(bad).toEqual([]);
     });
   }
+});
+
+describe("self-hosted Worker", () => {
+  const worker = readdirSync(join(src, "worker"));
+
+  // Health data: nothing the Worker handles may end up in logs
+  for (const file of worker) {
+    it(`worker/${file} doesn't log`, () => {
+      expect(readFileSync(join(src, "worker", file), "utf-8")).not.toMatch(/\bconsole\./);
+    });
+  }
+
+  it("is not part of the stdio build", async () => {
+    const result = await build({
+      entryPoints: [join(src, "index.ts")],
+      bundle: true,
+      platform: "node",
+      format: "esm",
+      write: false,
+      metafile: true,
+      logLevel: "silent",
+    });
+    const inputs = Object.keys(result.metafile.inputs);
+    expect(inputs.some((f) => f.includes("src/server.ts"))).toBe(true);
+    expect(inputs.filter((f) => f.includes("src/worker/"))).toEqual([]);
+  });
 });

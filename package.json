@@ -2,7 +2,7 @@
   "name": "garmin-mcp-app",
   "version": "0.10.0",
   "mcpName": "io.github.chenhunghan/garmin-mcp-app",
-  "description": "Run Coach: your Garmin data in Claude, ChatGPT and any MCP client — daily briefing, training trends, workout planning and interactive charts. Unofficial, not affiliated with Garmin.",
+  "description": "Run Coach: your Garmin data in Claude, ChatGPT and any MCP client \u2014 daily briefing, training trends, workout planning and interactive charts. Unofficial, not affiliated with Garmin.",
   "keywords": [
     "chatgpt",
     "claude",
@@ -34,11 +34,12 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "build:check": "tsc --noEmit && tsc --noEmit -p tsconfig.app.json",
+    "build:check": "tsc --noEmit && tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.worker.json",
     "start": "node dist/index.js",
     "dev": "concurrently \"vite build --watch\" \"esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --watch\"",
     "dev:ui": "vite --config vite.config.dev.ts",
     "dev:ui:demo": "GARMIN_DEMO=1 vite --config vite.config.dev.ts",
+    "dev:worker": "npm run build && wrangler dev",
     "lint": "oxlint",
     "assets:build": "node scripts/assets/build.mjs",
     "assets:publish": "node scripts/assets/publish.mjs",
@@ -47,13 +48,18 @@
     "pack": "npm run build && mcpb pack . garmin-mcp-app.mcpb",
     "pack:chatgpt": "npm run build && node scripts/pack-chatgpt-plugin.mjs && node scripts/validate-chatgpt-plugin.mjs",
     "pack:validate": "mcpb validate manifest.json",
+    "deploy": "wrangler deploy",
+    "deploy:dev": "wrangler deploy --env dev",
     "test:lib": "npm test --workspace=packages/garmin-connect",
     "test:live": "npm run test:live --workspace=packages/garmin-connect",
     "test": "vitest run",
+    "test:worker": "vitest run --config vitest.worker.config.ts",
     "typecheck:lib": "tsc --noEmit --project packages/garmin-connect/tsconfig.json",
     "prepare": "prek install || true"
   },
   "devDependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.2.4",
+    "@cloudflare/workers-types": "^5.20261028.1",
     "@commitlint/cli": "^20.4.2",
     "@commitlint/config-conventional": "^20.4.2",
     "@j178/prek": "^0.3.3",
@@ -85,9 +91,20 @@
     "vite": "^7.3.6",
     "vite-plugin-singlefile": "^2.3.0",
     "vitest": "^5.0.3",
+    "wrangler": "^4.154.0",
     "zod": "^4.3.6"
   },
   "engines": {
     "node": ">=20"
+  },
+  "cloudflare": {
+    "bindings": {
+      "OWNER_PASSPHRASE": {
+        "description": "A long password only you know. You enter it once when you connect Claude or ChatGPT to your Run Coach."
+      },
+      "TOKEN_ENCRYPTION_KEY": {
+        "description": "Encrypts your Garmin sign-in at rest. Generate one with `openssl rand -hex 32` (64 hex characters)."
+      }
+    }
   }
 }

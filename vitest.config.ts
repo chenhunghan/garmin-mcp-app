@@ -4,6 +4,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
+    // npm run test:worker
+    exclude: ["tests/worker/**"],
     environment: "node",
   },
 });

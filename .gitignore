@@ -6,3 +6,5 @@ dist/
 .live-capture/
 .DS_Store
 build/
+.dev.vars
+.wrangler/

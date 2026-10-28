@@ -167,6 +167,10 @@ export function registerReplayTools(server: McpServer, resourceUri: string, deps
       _meta: { ui: { resourceUri, visibility: ["app"] } },
     },
     async ({ realMap }) => {
+      if (deps.realMapUnavailable) {
+        const off = { realMap: false, unavailable: deps.realMapUnavailable };
+        return { content: [{ type: "text" as const, text: JSON.stringify(off) }] };
+      }
       const settings =
         realMap === undefined
           ? await deps.settings.read()
@@ -187,7 +191,9 @@ export function registerReplayTools(server: McpServer, resourceUri: string, deps
     },
     async ({ activityId }) =>
       withAuth(async () => {
-        if (!(await deps.settings.read()).realMap) return { enabled: false };
+        if (deps.realMapUnavailable || !(await deps.settings.read()).realMap) {
+          return { enabled: false };
+        }
         const client = deps.getClient();
         const replay = await loadReplay(
           client,

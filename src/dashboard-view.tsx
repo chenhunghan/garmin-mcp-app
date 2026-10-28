@@ -50,6 +50,8 @@ interface DashboardData {
   granularity: Granularity;
   metrics: MetricSeries[];
   availableMetrics: { key: string; label: string; unit: string }[];
+  /** Metrics left for the next call (self-hosted server: requests per call are capped) */
+  deferred?: string[];
 }
 
 type DashboardArgs = ToolArgs & { metrics?: string[]; range?: RangeKey };
@@ -627,13 +629,15 @@ export function DashboardView({
     }
     setLoading(true);
     setError(null);
-    callTool("show-performance-dashboard", { metrics: missing, range, endDate })
-      .then((res) => {
-        if (id !== request.current) return;
-        if (!isDashboardData(res)) throw new Error("Unexpected dashboard response");
-        remember(res);
-        assemble();
-      })
+    const load = async (metrics: string[]): Promise<void> => {
+      const res = await callTool("show-performance-dashboard", { metrics, range, endDate });
+      if (id !== request.current) return;
+      if (!isDashboardData(res)) throw new Error("Unexpected dashboard response");
+      remember(res);
+      assemble();
+      if (res.deferred?.length) return load(res.deferred);
+    };
+    load(missing)
       .catch((err) => {
         if (id === request.current) {
           setError(err instanceof Error ? err.message : "Failed to load the dashboard");

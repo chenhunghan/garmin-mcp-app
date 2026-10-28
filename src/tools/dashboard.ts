@@ -6,6 +6,7 @@ import {
   METRIC_KEYS,
   SeriesFetcher,
   fetchMetricSeries,
+  pagesBackwards,
   seriesRange,
   type GarminClient,
   type MetricKey,
@@ -13,27 +14,35 @@ import {
 import type { ServerDeps } from "../deps.js";
 import { authed } from "./data.js";
 import { entrypointIcons, openaiEntrypoint } from "./openai.js";
+import { today } from "../today.js";
 
 export const RANGE_WEEKS = { "4w": 4, "12w": 12, "26w": 26, "52w": 52 } as const;
 export type DashboardRange = keyof typeof RANGE_WEEKS;
 export const DEFAULT_METRICS: MetricKey[] = ["restingHR", "hrv", "vo2max", "sleepScore"];
 
-/** Today as the server's local calendar day. */
-function today(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-/** Series + summaries for up to 4 metrics over the range ending at endDate. */
+/**
+ * Series + summaries for up to 4 metrics over the range ending at endDate.
+ * With a request `budget`, metrics that might not fit are left out and listed
+ * in `deferred`: the view asks for them in its next call.
+ */
 export async function buildDashboard(
   client: GarminClient,
   metrics: MetricKey[],
   range: DashboardRange,
   endDate: string,
+  budget?: number,
 ) {
   const r = seriesRange(endDate, RANGE_WEEKS[range]);
   const fetcher = new SeriesFetcher(client);
-  const series = await Promise.all(metrics.map((m) => fetchMetricSeries(fetcher, m, r)));
+  // Worst case per metric: one request per 28-day page
+  const fits =
+    budget === undefined
+      ? metrics.length
+      : Math.max(1, Math.floor(budget / pagesBackwards(r.start, r.end).length));
+  const deferred = metrics.slice(fits);
+  const series = await Promise.all(
+    metrics.slice(0, fits).map((m) => fetchMetricSeries(fetcher, m, r)),
+  );
   return {
     range,
     startDate: r.start,
@@ -41,6 +50,7 @@ export async function buildDashboard(
     granularity: r.granularity,
     metrics: series,
     garminRequests: fetcher.requests,
+    ...(deferred.length > 0 && { deferred }),
     availableMetrics: METRIC_KEYS.map((k) => ({
       key: k,
       label: METRICS[k].label,
@@ -85,10 +95,17 @@ Each metric has a summary: end = current level (mean of the last 7 days, or the 
       const args = {
         metrics: [...new Set(metrics ?? DEFAULT_METRICS)],
         range: range ?? "12w",
-        endDate: endDate ?? today(),
+        endDate: endDate ?? today(deps.timeZone),
       };
       return withAuth(
-        () => buildDashboard(deps.getClient(), args.metrics, args.range, args.endDate),
+        () =>
+          buildDashboard(
+            deps.getClient(),
+            args.metrics,
+            args.range,
+            args.endDate,
+            deps.garminRequestBudget,
+          ),
         "dashboard",
         args,
       );

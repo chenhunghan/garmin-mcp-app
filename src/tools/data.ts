@@ -7,7 +7,7 @@ import {
   computeKmSplits,
   type GarminClient,
 } from "garmin-connect";
-import type { ServerDeps } from "../deps.js";
+import { SignInRequiredError, type ServerDeps } from "../deps.js";
 import { readinessMetric, trainingStatusSummary } from "../briefing-model.js";
 
 type ToolResult = {
@@ -29,35 +29,61 @@ export function authed(deps: ServerDeps) {
     args?: Record<string, unknown>,
   ): Promise<ToolResult> {
     const structured = view ? { structuredContent: { view, args: args ?? {} } } : {};
-    const client = deps.getClient();
-    if (!client.isAuthenticated) {
-      try {
-        await client.resume();
-      } catch {
-        // Wait for the user to log in through the MCP App UI.
-        // The tool stays "pending" while the iframe shows the login form.
-        await deps.auth.waitForSignIn();
-      }
-    }
     try {
-      const data = await fn();
-      return {
-        content: [{ type: "text", text: JSON.stringify(data) }],
-        ...structured,
-      };
-    } catch (err) {
-      if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
-        // Token expired mid-session — wait for re-auth through the UI
-        await deps.auth.waitForSignIn();
+      const client = deps.getClient();
+      if (!client.isAuthenticated) {
+        try {
+          await client.resume();
+        } catch {
+          // Wait for the user to log in through the MCP App UI.
+          // The tool stays "pending" while the iframe shows the login form.
+          await deps.auth.waitForSignIn();
+        }
+      }
+      try {
         const data = await fn();
         return {
           content: [{ type: "text", text: JSON.stringify(data) }],
+          ...structured,
+        };
+      } catch (err) {
+        if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
+          // Token expired mid-session — wait for re-auth through the UI
+          await deps.auth.waitForSignIn();
+          const data = await fn();
+          return {
+            content: [{ type: "text", text: JSON.stringify(data) }],
+            ...structured,
+          };
+        }
+        throw err;
+      }
+    } catch (err) {
+      // Remote: the view opens with the sign-in form, the text carries a sign-in link
+      if (err instanceof SignInRequiredError) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: notAuthenticated(err) }],
           ...structured,
         };
       }
       throw err;
     }
   };
+}
+
+/** The `not_authenticated` error the app answers with its sign-in form. */
+export function notAuthenticated(err: SignInRequiredError): string {
+  return JSON.stringify({
+    code: "not_authenticated",
+    message: err.message,
+    signInUrl: err.signInUrl,
+  });
+}
+
+/** Sign-in advice for tools that can't wait: a one-time link where there is one. */
+export async function signInRequired(deps: ServerDeps): Promise<SignInRequiredError | null> {
+  return deps.auth.signInLink ? new SignInRequiredError(await deps.auth.signInLink()) : null;
 }
 
 function readinessForContext(raw: unknown, date: string) {

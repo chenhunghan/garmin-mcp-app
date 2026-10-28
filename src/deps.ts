@@ -29,12 +29,29 @@ export type GeoFetch = (url: string, opts?: GeoFetchOptions) => Promise<Uint8Arr
 export interface AuthAdapter {
   /** A single-use RSA-OAEP public key (base64 SPKI DER) the app encrypts the password with. */
   issueLoginKey(): Promise<string>;
-  /** Decrypt a password encrypted with the last issued key; the key is then gone. */
-  decryptPassword(ciphertext: string): Promise<string>;
-  /** A Garmin call needs a sign-in: resolves once the user signed in through the app. */
+  /** Sign in with a password encrypted with the last issued key (the key is then gone). */
+  login(email: string, encryptedPassword: string): Promise<{ status: "success" | "needs_mfa" }>;
+  /** Finish a sign-in that needed a verification code. */
+  submitMfa(code: string): Promise<void>;
+  /**
+   * A Garmin call needs a sign-in. Local: resolves once the user signed in
+   * through the app. Remote: throws SignInRequiredError (requests can't wait).
+   */
   waitForSignIn(): Promise<void>;
-  /** The user signed in through the app. */
-  signedIn(): void;
+  /** Remote: a one-time sign-in page, for clients that can't show the app. */
+  signInLink?(): Promise<string>;
+}
+
+/** Garmin isn't signed in and the request can't wait for it. */
+export class SignInRequiredError extends Error {
+  readonly signInUrl: string;
+  constructor(signInUrl: string) {
+    super(
+      `Not signed in to Garmin Connect. Sign in with the form in the app, or open ${signInUrl} (valid for 10 minutes), then try again.`,
+    );
+    this.name = "SignInRequiredError";
+    this.signInUrl = signInUrl;
+  }
 }
 
 export interface ServerDeps {
@@ -53,4 +70,16 @@ export interface ServerDeps {
   auth: AuthAdapter;
   /** Extra `_meta` for the UI resource. */
   resourceMeta?: Record<string, unknown>;
+  /**
+   * Most Garmin requests one tool call may make (Workers free plan: 50
+   * subrequests per request). Unlimited when absent.
+   */
+  garminRequestBudget?: number;
+  /**
+   * The user's time zone (IANA) for "today", when the server runs elsewhere.
+   * Absent: the server's own time zone.
+   */
+  timeZone?: string;
+  /** Why the replay's real map (elevation + OpenStreetMap) can't be turned on here. */
+  realMapUnavailable?: string;
 }

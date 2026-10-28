@@ -62,16 +62,9 @@ export function registerAuthTools(server: McpServer, resourceUri: string, deps: 
       _meta: { ui: { resourceUri, visibility: ["app"] } },
     },
     async ({ email, encryptedPassword }) => {
-      const client = getClient();
-      const result = await client.login(email, await deps.auth.decryptPassword(encryptedPassword));
-      if (result.status === "needs_mfa") {
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify({ status: "needs_mfa" }) }],
-        };
-      }
-      deps.auth.signedIn();
+      const result = await deps.auth.login(email, encryptedPassword);
       return {
-        content: [{ type: "text" as const, text: JSON.stringify({ status: "success" }) }],
+        content: [{ type: "text" as const, text: JSON.stringify({ status: result.status }) }],
       };
     },
   );
@@ -86,9 +79,7 @@ export function registerAuthTools(server: McpServer, resourceUri: string, deps: 
       _meta: { ui: { resourceUri, visibility: ["app"] } },
     },
     async ({ code }) => {
-      const client = getClient();
-      await client.submitMfa(code);
-      deps.auth.signedIn();
+      await deps.auth.submitMfa(code);
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ status: "success" }) }],
       };

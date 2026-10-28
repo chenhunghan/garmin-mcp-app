@@ -3,6 +3,7 @@ import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import type { GarminClient } from "garmin-connect";
 import type { ServerDeps } from "../deps.js";
+import { today } from "../today.js";
 import { authed } from "./data.js";
 import { entrypointIcons, openaiEntrypoint } from "./openai.js";
 
@@ -304,7 +305,7 @@ export function registerWeekTools(server: McpServer, resourceUri: string, deps: 
       _meta: { ui: { resourceUri }, ...openaiEntrypoint("thread") },
     },
     async ({ startDate }) => {
-      const start = mondayOf(startDate);
+      const start = mondayOf(startDate ?? (deps.timeZone ? today(deps.timeZone) : undefined));
       return withAuth(() => fetchTrainingWeek(deps.getClient(), start), "week", {
         startDate: start,
       });

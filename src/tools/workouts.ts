@@ -8,6 +8,7 @@ import {
   type WorkoutSpec,
 } from "garmin-connect";
 import type { ServerDeps } from "../deps.js";
+import { notAuthenticated, signInRequired } from "./data.js";
 
 type ToolResult = {
   content: Array<{ type: "text"; text: string }>;
@@ -30,15 +31,18 @@ async function workoutResult(
     try {
       await client.resume();
     } catch {
+      const remote = await signInRequired(deps);
       return {
         isError: true,
         content: [
           {
             type: "text",
-            text: JSON.stringify({
-              code: "not_authenticated",
-              message: "Not authenticated with Garmin Connect",
-            }),
+            text: remote
+              ? notAuthenticated(remote)
+              : JSON.stringify({
+                  code: "not_authenticated",
+                  message: "Not authenticated with Garmin Connect",
+                }),
           },
         ],
       };
@@ -52,12 +56,15 @@ async function workoutResult(
     };
   } catch (err) {
     if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
+      const remote = await signInRequired(deps);
       return {
         isError: true,
         content: [
           {
             type: "text",
-            text: JSON.stringify({ code: "not_authenticated", message: err.message }),
+            text: remote
+              ? notAuthenticated(remote)
+              : JSON.stringify({ code: "not_authenticated", message: err.message }),
           },
         ],
       };

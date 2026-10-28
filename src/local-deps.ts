@@ -26,9 +26,17 @@ export function localDeps(): ServerDeps {
     loadAppHtml: () => readFile(resolve(__dirname, "app.html"), "utf-8"),
     auth: {
       issueLoginKey: async () => issueLoginKey(),
-      decryptPassword: async (ciphertext) => decryptWithLoginKey(ciphertext),
+      login: async (email, encryptedPassword) => {
+        const result = await getClient().login(email, decryptWithLoginKey(encryptedPassword));
+        if (result.status === "needs_mfa") return { status: "needs_mfa" };
+        notifyAuth();
+        return { status: "success" };
+      },
+      submitMfa: async (code) => {
+        await getClient().submitMfa(code);
+        notifyAuth();
+      },
       waitForSignIn: () => waitForAuth(),
-      signedIn: notifyAuth,
     },
   };
 }

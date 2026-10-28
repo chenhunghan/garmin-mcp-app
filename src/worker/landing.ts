@@ -23,8 +23,8 @@ export async function landing(request: Request, env: Env, version: string): Prom
 <p style="margin-top:20px"><strong>Claude</strong> (web, desktop, mobile)</p>
 <ol><li>Settings → Connectors → Add custom connector, paste the URL.</li>
 <li>Connect: enter your owner passphrase, then sign in to Garmin.</li></ol>
-<p><strong>ChatGPT</strong></p>
-<ol><li>Settings → Apps &amp; Connectors → Create (developer mode), paste the URL, OAuth.</li>
+<p><strong>ChatGPT</strong> (web)</p>
+<ol><li>Turn on developer mode, then add an MCP app with this URL and OAuth. Custom MCP servers depend on your ChatGPT plan: see OpenAI's help center.</li>
 <li>Connect the same way.</li></ol>
 <p class="muted">Only someone with your owner passphrase can connect, and only your Garmin account can sign in. Unofficial; not affiliated with or endorsed by Garmin. Garmin is a trademark of Garmin Ltd. · Run Coach ${escapeHtml(version)}</p>`,
     script: { source: COPY_SCRIPT, sha256: await (copyHash ??= sha256Base64(COPY_SCRIPT)) },

@@ -17,3 +17,8 @@ build/
 plugin/
 .agents/
 server.json
+wrangler.jsonc
+tsconfig.worker.json
+.dev.vars
+.dev.vars.example
+.wrangler/

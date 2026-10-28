@@ -1,15 +1,14 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z, type ZodRawShape } from "zod";
 import type { GarminClient } from "garmin-connect";
-import { getClient } from "../garmin.js";
+import type { ServerDeps } from "../deps.js";
 
 /**
  * Data-only tools (no UI). They can't show the sign-in form, so when the user
  * isn't signed in they return an error pointing at garmin-check-auth instead of
  * waiting for a login that would never happen.
  */
-async function plainResult(fn: (client: GarminClient) => Promise<unknown>) {
-  const client = getClient();
+async function plainResult(client: GarminClient, fn: (client: GarminClient) => Promise<unknown>) {
   if (!client.isAuthenticated) {
     try {
       await client.resume();
@@ -34,7 +33,7 @@ const startDate = z.string().describe("Start date in YYYY-MM-DD format");
 const endDate = z.string().describe("End date in YYYY-MM-DD format");
 const activityId = z.union([z.string(), z.number()]).describe("Garmin activity ID");
 
-export function registerInsightTools(server: McpServer) {
+export function registerInsightTools(server: McpServer, deps: ServerDeps) {
   function tool<S extends ZodRawShape>(
     name: string,
     title: string,
@@ -43,7 +42,7 @@ export function registerInsightTools(server: McpServer) {
     run: (client: GarminClient, args: z.infer<z.ZodObject<S>>) => Promise<unknown>,
   ) {
     server.registerTool(name, { title, description, inputSchema: z.object(shape) }, (args) =>
-      plainResult((client) => run(client, args)),
+      plainResult(deps.getClient(), (client) => run(client, args)),
     );
   }
 

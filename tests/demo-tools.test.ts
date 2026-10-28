@@ -11,6 +11,7 @@ import { createDemoServer, writeDemoTokens } from "../src/demo/server.ts";
 import { getWorld } from "../src/demo/world.ts";
 import { addDays } from "../src/demo/time.ts";
 import { createServer } from "../src/server.ts";
+import { localDeps } from "../src/local-deps.ts";
 import type { TrainingWeek } from "../src/tools/week.ts";
 
 const world = getWorld();
@@ -60,7 +61,7 @@ beforeAll(async () => {
   writeDemoTokens(dir);
   process.env.GARMIN_TOKEN_PATH = dir;
   mock.listen({ onUnhandledRequest: "error" });
-  const server = createServer("test");
+  const server = createServer("test", localDeps());
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
   client = new Client({ name: "demo-test", version: "0" });

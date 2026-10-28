@@ -2,8 +2,8 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import type { GarminClient } from "garmin-connect";
-import { getClient } from "../garmin.js";
-import { withAuth } from "./data.js";
+import type { ServerDeps } from "../deps.js";
+import { authed } from "./data.js";
 import { entrypointIcons, openaiEntrypoint } from "./openai.js";
 
 // ── Dates (local calendar days, YYYY-MM-DD) ──
@@ -282,7 +282,8 @@ export async function fetchTrainingWeek(
   return buildTrainingWeek(start, items, workouts);
 }
 
-export function registerWeekTools(server: McpServer, resourceUri: string) {
+export function registerWeekTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
+  const withAuth = authed(deps);
   registerAppTool(
     server,
     "show-training-week",
@@ -304,7 +305,9 @@ export function registerWeekTools(server: McpServer, resourceUri: string) {
     },
     async ({ startDate }) => {
       const start = mondayOf(startDate);
-      return withAuth(() => fetchTrainingWeek(getClient(), start), "week", { startDate: start });
+      return withAuth(() => fetchTrainingWeek(deps.getClient(), start), "week", {
+        startDate: start,
+      });
     },
   );
 }

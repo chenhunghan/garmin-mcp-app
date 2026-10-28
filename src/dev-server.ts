@@ -12,6 +12,7 @@
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/client";
 import { createServer } from "./server.js";
+import { localDeps } from "./local-deps.js";
 
 let client: Client | null = null;
 
@@ -25,7 +26,7 @@ export async function getDevClient(): Promise<Client> {
     startDemoMode();
   }
 
-  const server = createServer("dev");
+  const server = createServer("dev", localDeps());
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
   // Server must listen before client connects, otherwise the client's

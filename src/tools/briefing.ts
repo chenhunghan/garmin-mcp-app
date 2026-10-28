@@ -1,9 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import { GarminAuthError, GarminTokenExpiredError } from "garmin-connect";
-import { getClient } from "../garmin.js";
-import { withAuth } from "./data.js";
+import { GarminAuthError, GarminTokenExpiredError, type GarminClient } from "garmin-connect";
+import type { ServerDeps } from "../deps.js";
+import { authed } from "./data.js";
 import {
   buildBriefing,
   shiftDate,
@@ -24,8 +24,7 @@ function localToday(): string {
  * nights gives the baseline band and a trend; the 20 latest activities give
  * the last activity and the past week's volume.
  */
-async function fetchBriefing(date: string): Promise<Briefing> {
-  const client = getClient();
+async function fetchBriefing(client: GarminClient, date: string): Promise<Briefing> {
   const settled = await Promise.allSettled([
     client.getTrainingReadiness(date),
     client.getSleepData(date),
@@ -57,10 +56,10 @@ async function fetchBriefing(date: string): Promise<Briefing> {
 const CACHE_MS = 2 * 60_000;
 const cache = new Map<string, { at: number; briefing: Promise<Briefing> }>();
 
-function cachedBriefing(date: string): Promise<Briefing> {
+function cachedBriefing(client: GarminClient, date: string): Promise<Briefing> {
   const hit = cache.get(date);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.briefing;
-  const briefing = fetchBriefing(date);
+  const briefing = fetchBriefing(client, date);
   cache.set(date, { at: Date.now(), briefing });
   // Don't keep failures, or briefings where every source failed
   briefing.then(
@@ -72,7 +71,8 @@ function cachedBriefing(date: string): Promise<Briefing> {
   return briefing;
 }
 
-export function registerBriefingTools(server: McpServer, resourceUri: string) {
+export function registerBriefingTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
+  const withAuth = authed(deps);
   registerAppTool(
     server,
     "get-daily-briefing",
@@ -97,7 +97,7 @@ export function registerBriefingTools(server: McpServer, resourceUri: string) {
     },
     async ({ date }) => {
       const day = date || localToday();
-      return withAuth(() => cachedBriefing(day), "briefing", { date: day });
+      return withAuth(() => cachedBriefing(deps.getClient(), day), "briefing", { date: day });
     },
   );
 }

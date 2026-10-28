@@ -15,6 +15,7 @@ import {
   loadContext,
 } from "../packages/garmin-connect/tests/helpers/msw.ts";
 import { createServer } from "../src/server.ts";
+import { localDeps } from "../src/local-deps.ts";
 import type { TrainingWeek } from "../src/tools/week.ts";
 
 const ctx = loadContext();
@@ -138,7 +139,7 @@ beforeAll(async () => {
   process.env.GARMIN_TOKEN_PATH = dir;
 
   mock.listen({ onUnhandledRequest: "error" });
-  const server = createServer("test");
+  const server = createServer("test", localDeps());
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
   client = new Client({ name: "test", version: "0" });

@@ -1,11 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import { getClient } from "../garmin.js";
-import { readSettings, updateSettings } from "../settings.js";
+import type { GarminClient } from "garmin-connect";
+import type { ServerDeps } from "../deps.js";
 import { buildRunMap } from "../geo/run-map.js";
-import { readAsset } from "../asset-store.js";
-import { withAuth } from "./data.js";
+import { authed } from "./data.js";
 import {
   buildReplay,
   parseActivity,
@@ -42,9 +41,12 @@ function cached<T>(key: string, fetch: () => Promise<T>): Promise<T> {
 }
 
 /** The requested activity, else the most recent run (else the most recent activity). */
-async function resolveActivityId(activityId?: string | number): Promise<string | number> {
+async function resolveActivityId(
+  client: GarminClient,
+  activityId?: string | number,
+): Promise<string | number> {
   if (activityId !== undefined && activityId !== "") return activityId;
-  const list = (await cached("activities", () => getClient().getActivities(0, 20))) as Array<{
+  const list = (await cached("activities", () => client.getActivities(0, 20))) as Array<{
     activityId?: number;
     activityType?: { typeKey?: string };
   }> | null;
@@ -54,22 +56,31 @@ async function resolveActivityId(activityId?: string | number): Promise<string |
   return pick.activityId;
 }
 
-const details = (id: string | number) =>
-  cached(`details:${id}`, () => getClient().getActivityDetails(id));
-const weather = (id: string | number) =>
-  cached(`weather:${id}`, () => getClient().getActivityWeather(id));
+const details = (client: GarminClient, id: string | number) =>
+  cached(`details:${id}`, () => client.getActivityDetails(id));
+const weather = (client: GarminClient, id: string | number) =>
+  cached(`weather:${id}`, () => client.getActivityWeather(id));
 
-function loadReplay(activityId: string | number, maxPoints: number): Promise<ReplayData> {
-  return cached(`replay:${activityId}:${maxPoints}`, () => fetchReplay(activityId, maxPoints));
+function loadReplay(
+  client: GarminClient,
+  activityId: string | number,
+  maxPoints: number,
+): Promise<ReplayData> {
+  return cached(`replay:${activityId}:${maxPoints}`, () =>
+    fetchReplay(client, activityId, maxPoints),
+  );
 }
 
-async function fetchReplay(activityId: string | number, maxPoints: number): Promise<ReplayData> {
-  const client = getClient();
+async function fetchReplay(
+  client: GarminClient,
+  activityId: string | number,
+  maxPoints: number,
+): Promise<ReplayData> {
   const [d, chart, splits, w, zones, settings] = await Promise.allSettled([
-    details(activityId),
+    details(client, activityId),
     client.getActivityChartDetails(activityId, maxPoints),
     client.getActivitySplits(activityId),
-    weather(activityId),
+    weather(client, activityId),
     client.getActivityHrZones(activityId),
     // Sex, height and weight shape the 3D runner
     cached("user-settings", () => client.getUserSettings()),
@@ -88,7 +99,9 @@ async function fetchReplay(activityId: string | number, maxPoints: number): Prom
   });
 }
 
-export function registerReplayTools(server: McpServer, resourceUri: string) {
+export function registerReplayTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
+  const withAuth = authed(deps);
+
   registerAppTool(
     server,
     "show-run-replay",
@@ -102,8 +115,9 @@ export function registerReplayTools(server: McpServer, resourceUri: string) {
     async ({ activityId }) =>
       withAuth(
         async () => {
-          const id = await resolveActivityId(activityId);
-          const [d, w] = await Promise.allSettled([details(id), weather(id)]);
+          const client = deps.getClient();
+          const id = await resolveActivityId(client, activityId);
+          const [d, w] = await Promise.allSettled([details(client, id), weather(client, id)]);
           const raw = d.status === "fulfilled" ? (d.value as Record<string, unknown> | null) : null;
           const hasPolyline = (raw?.metadataDTO as { hasPolyline?: boolean } | undefined)
             ?.hasPolyline;
@@ -132,9 +146,14 @@ export function registerReplayTools(server: McpServer, resourceUri: string) {
       _meta: { ui: { resourceUri, visibility: ["app"] } },
     },
     async ({ activityId, maxPoints }) =>
-      withAuth(async () =>
-        loadReplay(await resolveActivityId(activityId), maxPoints ?? DEFAULT_POINTS),
-      ),
+      withAuth(async () => {
+        const client = deps.getClient();
+        return loadReplay(
+          client,
+          await resolveActivityId(client, activityId),
+          maxPoints ?? DEFAULT_POINTS,
+        );
+      }),
   );
 
   registerAppTool(
@@ -149,7 +168,9 @@ export function registerReplayTools(server: McpServer, resourceUri: string) {
     },
     async ({ realMap }) => {
       const settings =
-        realMap === undefined ? await readSettings() : await updateSettings({ realMap });
+        realMap === undefined
+          ? await deps.settings.read()
+          : await deps.settings.update({ realMap });
       return { content: [{ type: "text" as const, text: JSON.stringify(settings) }] };
     },
   );
@@ -166,12 +187,17 @@ export function registerReplayTools(server: McpServer, resourceUri: string) {
     },
     async ({ activityId }) =>
       withAuth(async () => {
-        if (!(await readSettings()).realMap) return { enabled: false };
-        const replay = await loadReplay(await resolveActivityId(activityId), DEFAULT_POINTS);
+        if (!(await deps.settings.read()).realMap) return { enabled: false };
+        const client = deps.getClient();
+        const replay = await loadReplay(
+          client,
+          await resolveActivityId(client, activityId),
+          DEFAULT_POINTS,
+        );
         const { lat, lon } = replay.channels;
         const map =
           lat && lon
-            ? await cached(`map:${replay.activity.id}`, () => buildRunMap(lat, lon))
+            ? await cached(`map:${replay.activity.id}`, () => buildRunMap(lat, lon, deps.geoFetch))
             : null;
         return map ? { enabled: true, ...map } : { enabled: true, unavailable: "no GPS track" };
       }),
@@ -188,7 +214,7 @@ export function registerReplayTools(server: McpServer, resourceUri: string) {
     },
     async ({ file }) => {
       try {
-        const buf = await readAsset(file);
+        const buf = await deps.readAsset(file);
         const data = Buffer.from(buf).toString("base64");
         return { content: [{ type: "text" as const, text: JSON.stringify({ file, data }) }] };
       } catch (e) {

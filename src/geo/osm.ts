@@ -3,7 +3,7 @@
  * land cover (forest, meadow, fields, built-up), water, rivers and buildings,
  * classified for the replay and projected to local meters.
  */
-import { cachedFetch } from "./fetch.js";
+import type { GeoFetch } from "../deps.js";
 import { toLocal, type Projection } from "./dem.js";
 import type {
   Area,
@@ -496,12 +496,13 @@ export function parseOverpass(json: { elements?: Element[] }, proj: Projection):
 export async function fetchOsm(
   proj: Projection,
   route: { lat: number; lon: number }[],
+  geoFetch: GeoFetch,
 ): Promise<OsmFeatures> {
   const body = `data=${encodeURIComponent(overpassQuery(route))}`;
   const errors: string[] = [];
   for (const url of ENDPOINTS) {
     try {
-      const buf = await cachedFetch(url, { body, maxAgeDays: 30, timeoutMs: 200_000 });
+      const buf = await geoFetch(url, { body, maxAgeDays: 30, timeoutMs: 200_000 });
       const json = JSON.parse(new TextDecoder().decode(buf)) as {
         elements?: Element[];
         remark?: string;

@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import type { GeoFetchOptions } from "../deps.js";
 
 const USER_AGENT = "RunCoach/1.0 (+https://github.com/chenhunghan/garmin-mcp-app)";
 
@@ -13,10 +14,7 @@ function cacheDir() {
   return process.env.RUN_COACH_CACHE ?? join(homedir(), ".cache", "run-coach");
 }
 
-export async function cachedFetch(
-  url: string,
-  opts: { body?: string; maxAgeDays?: number; timeoutMs?: number } = {},
-): Promise<Uint8Array> {
+export async function cachedFetch(url: string, opts: GeoFetchOptions = {}): Promise<Uint8Array> {
   const key = createHash("sha1")
     .update(url)
     .update(opts.body ?? "")

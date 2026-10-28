@@ -3,7 +3,7 @@
  * R·256 + G + B/256 − 32768 m), resampled onto regular grids in the replay's
  * local meters. Sources: USGS 3DEP/NED, SRTM, GMTED, ETOPO1 and others.
  */
-import { cachedFetch } from "./fetch.js";
+import type { GeoFetch } from "../deps.js";
 import { decodePng } from "./png.js";
 import type { HeightGrid } from "./types.js";
 
@@ -45,7 +45,14 @@ export function terrariumHeight(r: number, g: number, b: number) {
 }
 
 /** Elevation sampler over the tiles covering a lat/lon box at zoom z. */
-async function sampler(south: number, west: number, north: number, east: number, z: number) {
+async function sampler(
+  south: number,
+  west: number,
+  north: number,
+  east: number,
+  z: number,
+  geoFetch: GeoFetch,
+) {
   const a = lonLatToPixel(north, west, z);
   const b = lonLatToPixel(south, east, z);
   const tx0 = Math.floor(a.px / 256);
@@ -57,7 +64,7 @@ async function sampler(south: number, west: number, north: number, east: number,
   for (let ty = ty0; ty <= ty1; ty++) {
     for (let tx = tx0; tx <= tx1; tx++) {
       jobs.push(
-        cachedFetch(`${TILE_URL}/${z}/${tx}/${ty}.png`).then((buf) => {
+        geoFetch(`${TILE_URL}/${z}/${tx}/${ty}.png`).then((buf) => {
           const png = decodePng(buf);
           const h = new Float32Array(256 * 256);
           for (let i = 0; i < 256 * 256; i++) {
@@ -109,12 +116,13 @@ export async function heightGrid(
   proj: Projection,
   box: { minX: number; maxX: number; minZ: number; maxZ: number },
   opts: { maxZoom: number; maxTiles: number; maxCells: number },
+  geoFetch: GeoFetch,
 ): Promise<HeightGrid> {
   const nw = toLatLon(proj, box.minX, box.minZ);
   const se = toLatLon(proj, box.maxX, box.maxZ);
   let z = opts.maxZoom;
   while (z > 1 && tileCount(se.lat, nw.lon, nw.lat, se.lon, z) > opts.maxTiles) z--;
-  const elev = await sampler(se.lat, nw.lon, nw.lat, se.lon, z);
+  const elev = await sampler(se.lat, nw.lon, nw.lat, se.lon, z, geoFetch);
   // Native resolution at this zoom, or coarser to stay within maxCells per side
   const native = (156_543 * Math.cos((proj.lat0 * Math.PI) / 180)) / 2 ** z;
   const extent = Math.max(box.maxX - box.minX, box.maxZ - box.minZ);

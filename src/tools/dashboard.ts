@@ -7,10 +7,11 @@ import {
   SeriesFetcher,
   fetchMetricSeries,
   seriesRange,
+  type GarminClient,
   type MetricKey,
 } from "garmin-connect";
-import { getClient } from "../garmin.js";
-import { withAuth } from "./data.js";
+import type { ServerDeps } from "../deps.js";
+import { authed } from "./data.js";
 import { entrypointIcons, openaiEntrypoint } from "./openai.js";
 
 export const RANGE_WEEKS = { "4w": 4, "12w": 12, "26w": 26, "52w": 52 } as const;
@@ -24,9 +25,14 @@ function today(): string {
 }
 
 /** Series + summaries for up to 4 metrics over the range ending at endDate. */
-export async function buildDashboard(metrics: MetricKey[], range: DashboardRange, endDate: string) {
+export async function buildDashboard(
+  client: GarminClient,
+  metrics: MetricKey[],
+  range: DashboardRange,
+  endDate: string,
+) {
   const r = seriesRange(endDate, RANGE_WEEKS[range]);
-  const fetcher = new SeriesFetcher(getClient());
+  const fetcher = new SeriesFetcher(client);
   const series = await Promise.all(metrics.map((m) => fetchMetricSeries(fetcher, m, r)));
   return {
     range,
@@ -43,7 +49,8 @@ export async function buildDashboard(metrics: MetricKey[], range: DashboardRange
   };
 }
 
-export function registerDashboardTools(server: McpServer, resourceUri: string) {
+export function registerDashboardTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
+  const withAuth = authed(deps);
   registerAppTool(
     server,
     "show-performance-dashboard",
@@ -81,7 +88,7 @@ Each metric has a summary: end = current level (mean of the last 7 days, or the 
         endDate: endDate ?? today(),
       };
       return withAuth(
-        () => buildDashboard(args.metrics, args.range, args.endDate),
+        () => buildDashboard(deps.getClient(), args.metrics, args.range, args.endDate),
         "dashboard",
         args,
       );

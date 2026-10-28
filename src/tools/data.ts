@@ -1,10 +1,14 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import { GarminAuthError, GarminTokenExpiredError, computeKmSplits } from "garmin-connect";
-import { getClient } from "../garmin.js";
+import {
+  GarminAuthError,
+  GarminTokenExpiredError,
+  computeKmSplits,
+  type GarminClient,
+} from "garmin-connect";
+import type { ServerDeps } from "../deps.js";
 import { readinessMetric, trainingStatusSummary } from "../briefing-model.js";
-import { waitForAuth } from "../auth-gate.js";
 
 type ToolResult = {
   content: Array<{ type: "text"; text: string }>;
@@ -13,44 +17,47 @@ type ToolResult = {
 };
 
 /**
- * Run a Garmin call, waiting for sign-in through the app UI if needed.
- * `view` picks the chart; `args` are echoed so the chart shows what was asked
- * for (a specific date or activity) rather than today/latest.
+ * `withAuth(fn, view, args)`: run a Garmin call, waiting for sign-in through
+ * the app UI if needed. `view` picks the chart; `args` are echoed so the chart
+ * shows what was asked for (a specific date or activity) rather than
+ * today/latest.
  */
-export async function withAuth(
-  fn: () => Promise<unknown>,
-  view?: string,
-  args?: Record<string, unknown>,
-): Promise<ToolResult> {
-  const structured = view ? { structuredContent: { view, args: args ?? {} } } : {};
-  const client = getClient();
-  if (!client.isAuthenticated) {
-    try {
-      await client.resume();
-    } catch {
-      // Wait for the user to log in through the MCP App UI.
-      // The tool stays "pending" while the iframe shows the login form.
-      await waitForAuth();
+export function authed(deps: ServerDeps) {
+  return async function withAuth(
+    fn: () => Promise<unknown>,
+    view?: string,
+    args?: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const structured = view ? { structuredContent: { view, args: args ?? {} } } : {};
+    const client = deps.getClient();
+    if (!client.isAuthenticated) {
+      try {
+        await client.resume();
+      } catch {
+        // Wait for the user to log in through the MCP App UI.
+        // The tool stays "pending" while the iframe shows the login form.
+        await deps.auth.waitForSignIn();
+      }
     }
-  }
-  try {
-    const data = await fn();
-    return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
-      ...structured,
-    };
-  } catch (err) {
-    if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
-      // Token expired mid-session — wait for re-auth through the UI
-      await waitForAuth();
+    try {
       const data = await fn();
       return {
         content: [{ type: "text", text: JSON.stringify(data) }],
         ...structured,
       };
+    } catch (err) {
+      if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
+        // Token expired mid-session — wait for re-auth through the UI
+        await deps.auth.waitForSignIn();
+        const data = await fn();
+        return {
+          content: [{ type: "text", text: JSON.stringify(data) }],
+          ...structured,
+        };
+      }
+      throw err;
     }
-    throw err;
-  }
+  };
 }
 
 function readinessForContext(raw: unknown, date: string) {
@@ -74,8 +81,7 @@ function statusForContext(raw: unknown) {
  * activity has a single lap (auto-lap off) — like Garmin Connect shows. Falls
  * back to the laps alone if the time series isn't available.
  */
-async function splitsWithKmFallback(activityId: string | number) {
-  const client = getClient();
+async function splitsWithKmFallback(client: GarminClient, activityId: string | number) {
   const splits = (await client.getActivitySplits(activityId)) as { lapDTOs?: unknown[] } | null;
   if ((splits?.lapDTOs?.length ?? 0) >= 2) return splits;
   try {
@@ -144,7 +150,10 @@ const activityIdSchema = {
   activityId: z.union([z.string(), z.number()]).describe("Garmin activity ID"),
 };
 
-export function registerDataTools(server: McpServer, resourceUri: string) {
+export function registerDataTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
+  const withAuth = authed(deps);
+  const getClient = () => deps.getClient();
+
   registerAppTool(
     server,
     "get-steps",
@@ -313,7 +322,7 @@ export function registerDataTools(server: McpServer, resourceUri: string) {
       _meta: { ui: { resourceUri } },
     },
     async ({ activityId }) =>
-      withAuth(() => splitsWithKmFallback(activityId), "splits", { activityId }),
+      withAuth(() => splitsWithKmFallback(getClient(), activityId), "splits", { activityId }),
   );
 
   registerAppTool(

@@ -1,11 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import { getClient } from "../garmin.js";
-import { notifyAuth } from "../auth-gate.js";
-import { decryptWithLoginKey, issueLoginKey } from "../login-key.js";
+import type { ServerDeps } from "../deps.js";
 
-export function registerAuthTools(server: McpServer, resourceUri: string) {
+export function registerAuthTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
+  const getClient = () => deps.getClient();
+
   registerAppTool(
     server,
     "garmin-check-auth",
@@ -38,7 +38,12 @@ export function registerAuthTools(server: McpServer, resourceUri: string) {
       _meta: { ui: { resourceUri, visibility: ["app"] } },
     },
     async () => ({
-      content: [{ type: "text" as const, text: JSON.stringify({ publicKey: issueLoginKey() }) }],
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify({ publicKey: await deps.auth.issueLoginKey() }),
+        },
+      ],
     }),
   );
 
@@ -58,13 +63,13 @@ export function registerAuthTools(server: McpServer, resourceUri: string) {
     },
     async ({ email, encryptedPassword }) => {
       const client = getClient();
-      const result = await client.login(email, decryptWithLoginKey(encryptedPassword));
+      const result = await client.login(email, await deps.auth.decryptPassword(encryptedPassword));
       if (result.status === "needs_mfa") {
         return {
           content: [{ type: "text" as const, text: JSON.stringify({ status: "needs_mfa" }) }],
         };
       }
-      notifyAuth();
+      deps.auth.signedIn();
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ status: "success" }) }],
       };
@@ -83,7 +88,7 @@ export function registerAuthTools(server: McpServer, resourceUri: string) {
     async ({ code }) => {
       const client = getClient();
       await client.submitMfa(code);
-      notifyAuth();
+      deps.auth.signedIn();
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ status: "success" }) }],
       };

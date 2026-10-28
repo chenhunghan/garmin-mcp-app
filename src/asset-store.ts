@@ -12,8 +12,7 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { ASSET_RELEASE, assetFile } from "./replay-assets.js";
-
-const USER_AGENT = "RunCoach/1.0 (+https://github.com/chenhunghan/garmin-mcp-app)";
+import { USER_AGENT } from "./geo/request.js";
 
 export function assetDir() {
   return join(

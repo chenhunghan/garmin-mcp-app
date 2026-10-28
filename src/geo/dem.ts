@@ -64,8 +64,8 @@ async function sampler(
   for (let ty = ty0; ty <= ty1; ty++) {
     for (let tx = tx0; tx <= tx1; tx++) {
       jobs.push(
-        geoFetch(`${TILE_URL}/${z}/${tx}/${ty}.png`).then((buf) => {
-          const png = decodePng(buf);
+        geoFetch(`${TILE_URL}/${z}/${tx}/${ty}.png`).then(async (buf) => {
+          const png = await decodePng(buf);
           const h = new Float32Array(256 * 256);
           for (let i = 0; i < 256 * 256; i++) {
             const o = i * png.channels;

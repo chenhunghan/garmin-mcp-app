@@ -6,7 +6,7 @@ import type {
   MfaState,
 } from "./types.ts";
 import type { TokenStorage } from "./storage.ts";
-import { FileTokenStorage } from "./storage.ts";
+import { lazyFileTokenStorage } from "./storage.ts";
 import {
   GarminApiError,
   GarminAuthError,
@@ -37,7 +37,7 @@ export class GarminClient {
     if (config?.storage) {
       this.storage = config.storage;
     } else {
-      this.storage = new FileTokenStorage(config?.storagePath ?? "~/.garminconnect");
+      this.storage = lazyFileTokenStorage(config?.storagePath ?? "~/.garminconnect");
     }
   }
 

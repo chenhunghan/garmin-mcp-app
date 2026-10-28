@@ -1,5 +1,4 @@
 import OAuth from "oauth-1.0a";
-import { createHmac } from "node:crypto";
 import type { OAuth1Token, OAuth2Token, OAuthConsumer } from "./types.ts";
 import {
   GarminAuthError,
@@ -45,8 +44,7 @@ export async function getOAuth1Token(
   const loginUrl = `https://sso.${domain}/sso/embed`;
   const url = `https://connectapi.${domain}/oauth-service/oauth/preauthorized?ticket=${encodeURIComponent(ticket)}&login-url=${encodeURIComponent(loginUrl)}&accepts-mfa-tokens=true`;
 
-  const oauth = createOAuth(consumer);
-  const authHeader = oauth.toHeader(oauth.authorize({ url, method: "GET" }));
+  const authHeader = await signRequest(consumer, { url, method: "GET" });
 
   let resp: Response;
   try {
@@ -98,14 +96,13 @@ export async function exchangeOAuth2(
 ): Promise<OAuth2Token> {
   const url = `https://connectapi.${oauth1.domain}/oauth-service/oauth/exchange/user/2.0`;
 
-  const oauth = createOAuth(consumer);
   const token = { key: oauth1.oauth_token, secret: oauth1.oauth_token_secret };
   const data: Record<string, string> = {};
   if (oauth1.mfa_token) {
     data.mfa_token = oauth1.mfa_token;
   }
 
-  const authHeader = oauth.toHeader(oauth.authorize({ url, method: "POST", data }, token));
+  const authHeader = await signRequest(consumer, { url, method: "POST", data }, token);
 
   let resp: Response;
   try {
@@ -148,12 +145,47 @@ export async function exchangeOAuth2(
   };
 }
 
-function createOAuth(consumer: OAuthConsumer): OAuth {
-  return new OAuth({
+/**
+ * OAuth1 HMAC-SHA1 Authorization header, signed with WebCrypto so the client
+ * runs outside Node (Cloudflare Workers). Same steps as oauth-1.0a's
+ * `authorize()`, whose `hash_function` must be synchronous.
+ */
+export async function signRequest(
+  consumer: OAuthConsumer,
+  request: OAuth.RequestOptions,
+  token?: OAuth.Token,
+): Promise<OAuth.Header> {
+  const oauth = new OAuth({
     consumer: { key: consumer.consumer_key, secret: consumer.consumer_secret },
     signature_method: "HMAC-SHA1",
-    hash_function(baseString: string, key: string) {
-      return createHmac("sha1", key).update(baseString).digest("base64");
-    },
+    hash_function: () => "",
   });
+  const data: OAuth.Data = {
+    oauth_consumer_key: consumer.consumer_key,
+    oauth_nonce: oauth.getNonce(),
+    oauth_signature_method: "HMAC-SHA1",
+    oauth_timestamp: oauth.getTimeStamp(),
+    oauth_version: "1.0",
+  };
+  if (token?.key !== undefined) data.oauth_token = token.key;
+  const signature = await hmacSha1Base64(
+    oauth.getSigningKey(token?.secret),
+    oauth.getBaseString({ ...request, data: request.data ?? {} }, data),
+  );
+  return oauth.toHeader({ ...data, oauth_signature: signature });
+}
+
+async function hmacSha1Base64(key: string, message: string): Promise<string> {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(key),
+    { name: "HMAC", hash: "SHA-1" },
+    false,
+    ["sign"],
+  );
+  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(message)));
+  let bin = "";
+  for (const b of sig) bin += String.fromCharCode(b);
+  return btoa(bin);
 }

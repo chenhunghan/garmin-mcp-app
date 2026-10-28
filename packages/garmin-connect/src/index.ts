@@ -1,6 +1,5 @@
 export { GarminClient } from "./client.ts";
 
-export { FileTokenStorage } from "./storage.ts";
 export { computeKmSplits, type KmSplit } from "./splits.ts";
 export {
   buildWorkout,

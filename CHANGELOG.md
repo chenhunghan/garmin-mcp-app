@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.11.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.10.0...garmin-mcp-app-v0.11.0) (2026-10-28)
+
+
+### Features
+
+* **replay:** a glowing line along the path run so far, dust kicked up behind the runner ([6403c50](https://github.com/chenhunghan/garmin-mcp-app/commit/6403c5055007ecf52159016e7f49b75e75ca52e6))
+* **replay:** a glowing wake behind the runner instead of the route on the ground; feet never sink ([2725b81](https://github.com/chenhunghan/garmin-mcp-app/commit/2725b810cc1ba9625f8d9d4c1ce58f1f02b158cc))
+* **replay:** close-up trees grown with EZ-Tree, dressed by their mapped genus ([3236168](https://github.com/chenhunghan/garmin-mcp-app/commit/32361689fbee9be1af4c34ba5c90ed3727c40e5c))
+* **replay:** faster runs move like faster runners ([25afee1](https://github.com/chenhunghan/garmin-mcp-app/commit/25afee1710d33217961fcbe853498729c195789e))
+* **replay:** runner moves its trunk and arms from motion capture, wears running kit ([8482652](https://github.com/chenhunghan/garmin-mcp-app/commit/8482652ef1cd8755b5729fc5b208627c85f5bd93))
+* **replay:** scanned grass blades and flowers in mapped grass ([39d7b50](https://github.com/chenhunghan/garmin-mcp-app/commit/39d7b50ab63019a0b69dfde80c76034f523aea99))
+* **replay:** scanned ground, road and wall materials and sky-photo light from an asset pack ([5245102](https://github.com/chenhunghan/garmin-mcp-app/commit/524510229a88ef4955a653f8f507de80a6da6fa9))
+* **replay:** street furniture and lamps from OpenStreetMap, lit at night ([a36bbdc](https://github.com/chenhunghan/garmin-mcp-app/commit/a36bbdc0e8093a8374f1bcaeacf89efdacdddb59))
+
+
+### Bug Fixes
+
+* **demo:** yesterday's run is always the easy negative split ([fa59f34](https://github.com/chenhunghan/garmin-mcp-app/commit/fa59f34eb013840cca805c00203f580a3946aca0))
+* **replay:** credit the motion capture as CMU asks ([438c0e5](https://github.com/chenhunghan/garmin-mcp-app/commit/438c0e5c5cc1c8129c6ed75ad1cfe8848124381c))
+* **replay:** flowers grow in dense one-kind patches that thin the grass ([56e7b24](https://github.com/chenhunghan/garmin-mcp-app/commit/56e7b2453feaee980b32b3e647ecf3a567db39f2))
+* **replay:** no gap in the route under the runner, fewer merged lamp pools, twig-sized leaves ([bffa454](https://github.com/chenhunghan/garmin-mcp-app/commit/bffa454c0dcb4b54e1e58fe5fc2ce5537e53fd6b))
+* **replay:** the horizon ground no longer rises through the route area and hides the runner's legs ([6011eb4](https://github.com/chenhunghan/garmin-mcp-app/commit/6011eb4c56b192611a72634914be6360ee698d52))
+
 ## [0.10.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.9.1...garmin-mcp-app-v0.10.0) (2026-10-15)
 
 

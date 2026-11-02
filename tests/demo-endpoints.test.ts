@@ -81,6 +81,25 @@ describe("demo mode answers every endpoint like Garmin", () => {
       workoutScheduleId: number;
     };
     expect(scheduled.workoutScheduleId).toBeGreaterThan(0);
+    // Unscheduling removes one calendar entry; the workout and its other entries stay
+    const second = (await c.scheduleWorkout(created.workoutId, world.today)) as {
+      workoutScheduleId: number;
+    };
+    const [y, m] = world.today.split("-").map(Number);
+    const calendarIds = async () =>
+      ((await c.getCalendar(y!, m!)) as { calendarItems: { id: number }[] }).calendarItems.map(
+        (i) => i.id,
+      );
+    expect(await calendarIds()).toEqual(
+      expect.arrayContaining([scheduled.workoutScheduleId, second.workoutScheduleId]),
+    );
+    await c.unscheduleWorkout(scheduled.workoutScheduleId);
+    const ids = await calendarIds();
+    expect(ids).not.toContain(scheduled.workoutScheduleId);
+    expect(ids).toContain(second.workoutScheduleId);
+    await expect(c.unscheduleWorkout(scheduled.workoutScheduleId)).rejects.toMatchObject({
+      status: 404,
+    });
     const list = (await c.getWorkouts(0, 50)) as { workoutId: number }[];
     expect(list.map((x) => x.workoutId)).toContain(created.workoutId);
     await c.deleteWorkout(created.workoutId);

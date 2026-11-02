@@ -342,7 +342,8 @@ An easy run is a single { "type": "run", "duration": { "seconds": 2700 }, "targe
     "delete-workout",
     {
       title: "Delete Workout",
-      description: "Delete a workout from Garmin Connect",
+      description:
+        "Delete a workout from Garmin Connect, with every calendar entry it has. To take one scheduled workout off the calendar and keep the workout, use unschedule-workout.",
       inputSchema: z.object(workoutIdSchema),
       _meta: { ui: { resourceUri } },
     },
@@ -368,5 +369,23 @@ An easy run is a single { "type": "run", "duration": { "seconds": 2700 }, "targe
         date,
         action: "scheduled",
       }),
+  );
+
+  registerAppTool(
+    server,
+    "unschedule-workout",
+    {
+      title: "Unschedule Workout",
+      description:
+        "Remove one scheduled workout from the Garmin calendar; the workout itself and its other dates are kept. " +
+        "scheduleId is the calendar entry's ID, not the workout's: workoutScheduleId from schedule-workout or create-structured-workout, or scheduleId from show-training-week. " +
+        "To move a workout to another day, unschedule it, then schedule-workout on the new date.",
+      inputSchema: z.object({
+        scheduleId: z.union([z.string(), z.number()]).describe("Calendar schedule entry ID"),
+      }),
+      _meta: { ui: { resourceUri } },
+    },
+    async ({ scheduleId }) =>
+      withAuth(() => getClient().unscheduleWorkout(scheduleId), { action: "unscheduled" }),
   );
 }

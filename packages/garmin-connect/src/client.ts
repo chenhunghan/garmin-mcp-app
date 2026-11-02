@@ -478,6 +478,15 @@ export class GarminClient {
     return this.connectapi(`/workout-service/schedule/${workoutId}`, "POST", { date });
   }
 
+  /**
+   * Remove one scheduled instance from the calendar; the workout itself is kept.
+   * `scheduleId` is the calendar entry's ID (`workoutScheduleId` from
+   * scheduleWorkout, `id` of a calendar workout item), not the workout's ID.
+   */
+  async unscheduleWorkout(scheduleId: string | number): Promise<unknown> {
+    return this.connectapi(`/workout-service/schedule/${scheduleId}`, "DELETE");
+  }
+
   // ── Private ───────────────────────────────────────────
 
   private profileIds: { displayName: string; profileId: number } | null = null;

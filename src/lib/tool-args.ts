@@ -12,7 +12,7 @@ export interface ToolArgs {
   activityId?: string | number;
   workoutId?: string | number;
   limit?: number;
-  action?: "created" | "updated" | "deleted" | "scheduled";
+  action?: "created" | "updated" | "deleted" | "scheduled" | "unscheduled";
 }
 
 /** Last day a date-range chart should show: the requested date, else today. */

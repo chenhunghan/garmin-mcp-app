@@ -39,6 +39,8 @@ function actionMessage(args: ToolArgs | undefined, name: string | undefined): st
       return `${what} updated`;
     case "deleted":
       return "Workout deleted";
+    case "unscheduled":
+      return "Workout removed from the calendar";
     case "scheduled":
       return args.date
         ? `${what} scheduled for ${parseDate(args.date).toLocaleDateString(undefined, {

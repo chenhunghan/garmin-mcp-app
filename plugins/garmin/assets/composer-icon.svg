@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round">
+  <style>
+    /* Composer chips have no dark variant: adapt here. Mid-gray stays legible
+       on both themes if the app and system themes disagree. */
+    g { stroke: #6b6b6b; }
+    @media (prefers-color-scheme: dark) { g { stroke: #e5e5e5; } }
+  </style>
+  <g>
+    <path d="M7.2 4.5 7.8 2h4.4l.6 2.5"/>
+    <path d="M7.2 15.5 7.8 18h4.4l.6-2.5"/>
+    <rect x="4.5" y="4.5" width="11" height="11" rx="3"/>
+    <path d="M6.5 10h1.6l1-2 1.6 4 1-2h1.8"/>
+  </g>
+</svg>

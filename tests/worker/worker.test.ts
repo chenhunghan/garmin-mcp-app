@@ -317,9 +317,9 @@ describe("self-hosted Worker", () => {
     await client.close();
   });
 
-  it("sends the view only to clients that announce they render the app", async () => {
+  it("leaves the view out for Claude Code only", async () => {
     // What Claude Code sends: its capabilities ride with each request (2026-07-28)
-    const call = async (clientCapabilities: Record<string, unknown>) => {
+    const call = async (name: string, clientCapabilities: Record<string, unknown>) => {
       const res = await fetchWorker("/mcp", {
         method: "POST",
         headers: {
@@ -339,7 +339,7 @@ describe("self-hosted Worker", () => {
             arguments: { date: "2026-10-01" },
             _meta: {
               "io.modelcontextprotocol/protocolVersion": "2026-07-28",
-              "io.modelcontextprotocol/clientInfo": { name: "claude-code", version: "2.1.322" },
+              "io.modelcontextprotocol/clientInfo": { name, version: "2.1.322" },
               "io.modelcontextprotocol/clientCapabilities": clientCapabilities,
             },
           },
@@ -351,11 +351,14 @@ describe("self-hosted Worker", () => {
       return (JSON.parse(json) as { result: ToolResult }).result;
     };
 
-    const plain = await call({ roots: { listChanged: true } });
-    expect(plain.structuredContent).toBeUndefined();
-    expect(JSON.parse(plain.content[0]!.text)[0].totalSteps).toBe(9000);
+    const claudeCode = await call("claude-code", { roots: { listChanged: true } });
+    expect(claudeCode.structuredContent).toBeUndefined();
+    expect(JSON.parse(claudeCode.content[0]!.text)[0].totalSteps).toBe(9000);
 
-    const host = await call(APP_HOST_CAPABILITIES);
+    // Everyone else keeps it, whether or not they announce the app
+    const other = await call("some-other-client", { roots: { listChanged: true } });
+    expect(other.structuredContent?.view).toBe("steps");
+    const host = await call("claude-ai", APP_HOST_CAPABILITIES);
     expect(host.structuredContent?.view).toBe("steps");
   });
 

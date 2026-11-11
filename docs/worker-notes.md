@@ -132,9 +132,8 @@ the stdio bundle contains nothing from `src/worker/`.
   Whether the free plan's limit lets that through every time is not settled.
 - **Claude Code shows the model only `structuredContent`:** a view tool's result read
   `{"view":"briefing","args":{…}}` there, without the data in the text block. Fixed: the
-  view routing is sent only to clients that announce the MCP Apps capability
-  (`src/tools/view.ts`); Claude Code sends its capabilities with each request, so this
-  works on the stateless Worker too.
+  view routing is left out for Claude Code alone (`src/tools/view.ts`); it sends its name
+  and capabilities with each request, so this works on the stateless Worker too.
 
 ## Later
 

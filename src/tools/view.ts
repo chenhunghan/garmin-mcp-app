@@ -5,28 +5,33 @@ import {
   getUiCapability,
 } from "@modelcontextprotocol/ext-apps/server";
 
-/** What a client that renders the app announces (used by the dev UI and tests). */
+/** What a client that renders the app announces. */
 export const APP_HOST_CAPABILITIES: ClientCapabilities = {
   extensions: { [EXTENSION_ID]: { mimeTypes: [RESOURCE_MIME_TYPE] } },
 };
 
 /**
+ * Clients (by `clientInfo.name`) that hand the model `structuredContent`
+ * instead of the text when a result has both, and don't render the app: with
+ * the view routing they'd see `{"view":…}` and none of the data.
+ */
+const TEXT_ONLY_CLIENTS = new Set(["claude-code"]);
+
+/**
  * Whether to send `structuredContent` (which view to open, and for what) with
- * a tool result. Only clients that render the app need it, and some that
- * don't (Claude Code) hand the model `structuredContent` instead of the text,
- * so it would see `{"view":…}` and none of the data.
- *
- * Unknown capabilities (a 2025-era request to the stateless remote server
- * carries none) count as an app host: that's what every remote host was until
- * clients started sending them with each request.
+ * a tool result. Every client gets it, as before, except a known text-only
+ * client that doesn't announce the MCP Apps capability. Deliberately narrow:
+ * a host that renders the app must never lose its routing, whatever it
+ * announces.
  */
 export function rendersViews(server: McpServer): boolean {
-  const capabilities = server.server.getClientCapabilities();
-  if (!capabilities) return true;
-  return getUiCapability(capabilities)?.mimeTypes?.includes(RESOURCE_MIME_TYPE) ?? false;
+  const name = server.server.getClientVersion()?.name;
+  if (!name || !TEXT_ONLY_CLIENTS.has(name)) return true;
+  const ui = getUiCapability(server.server.getClientCapabilities());
+  return ui?.mimeTypes?.includes(RESOURCE_MIME_TYPE) ?? false;
 }
 
-/** The `structuredContent` that routes a result to `view`, or nothing for clients without views. */
+/** The `structuredContent` that routes a result to `view`; nothing for a text-only client. */
 export function viewRouting(
   server: McpServer,
   view: string,

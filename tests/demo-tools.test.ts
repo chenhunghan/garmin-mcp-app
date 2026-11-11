@@ -27,6 +27,7 @@ const NOT_VIEWS = new Set([
   "update-workout",
   "delete-workout",
   "schedule-workout",
+  "unschedule-workout",
 ]);
 
 const args: Record<string, Record<string, unknown>> = {

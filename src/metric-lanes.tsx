@@ -112,7 +112,7 @@ export function MetricPanels({
   onSeek,
   groups,
   firstLetter = 0,
-  className = "",
+  className = "flex flex-col gap-2",
 }: {
   data: ReplayData;
   track: Track;
@@ -128,6 +128,7 @@ export function MetricPanels({
   groups?: string[];
   /** Index letter of the first panel (panels are lettered across columns) */
   firstLetter?: number;
+  /** Layout of the wrapper (replaces the default column, e.g. "contents" to lay the panels into a parent grid) */
   className?: string;
 }) {
   const all = useMemo(() => lanesFor(data, track, zones), [data, track, zones]);
@@ -192,7 +193,7 @@ export function MetricPanels({
   });
 
   return (
-    <div className={`flex flex-col gap-2 ${className}`}>
+    <div className={className}>
       <svg width="0" height="0" className="absolute" aria-hidden>
         <defs>
           <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="0">

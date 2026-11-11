@@ -125,6 +125,7 @@ const untested: Record<string, string> = {
   "update-workout": "write operation, no recording",
   "delete-workout": "write operation, no recording",
   "schedule-workout": "write operation, no recording",
+  "unschedule-workout": "write operation, no recording",
 };
 
 const mock = garminMockServer();

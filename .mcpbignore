@@ -22,3 +22,4 @@ tsconfig.worker.json
 .dev.vars
 .dev.vars.example
 .wrangler/
+glama.json

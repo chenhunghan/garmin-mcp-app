@@ -70,6 +70,8 @@ class HttpError extends Error {
 const created: SavedWorkout[] = [];
 const deleted = new Set<number>();
 const extraSchedule: { scheduleId: number; workoutId: number; date: string }[] = [];
+const unscheduled = new Set<number>();
+let nextScheduleId = 1_650_900_000;
 let nextId = 1_184_900_000;
 
 function workoutsOf(w: World): SavedWorkout[] {
@@ -77,7 +79,9 @@ function workoutsOf(w: World): SavedWorkout[] {
 }
 
 function scheduleOf(w: World) {
-  return [...w.schedule, ...extraSchedule].filter((s) => !deleted.has(s.workoutId));
+  return [...w.schedule, ...extraSchedule].filter(
+    (s) => !deleted.has(s.workoutId) && !unscheduled.has(s.scheduleId),
+  );
 }
 
 // ── Helpers ───────────────────────────────────────────
@@ -2848,7 +2852,7 @@ function routes(): Route[] {
         const saved = findWorkout(w(), id!);
         const date = (body as { date?: string } | null)?.date;
         if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new HttpError(400, "Missing date");
-        const scheduleId = 1_650_900_000 + extraSchedule.length;
+        const scheduleId = nextScheduleId++;
         extraSchedule.push({ scheduleId, workoutId: saved.workoutId, date });
         return {
           workoutScheduleId: scheduleId,
@@ -2857,6 +2861,17 @@ function routes(): Route[] {
           ownerId: PERSONA.profileId,
           workout: workoutSummary(saved),
         };
+      },
+    },
+    {
+      method: "DELETE",
+      path: /^\/workout-service\/schedule\/(\d+)$/,
+      handle: ([, id]) => {
+        if (!scheduleOf(w()).some((s) => s.scheduleId === Number(id))) {
+          throw new HttpError(404, `No scheduled workout ${id}`);
+        }
+        unscheduled.add(Number(id));
+        return undefined;
       },
     },
   ];

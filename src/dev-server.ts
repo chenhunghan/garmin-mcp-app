@@ -13,6 +13,7 @@ import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/client";
 import { createServer } from "./server.js";
 import { localDeps } from "./local-deps.js";
+import { APP_HOST_CAPABILITIES } from "./tools/view.js";
 
 let client: Client | null = null;
 
@@ -33,7 +34,11 @@ export async function getDevClient(): Promise<Client> {
   // initialize request has no listener and times out after 60s.
   await server.connect(serverTransport);
 
-  client = new Client({ name: "dev-client", version: "0.0.0" });
+  // The dev UI renders the app, so it announces that like a real host does
+  client = new Client(
+    { name: "dev-client", version: "0.0.0" },
+    { capabilities: APP_HOST_CAPABILITIES },
+  );
   await client.connect(clientTransport);
 
   return client;

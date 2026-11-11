@@ -78,7 +78,7 @@ export async function buildDashboard(
 }
 
 export function registerDashboardTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
-  const withAuth = authed(deps);
+  const withAuth = authed(server, deps);
   registerAppTool(
     server,
     "show-performance-dashboard",

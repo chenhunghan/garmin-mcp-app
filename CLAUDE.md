@@ -354,7 +354,7 @@ All tools share a single `ui://garmin-mcp/app.html` resource. The app uses `stru
    async ({ date }) => withAuth(() => getClient().getSleepData(date), "sleep", { date }),
    ```
 
-   This adds `structuredContent: { view: "sleep", args: { date } }` to the tool response. Several tools can share a view (e.g. `get-hrv` and `get-training-status` → `training`; `get-body-battery` → `heart-rate`; `get-vo2-max` → `race-predictions`; all workout tools → `workouts`; `show-training-week` → `week`). Workout step rendering/formatting is shared in `src/components/workout-steps.tsx`.
+   This adds `structuredContent: { view: "sleep", args: { date } }` to the tool response — only for clients that announce the MCP Apps capability (`viewRouting` in `src/tools/view.ts`). Claude Code gives the model `structuredContent` *instead of* the text when both are there, so a client without views gets the text alone. Unknown capabilities (a 2025-era request to the stateless Worker) count as an app host. A test client or dev host that should get views must pass `APP_HOST_CAPABILITIES`. Several tools can share a view (e.g. `get-hrv` and `get-training-status` → `training`; `get-body-battery` → `heart-rate`; `get-vo2-max` → `race-predictions`; all workout tools → `workouts`; `show-training-week` → `week`). Workout step rendering/formatting is shared in `src/components/workout-steps.tsx`.
 
 2. **App** (`src/app.tsx`) — a `toolresult` listener (registered in `onAppCreated`, before connect) sets `visibleCharts` and `toolArgs`:
 

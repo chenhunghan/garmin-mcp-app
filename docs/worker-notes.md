@@ -101,7 +101,10 @@ the stdio bundle contains nothing from `src/worker/`.
 
 ## Needs a person (before release)
 
-- [ ] S1: Garmin sign-in (with MFA) works from Cloudflare (`npm run deploy:dev`, then connect).
+- [x] S1: Garmin sign-in works from Cloudflare (2026-11-11, `run-coach-dev`, connected from
+      Claude Code): passphrase → Garmin sign-in → token, then briefing, readiness,
+      dashboard (52 weeks), training week, replay and a data-only tool all answered
+      with real data. No failed invocation; `/mcp` calls used 6–69 ms CPU, `/authorize` up to 19 ms.
 - [ ] S4: Deploy button from the repo root on a free account without a card (npm workspaces, `npm run build`).
 - [ ] S5: UI rendering on Claude web, Claude desktop (remote connector), Claude iOS/Android, ChatGPT web; text fallback everywhere.
 - [ ] Wrong passphrase rejected, lockout, second Garmin account rejected (also covered by `test:worker`).
@@ -112,6 +115,19 @@ the stdio bundle contains nothing from `src/worker/`.
 - [ ] `.mcpb` and ChatGPT desktop plugin behave exactly as v0.10.0.
 - [ ] Production Worker shows no stored logs; `run-coach-dev` does.
 - [ ] Signing in remotely doesn't sign out local clients (separate tokens).
+
+## Found while checking
+
+- **The `cf` CLI (1.0 beta) can't deploy this repo as it is:** `cf deploy` refuses an npm
+  workspace root and reads only `cloudflare.config.ts`, where Durable Objects are declared
+  as `exports` instead of `migrations`. The S1 check deployed a wrangler-built bundle from a
+  folder outside the repo with a converted config, so `wrangler.jsonc` itself (S4) is still
+  unchecked.
+- **CPU on the free plan:** several `/mcp` calls took 16–69 ms CPU and still ended `ok`.
+  Whether the free plan's limit lets that through every time is not settled.
+- **Claude Code shows the model only `structuredContent`:** a view tool's result reads
+  `{"view":"briefing","args":{…}}` there, without the data in the text block. Data-only
+  tools are fine. Same for the stdio server; hosts that render the app read the text.
 
 ## Later
 

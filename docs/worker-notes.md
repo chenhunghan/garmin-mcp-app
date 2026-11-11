@@ -121,8 +121,13 @@ the stdio bundle contains nothing from `src/worker/`.
 - **The `cf` CLI (1.0 beta) can't deploy this repo as it is:** `cf deploy` refuses an npm
   workspace root and reads only `cloudflare.config.ts`, where Durable Objects are declared
   as `exports` instead of `migrations`. The S1 check deployed a wrangler-built bundle from a
-  folder outside the repo with a converted config, so `wrangler.jsonc` itself (S4) is still
-  unchecked.
+  folder outside the repo with a converted config.
+- **`wrangler.jsonc` deploys from the repo root** (2026-11-11, `wrangler deploy --env dev`
+  under a throwaway name, with `--secrets-file .dev.vars`): KV provisioned, migration
+  applied, landing page, metadata, `/register` and the `/authorize` page answered. The
+  Deploy button itself (S4) is still unchecked. Both test Workers were deleted afterwards.
+- **`/app` is public:** the static asset `app.html` is served without a token at `/app`
+  (6.5 MB). It holds no data, only the open-source UI.
 - **CPU on the free plan:** several `/mcp` calls took 16–69 ms CPU and still ended `ok`.
   Whether the free plan's limit lets that through every time is not settled.
 - **Claude Code shows the model only `structuredContent`:** a view tool's result reads

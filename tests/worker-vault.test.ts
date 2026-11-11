@@ -121,6 +121,20 @@ describe("Vault", () => {
     expect(await vault.checkPassphrase("correct horse battery staple")).toEqual({ ok: true });
   });
 
+  it("counts wrong passphrases sent at the same time", async () => {
+    const { vault } = setup();
+    const results = await Promise.all(
+      Array.from({ length: 12 }, () => vault.checkPassphrase("wrong", "attacker")),
+    );
+    // 4 plain refusals, then the lockout and refusals while locked
+    expect(results.filter((r) => !r.ok && r.retryAfterMs === undefined)).toHaveLength(
+      LIMITS.maxFailures - 1,
+    );
+    expect((await vault.checkPassphrase("correct horse battery staple", "attacker")).ok).toBe(
+      false,
+    );
+  });
+
   it("locks out only the client that failed", async () => {
     const { vault } = setup();
     for (let i = 0; i < LIMITS.maxFailures; i++) await vault.checkPassphrase("wrong", "attacker");

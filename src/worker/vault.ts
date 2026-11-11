@@ -78,6 +78,8 @@ export class Vault {
   private refreshing: Promise<Tokens | null> | undefined;
   /** Bumped when tokens are saved or cleared, so a slow refresh can't overwrite that */
   private tokenGeneration = 0;
+  /** Passphrase checks run one at a time: parallel wrong guesses must each count */
+  private passphraseQueue: Promise<unknown> = Promise.resolve();
 
   constructor(
     private storage: VaultStorage,
@@ -95,7 +97,15 @@ export class Vault {
    * Constant-time check; 5 failures lock that client out for 15 minutes.
    * Per client (a hash of the IP), so nobody can lock the owner out.
    */
-  async checkPassphrase(input: string, client = ""): Promise<PassphraseResult> {
+  checkPassphrase(input: string, client = ""): Promise<PassphraseResult> {
+    // The comparison awaits WebCrypto, which lets other requests in between
+    // reading the failure count and writing it back.
+    const run = this.passphraseQueue.then(() => this.checkPassphraseNow(input, client));
+    this.passphraseQueue = run.catch(() => undefined);
+    return run;
+  }
+
+  private async checkPassphraseNow(input: string, client: string): Promise<PassphraseResult> {
     const passphrase = this.secrets.passphrase;
     if (!passphrase) return { ok: false };
     const key = `passphrase:${client}`;

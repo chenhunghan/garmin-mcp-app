@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z, type ZodRawShape } from "zod";
-import type { GarminClient } from "garmin-connect";
+import { GarminAuthError, GarminTokenExpiredError, type GarminClient } from "garmin-connect";
 import type { ServerDeps } from "../deps.js";
 import { signInRequired } from "./data.js";
 
@@ -10,26 +10,35 @@ import { signInRequired } from "./data.js";
  * waiting for a login that would never happen.
  */
 async function plainResult(deps: ServerDeps, fn: (client: GarminClient) => Promise<unknown>) {
+  const notSignedIn = async () => ({
+    isError: true,
+    content: [
+      {
+        type: "text" as const,
+        text:
+          (await signInRequired(deps))?.message ??
+          "Not signed in to Garmin Connect. Call garmin-check-auth to show the sign-in form.",
+      },
+    ],
+  });
   const client = deps.getClient();
   if (!client.isAuthenticated) {
     try {
       await client.resume();
     } catch {
-      return {
-        isError: true,
-        content: [
-          {
-            type: "text" as const,
-            text:
-              (await signInRequired(deps))?.message ??
-              "Not signed in to Garmin Connect. Call garmin-check-auth to show the sign-in form.",
-          },
-        ],
-      };
+      return notSignedIn();
     }
   }
-  const data = await fn(client);
-  return { content: [{ type: "text" as const, text: JSON.stringify(data ?? null) }] };
+  try {
+    const data = await fn(client);
+    return { content: [{ type: "text" as const, text: JSON.stringify(data ?? null) }] };
+  } catch (err) {
+    // Saved tokens that Garmin no longer accepts: same advice as not being signed in
+    if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
+      return notSignedIn();
+    }
+    throw err;
+  }
 }
 
 const date = z.string().describe("Date in YYYY-MM-DD format");

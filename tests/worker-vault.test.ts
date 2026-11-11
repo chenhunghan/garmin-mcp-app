@@ -226,15 +226,21 @@ describe("Vault", () => {
 
   it("a refresh finishing after a logout doesn't sign back in", async () => {
     let release!: () => void;
+    let markStarted!: () => void;
+    const started = new Promise<void>((r) => (markStarted = r));
     const { vault, now } = setup({
       refresh: async (t) => {
-        await new Promise<void>((r) => (release = r));
+        await new Promise<void>((r) => {
+          release = r;
+          markStarted();
+        });
         return { ...t, oauth2: { ...t.oauth2, access_token: "new", expires_at: 2e9 } };
       },
     });
     await vault.saveTokens(tokens(now() / 1000 + 30));
     const refreshing = vault.freshTokens();
-    await new Promise((r) => setTimeout(r, 0));
+    // Unsealing the tokens takes WebCrypto a while: wait until the refresh is running
+    await started;
     await vault.clearTokens();
     release();
     expect(await refreshing).toBeNull();

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.11.0...garmin-mcp-app-v0.12.0) (2026-11-11)
+
+
+### Features
+
+* self-hosted Cloudflare Worker (remote MCP) with OAuth and an encrypted token vault ([#51](https://github.com/chenhunghan/garmin-mcp-app/issues/51)) ([8a51139](https://github.com/chenhunghan/garmin-mcp-app/commit/8a51139dc7162af7abdb3e6932ee0c8f98c7d55b))
+
+
+### Bug Fixes
+
+* view tools give their data to Claude Code ([#56](https://github.com/chenhunghan/garmin-mcp-app/issues/56)) ([50cafde](https://github.com/chenhunghan/garmin-mcp-app/commit/50cafde692987eb1bad712f52b18bfa702081907))
+
 ## [0.11.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.10.0...garmin-mcp-app-v0.11.0) (2026-11-02)
 
 

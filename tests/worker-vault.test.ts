@@ -4,7 +4,13 @@
  */
 import { constants, publicEncrypt } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { Sealer, UnsealError, constantTimeEqual, keyBytes } from "../src/worker/crypto.ts";
+import {
+  Sealer,
+  UnsealError,
+  constantTimeEqual,
+  ipNetwork,
+  keyBytes,
+} from "../src/worker/crypto.ts";
 import { LIMITS, Vault, type Tokens, type VaultStorage } from "../src/worker/vault.ts";
 
 const KEY = "a".repeat(64);
@@ -133,6 +139,22 @@ describe("Vault", () => {
     expect((await vault.checkPassphrase("correct horse battery staple", "attacker")).ok).toBe(
       false,
     );
+  });
+
+  it("forgets wrong passphrases older than the lockout window", async () => {
+    const { vault, advance } = setup();
+    for (let i = 1; i < LIMITS.maxFailures; i++) await vault.checkPassphrase("wrong");
+    advance(LIMITS.lockoutMs + 1);
+    expect(await vault.checkPassphrase("wrong")).toEqual({ ok: false });
+  });
+
+  it("counts an IPv6 connection's /64 as one client", () => {
+    expect(ipNetwork("203.0.113.7")).toBe("203.0.113.7");
+    expect(ipNetwork("::ffff:203.0.113.7")).toBe("203.0.113.7");
+    expect(ipNetwork("2001:db8:1:2:aaaa:bbbb:cccc:dddd")).toBe("2001:db8:1:2");
+    expect(ipNetwork("2001:0db8:0001:0002::1")).toBe("2001:db8:1:2");
+    expect(ipNetwork("2001:db8::1")).toBe("2001:db8:0:0");
+    expect(ipNetwork("::1")).toBe("0:0:0:0");
   });
 
   it("locks out only the client that failed", async () => {

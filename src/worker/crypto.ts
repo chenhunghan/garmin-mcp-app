@@ -157,3 +157,28 @@ export async function constantTimeEqual(a: string, b: string): Promise<boolean> 
   for (let i = 0; i < x.length; i++) diff |= x[i]! ^ y[i]!;
   return diff === 0;
 }
+
+/**
+ * The network an address counts as for rate limits: an IPv4 address itself, an
+ * IPv6 address's /64 (one home or mobile connection has all of it).
+ */
+export function ipNetwork(ip: string): string {
+  if (!ip.includes(":")) return ip;
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
+  if (mapped) return mapped[1];
+  const [head, tail] = ip.toLowerCase().split("::");
+  const left = head ? head.split(":") : [];
+  const right = tail ? tail.split(":") : [];
+  const groups =
+    tail === undefined
+      ? left
+      : [
+          ...left,
+          ...Array.from({ length: Math.max(0, 8 - left.length - right.length) }, () => "0"),
+          ...right,
+        ];
+  return groups
+    .slice(0, 4)
+    .map((g) => g.replace(/^0+(?=.)/, ""))
+    .join(":");
+}

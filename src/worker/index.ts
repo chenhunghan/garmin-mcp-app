@@ -32,10 +32,14 @@ const REGISTRATIONS = {
 async function limitRegistration(request: Request, env: Env): Promise<Response | null> {
   const vault = vaultOf(env);
   const { perIp, all } = REGISTRATIONS;
-  for (const r of [
-    await vault.rateLimit(`register:${await clientKey(request)}`, perIp.limit, perIp.windowMs),
-    await vault.rateLimit("register", all.limit, all.windowMs),
-  ]) {
+  const clientKeyOf = await clientKey(request);
+  // This address first: a refused request must not count toward everyone's daily total
+  const checks = [
+    () => vault.rateLimit(`register:${clientKeyOf}`, perIp.limit, perIp.windowMs),
+    () => vault.rateLimit("register", all.limit, all.windowMs),
+  ];
+  for (const check of checks) {
+    const r = await check();
     if (!r.ok) {
       return Response.json(
         { error: "too_many_requests", error_description: "Too many client registrations" },

@@ -9,7 +9,7 @@
  * and starting sign-ins is rate-limited per IP.
  */
 import { AuthorizationError, type AuthRequest } from "@cloudflare/workers-oauth-provider";
-import { Sealer, randomId } from "./crypto.js";
+import { Sealer, ipNetwork, randomId } from "./crypto.js";
 import { vaultOf, type Env, type VaultStub } from "./env.js";
 import { escapeHtml, page } from "./html.js";
 import { checkSignInLink } from "./signin-link.js";
@@ -291,9 +291,12 @@ function redirectOrigin(tx: SignInTransaction): string[] {
   }
 }
 
-/** Who's asking, for rate limits: the IP, hashed (the records expire within a day). */
+/**
+ * Who's asking, for rate limits: the IP (an IPv6 address's /64, which is what
+ * one connection gets), hashed. The records expire within a day.
+ */
 export async function clientKey(request: Request): Promise<string> {
-  return (await sha256Hex(request.headers.get("CF-Connecting-IP") ?? "")).slice(0, 32);
+  return (await sha256Hex(ipNetwork(request.headers.get("CF-Connecting-IP") ?? ""))).slice(0, 32);
 }
 
 function isTimeZone(timeZone: string): boolean {

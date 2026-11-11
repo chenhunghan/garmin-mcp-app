@@ -109,10 +109,12 @@ export class Vault {
     const passphrase = this.secrets.passphrase;
     if (!passphrase) return { ok: false };
     const key = `passphrase:${client}`;
-    const state = (await this.storage.get<{ failures: number; lockedUntil?: number }>(key)) ?? {
-      failures: 0,
-    };
     const now = this.now();
+    const saved = await this.storage.get<{ failures: number; lockedUntil?: number; exp: number }>(
+      key,
+    );
+    // Failures older than the lockout window don't count any more
+    const state = saved && saved.exp > now ? saved : { failures: 0, lockedUntil: undefined };
     if (state.lockedUntil && state.lockedUntil > now) {
       return { ok: false, retryAfterMs: state.lockedUntil - now };
     }

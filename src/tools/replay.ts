@@ -100,7 +100,7 @@ async function fetchReplay(
 }
 
 export function registerReplayTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
-  const withAuth = authed(deps);
+  const withAuth = authed(server, deps);
 
   registerAppTool(
     server,

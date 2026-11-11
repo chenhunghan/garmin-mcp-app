@@ -6,7 +6,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Client } from "@modelcontextprotocol/client";
+import { Client, type ClientCapabilities } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -16,6 +16,7 @@ import {
 } from "../packages/garmin-connect/tests/helpers/msw.ts";
 import { createServer } from "../src/server.ts";
 import { localDeps } from "../src/local-deps.ts";
+import { APP_HOST_CAPABILITIES } from "../src/tools/view.ts";
 import type { TrainingWeek } from "../src/tools/week.ts";
 
 const ctx = loadContext();
@@ -130,6 +131,7 @@ const untested: Record<string, string> = {
 
 const mock = garminMockServer();
 let client: Client;
+let claudeCode: Client;
 
 beforeAll(async () => {
   // Fake saved tokens, so the server's client resumes without signing in
@@ -145,7 +147,19 @@ beforeAll(async () => {
   await server.connect(serverTransport);
   client = new Client({ name: "test", version: "0" });
   await client.connect(clientTransport);
+
+  // Claude Code: gives the model structuredContent instead of the text, renders no app
+  claudeCode = await connect("claude-code");
 });
+
+async function connect(name: string, capabilities?: ClientCapabilities): Promise<Client> {
+  const server = createServer("test", localDeps());
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await server.connect(serverTransport);
+  const c = new Client({ name, version: "0" }, capabilities ? { capabilities } : undefined);
+  await c.connect(clientTransport);
+  return c;
+}
 
 afterAll(() => mock.close());
 
@@ -221,6 +235,42 @@ describe("MCP tools", () => {
       if (!result.structuredContent?.view) noView.push(t.name);
     }
     expect(noView).toEqual([]);
+  });
+
+  it("Claude Code gets the data as text and no structuredContent", async () => {
+    const { tools } = await claudeCode.listTools();
+    const routed: string[] = [];
+    for (const t of tools) {
+      if (!(t.name in toolArgs)) continue;
+      const result = (await claudeCode.callTool({ name: t.name, arguments: toolArgs[t.name] })) as {
+        content: { text: string }[];
+        structuredContent?: unknown;
+        isError?: boolean;
+      };
+      if (result.structuredContent !== undefined) routed.push(t.name);
+      expect(result.isError, t.name).toBeFalsy();
+      expect(result.content[0]?.text, t.name).toBeTruthy();
+    }
+    expect(routed).toEqual([]);
+
+    const briefing = (await claudeCode.callTool({
+      name: "get-daily-briefing",
+      arguments: { date: ctx.date },
+    })) as { content: { text: string }[] };
+    expect(JSON.parse(briefing.content[0]!.text).date).toBe(ctx.date);
+  });
+
+  it("every other client keeps the view routing, whatever it announces", async () => {
+    const steps = { name: "get-steps", arguments: toolArgs["get-steps"] };
+    type Routed = { structuredContent?: { view?: string } };
+    // No capabilities at all (the `client` of the other tests is one too)
+    const unknown = await connect("some-other-client");
+    expect(((await unknown.callTool(steps)) as Routed).structuredContent?.view).toBe("steps");
+    // An app host, and a Claude Code that says it renders the app
+    const host = await connect("claude-ai", APP_HOST_CAPABILITIES);
+    expect(((await host.callTool(steps)) as Routed).structuredContent?.view).toBe("steps");
+    const codeWithUi = await connect("claude-code", APP_HOST_CAPABILITIES);
+    expect(((await codeWithUi.callTool(steps)) as Routed).structuredContent?.view).toBe("steps");
   });
 
   it("echoes the call's arguments so the chart shows what was asked for", async () => {

@@ -130,9 +130,10 @@ the stdio bundle contains nothing from `src/worker/`.
   (6.5 MB). It holds no data, only the open-source UI.
 - **CPU on the free plan:** several `/mcp` calls took 16–69 ms CPU and still ended `ok`.
   Whether the free plan's limit lets that through every time is not settled.
-- **Claude Code shows the model only `structuredContent`:** a view tool's result reads
-  `{"view":"briefing","args":{…}}` there, without the data in the text block. Data-only
-  tools are fine. Same for the stdio server; hosts that render the app read the text.
+- **Claude Code shows the model only `structuredContent`:** a view tool's result read
+  `{"view":"briefing","args":{…}}` there, without the data in the text block. Fixed: the
+  view routing is left out for Claude Code alone (`src/tools/view.ts`); it sends its name
+  and capabilities with each request, so this works on the stateless Worker too.
 
 ## Later
 

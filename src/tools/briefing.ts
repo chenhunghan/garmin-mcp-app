@@ -71,7 +71,7 @@ function cachedBriefing(client: GarminClient, date: string, timeZone?: string): 
 }
 
 export function registerBriefingTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
-  const withAuth = authed(deps);
+  const withAuth = authed(server, deps);
   registerAppTool(
     server,
     "get-daily-briefing",

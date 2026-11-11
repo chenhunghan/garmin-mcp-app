@@ -284,7 +284,7 @@ export async function fetchTrainingWeek(
 }
 
 export function registerWeekTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
-  const withAuth = authed(deps);
+  const withAuth = authed(server, deps);
   registerAppTool(
     server,
     "show-training-week",

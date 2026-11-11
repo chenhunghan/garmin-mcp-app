@@ -9,6 +9,7 @@ import {
 } from "garmin-connect";
 import type { ServerDeps } from "../deps.js";
 import { notAuthenticated, signInRequired } from "./data.js";
+import { viewRouting } from "./view.js";
 
 type ToolResult = {
   content: Array<{ type: "text"; text: string }>;
@@ -21,6 +22,7 @@ type ToolResult = {
  * result, e.g. a newly created workout's ID) tell the view what to highlight.
  */
 async function workoutResult(
+  server: McpServer,
   deps: ServerDeps,
   fn: () => Promise<unknown>,
   args: Record<string, unknown> = {},
@@ -52,7 +54,7 @@ async function workoutResult(
     const data = await fn();
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? null) }],
-      structuredContent: { view: "workouts", args: { ...args, ...argsFrom?.(data) } },
+      ...viewRouting(server, "workouts", { ...args, ...argsFrom?.(data) }),
     };
   } catch (err) {
     if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
@@ -184,7 +186,7 @@ export function registerWorkoutTools(server: McpServer, resourceUri: string, dep
     fn: () => Promise<unknown>,
     args?: Record<string, unknown>,
     argsFrom?: (data: unknown) => Record<string, unknown>,
-  ) => workoutResult(deps, fn, args, argsFrom);
+  ) => workoutResult(server, deps, fn, args, argsFrom);
   const getClient = () => deps.getClient();
 
   registerAppTool(

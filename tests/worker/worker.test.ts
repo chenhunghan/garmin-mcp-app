@@ -15,6 +15,7 @@ import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/cli
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { unstable_getMiniflareWorkerOptions } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { APP_HOST_CAPABILITIES } from "../../src/tools/view.ts";
 
 const ORIGIN = "http://localhost";
 const PASSPHRASE = "a long owner passphrase for tests";
@@ -314,6 +315,51 @@ describe("self-hosted Worker", () => {
     expect(JSON.parse(steps.content[0]!.text)[0].totalSteps).toBe(9000);
     expect(steps.structuredContent?.view).toBe("steps");
     await client.close();
+  });
+
+  it("leaves the view out for Claude Code only", async () => {
+    // What Claude Code sends: its capabilities ride with each request (2026-07-28)
+    const call = async (name: string, clientCapabilities: Record<string, unknown>) => {
+      const res = await fetchWorker("/mcp", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json, text/event-stream",
+          "MCP-Protocol-Version": "2026-07-28",
+          "Mcp-Method": "tools/call",
+          "Mcp-Name": "get-steps",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: {
+            name: "get-steps",
+            arguments: { date: "2026-10-01" },
+            _meta: {
+              "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+              "io.modelcontextprotocol/clientInfo": { name, version: "2.1.322" },
+              "io.modelcontextprotocol/clientCapabilities": clientCapabilities,
+            },
+          },
+        }),
+      });
+      const text = await res.text();
+      expect(res.status, text).toBe(200);
+      const json = text.startsWith("{") ? text : text.slice(text.indexOf("data: ") + 6);
+      return (JSON.parse(json) as { result: ToolResult }).result;
+    };
+
+    const claudeCode = await call("claude-code", { roots: { listChanged: true } });
+    expect(claudeCode.structuredContent).toBeUndefined();
+    expect(JSON.parse(claudeCode.content[0]!.text)[0].totalSteps).toBe(9000);
+
+    // Everyone else keeps it, whether or not they announce the app
+    const other = await call("some-other-client", { roots: { listChanged: true } });
+    expect(other.structuredContent?.view).toBe("steps");
+    const host = await call("claude-ai", APP_HOST_CAPABILITIES);
+    expect(host.structuredContent?.view).toBe("steps");
   });
 
   it("a second client connects with the passphrase alone", async () => {

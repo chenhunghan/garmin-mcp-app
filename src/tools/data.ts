@@ -9,6 +9,7 @@ import {
 } from "garmin-connect";
 import { SignInRequiredError, type ServerDeps } from "../deps.js";
 import { readinessMetric, trainingStatusSummary } from "../briefing-model.js";
+import { viewRouting } from "./view.js";
 
 type ToolResult = {
   content: Array<{ type: "text"; text: string }>;
@@ -20,15 +21,16 @@ type ToolResult = {
  * `withAuth(fn, view, args)`: run a Garmin call, waiting for sign-in through
  * the app UI if needed. `view` picks the chart; `args` are echoed so the chart
  * shows what was asked for (a specific date or activity) rather than
- * today/latest.
+ * today/latest. Clients that can't render the app get the text only
+ * (`viewRouting`).
  */
-export function authed(deps: ServerDeps) {
+export function authed(server: McpServer, deps: ServerDeps) {
   return async function withAuth(
     fn: () => Promise<unknown>,
     view?: string,
     args?: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const structured = view ? { structuredContent: { view, args: args ?? {} } } : {};
+    const structured = view ? viewRouting(server, view, args) : {};
     try {
       const client = deps.getClient();
       if (!client.isAuthenticated) {
@@ -177,7 +179,7 @@ const activityIdSchema = {
 };
 
 export function registerDataTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
-  const withAuth = authed(deps);
+  const withAuth = authed(server, deps);
   const getClient = () => deps.getClient();
 
   registerAppTool(

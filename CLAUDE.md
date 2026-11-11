@@ -19,6 +19,17 @@ The host (e.g. Claude Desktop) brokers all communication: Server ←stdio→ Hos
 - SDK: `@modelcontextprotocol/ext-apps` 2.x on the split MCP SDK 2.x packages — `McpServer` / `StdioServerTransport` from `@modelcontextprotocol/server`, `Client` / `InMemoryTransport` from `@modelcontextprotocol/client` (the old `@modelcontextprotocol/sdk` package is not used). Tool `inputSchema` / prompt `argsSchema` are `z.object(...)` (raw shapes are deprecated, removed in 3.0). Node 20+.
 - See: https://modelcontextprotocol.io/docs/extensions/apps
 
+## Self-hosted Worker (remote MCP)
+
+The same server also runs as a single-tenant Cloudflare Worker each user deploys to their own account (`wrangler.jsonc` at the root, Deploy button in the README). Design notes and the open HUMAN checks: `docs/worker-notes.md`.
+
+- **Two entries, one server:** `src/index.ts` (stdio) → `createServer(version, localDeps())`; `src/worker/index.ts` → `createServer(version, await remoteDeps(env, origin))` per request behind `@cloudflare/workers-oauth-provider`.
+- **`ServerDeps` rule** (`src/deps.ts`): tools and `server.ts` get the Garmin client, settings, map fetch, assets, app HTML, sign-in, request budget and time zone from `deps` — never import `getClient`, `node:*`, `settings.ts`, `auth-gate.ts`, `login-key.ts`, `geo/fetch.ts`, `asset-store.ts` (`tests/deps.test.ts`). `src/worker/` imports no `node:*`, never uses `console`, and the stdio bundle contains none of it.
+- **Remote sign-in:** `deps.auth.waitForSignIn()` throws `SignInRequiredError` (a one-time `/signin` link); `withAuth` answers `not_authenticated` and the app shows its form. All state (tokens, owner Garmin id, sign-ins, MFA, login key, lockout, time zone) is sealed in the `GarminVault` Durable Object.
+- **Compatibility invariants** (stdio channels must not change): `dist/index.js` + `dist/app.html` only in `dist/` (`build/worker-assets/` holds the Worker's copy); tool names, schemas and app-only visibility; `~/.garminconnect` / `GARMIN_TOKEN_PATH`, `RUN_COACH_CACHE`, `run-coach-settings.json`; the in-memory RSA login key and `waitForAuth`; demo mode; `openai/*` `_meta`; empty resource CSP; `pack`, `pack:validate`, `pack:chatgpt` in CI.
+- **wrangler.jsonc:** keep changes rare (deployed copies get resource IDs written into it), migrations append-only, never rename bindings or `GarminVault`; production logs off, `env.dev` on.
+- Commands: `npm run dev:worker` (build + `wrangler dev`, secrets in `.dev.vars`, see `.dev.vars.example`), `npm run test:worker` (Miniflare, fake Garmin), `npm run deploy` / `deploy:dev`.
+
 ## Monorepo
 
 npm workspaces (`packages/*`). Root scripts:
@@ -61,7 +72,7 @@ The dev UI with a **fully fictional** Garmin account ("Demo Runner", a recreatio
 
 - OAuth 1.0a → OAuth 2.0 token exchange flow with Garmin SSO
 - `GarminClient` — main entry point
-- `FileTokenStorage` — persists tokens to `~/.garminconnect/`
+- `FileTokenStorage` (`garmin-connect/node`, loaded lazily so the client runs on Workers) — persists tokens to `~/.garminconnect/`; OAuth1 is signed with WebCrypto
 - Tests: `vitest` (`npm run test:lib`)
 
 ### Garmin Connect API

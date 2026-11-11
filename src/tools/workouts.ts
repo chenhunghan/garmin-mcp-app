@@ -7,7 +7,8 @@ import {
   GarminTokenExpiredError,
   type WorkoutSpec,
 } from "garmin-connect";
-import { getClient } from "../garmin.js";
+import type { ServerDeps } from "../deps.js";
+import { notAuthenticated, signInRequired } from "./data.js";
 
 type ToolResult = {
   content: Array<{ type: "text"; text: string }>;
@@ -19,25 +20,29 @@ type ToolResult = {
  * Run a workout call and open the workouts view. `args` (or `argsFrom` the
  * result, e.g. a newly created workout's ID) tell the view what to highlight.
  */
-async function withAuth(
+async function workoutResult(
+  deps: ServerDeps,
   fn: () => Promise<unknown>,
   args: Record<string, unknown> = {},
   argsFrom?: (data: unknown) => Record<string, unknown>,
 ): Promise<ToolResult> {
-  const client = getClient();
+  const client = deps.getClient();
   if (!client.isAuthenticated) {
     try {
       await client.resume();
     } catch {
+      const remote = await signInRequired(deps);
       return {
         isError: true,
         content: [
           {
             type: "text",
-            text: JSON.stringify({
-              code: "not_authenticated",
-              message: "Not authenticated with Garmin Connect",
-            }),
+            text: remote
+              ? notAuthenticated(remote)
+              : JSON.stringify({
+                  code: "not_authenticated",
+                  message: "Not authenticated with Garmin Connect",
+                }),
           },
         ],
       };
@@ -51,12 +56,15 @@ async function withAuth(
     };
   } catch (err) {
     if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
+      const remote = await signInRequired(deps);
       return {
         isError: true,
         content: [
           {
             type: "text",
-            text: JSON.stringify({ code: "not_authenticated", message: err.message }),
+            text: remote
+              ? notAuthenticated(remote)
+              : JSON.stringify({ code: "not_authenticated", message: err.message }),
           },
         ],
       };
@@ -171,7 +179,14 @@ const structuredWorkoutSchema = {
     .describe("Optional YYYY-MM-DD: also put the workout on the user's Garmin calendar that day"),
 };
 
-export function registerWorkoutTools(server: McpServer, resourceUri: string) {
+export function registerWorkoutTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
+  const withAuth = (
+    fn: () => Promise<unknown>,
+    args?: Record<string, unknown>,
+    argsFrom?: (data: unknown) => Record<string, unknown>,
+  ) => workoutResult(deps, fn, args, argsFrom);
+  const getClient = () => deps.getClient();
+
   registerAppTool(
     server,
     "list-workouts",

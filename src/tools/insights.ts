@@ -1,32 +1,44 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { z, type ZodRawShape } from "zod";
-import type { GarminClient } from "garmin-connect";
-import { getClient } from "../garmin.js";
+import { GarminAuthError, GarminTokenExpiredError, type GarminClient } from "garmin-connect";
+import type { ServerDeps } from "../deps.js";
+import { signInRequired } from "./data.js";
 
 /**
  * Data-only tools (no UI). They can't show the sign-in form, so when the user
  * isn't signed in they return an error pointing at garmin-check-auth instead of
  * waiting for a login that would never happen.
  */
-async function plainResult(fn: (client: GarminClient) => Promise<unknown>) {
-  const client = getClient();
+async function plainResult(deps: ServerDeps, fn: (client: GarminClient) => Promise<unknown>) {
+  const notSignedIn = async () => ({
+    isError: true,
+    content: [
+      {
+        type: "text" as const,
+        text:
+          (await signInRequired(deps))?.message ??
+          "Not signed in to Garmin Connect. Call garmin-check-auth to show the sign-in form.",
+      },
+    ],
+  });
+  const client = deps.getClient();
   if (!client.isAuthenticated) {
     try {
       await client.resume();
     } catch {
-      return {
-        isError: true,
-        content: [
-          {
-            type: "text" as const,
-            text: "Not signed in to Garmin Connect. Call garmin-check-auth to show the sign-in form.",
-          },
-        ],
-      };
+      return notSignedIn();
     }
   }
-  const data = await fn(client);
-  return { content: [{ type: "text" as const, text: JSON.stringify(data ?? null) }] };
+  try {
+    const data = await fn(client);
+    return { content: [{ type: "text" as const, text: JSON.stringify(data ?? null) }] };
+  } catch (err) {
+    // Saved tokens that Garmin no longer accepts: same advice as not being signed in
+    if (err instanceof GarminAuthError || err instanceof GarminTokenExpiredError) {
+      return notSignedIn();
+    }
+    throw err;
+  }
 }
 
 const date = z.string().describe("Date in YYYY-MM-DD format");
@@ -34,7 +46,7 @@ const startDate = z.string().describe("Start date in YYYY-MM-DD format");
 const endDate = z.string().describe("End date in YYYY-MM-DD format");
 const activityId = z.union([z.string(), z.number()]).describe("Garmin activity ID");
 
-export function registerInsightTools(server: McpServer) {
+export function registerInsightTools(server: McpServer, deps: ServerDeps) {
   function tool<S extends ZodRawShape>(
     name: string,
     title: string,
@@ -43,7 +55,7 @@ export function registerInsightTools(server: McpServer) {
     run: (client: GarminClient, args: z.infer<z.ZodObject<S>>) => Promise<unknown>,
   ) {
     server.registerTool(name, { title, description, inputSchema: z.object(shape) }, (args) =>
-      plainResult((client) => run(client, args)),
+      plainResult(deps, (client) => run(client, args)),
     );
   }
 

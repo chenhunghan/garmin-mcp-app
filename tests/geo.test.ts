@@ -32,8 +32,8 @@ function png(width: number, rows: { filter: number; bytes: number[] }[]) {
 }
 
 describe("PNG decoding", () => {
-  it("undoes the row filters", () => {
-    const img = decodePng(
+  it("undoes the row filters", async () => {
+    const img = await decodePng(
       png(2, [
         { filter: 0, bytes: [10, 20, 30, 40, 50, 60] },
         { filter: 1, bytes: [1, 2, 3, 4, 4, 4] }, // sub: left neighbor

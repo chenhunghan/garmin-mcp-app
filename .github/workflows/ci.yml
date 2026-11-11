@@ -46,6 +46,22 @@ jobs:
       - name: Pack and validate the ChatGPT plugin
         run: node scripts/pack-chatgpt-plugin.mjs && node scripts/validate-chatgpt-plugin.mjs
 
+      # Self-hosted Worker: in workerd through OAuth and MCP, against a fake Garmin
+      - name: Test the self-hosted Worker
+        run: npm run test:worker
+        env:
+          WRANGLER_SEND_METRICS: "false"
+
+      # The Workers free plan takes scripts up to 3 MB gzipped (app.html is a static asset)
+      - name: Worker bundle size
+        run: |
+          npx wrangler deploy --dry-run --env "" --outdir "$RUNNER_TEMP/worker"
+          size=$(gzip -c "$RUNNER_TEMP/worker/index.js" | wc -c)
+          echo "Worker script: $((size / 1024)) KiB gzipped"
+          test "$size" -lt 3145728
+        env:
+          WRANGLER_SEND_METRICS: "false"
+
   # Merge Dependabot patch/minor updates once CI passes. Majors need review.
   dependabot-automerge:
     needs: ci

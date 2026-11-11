@@ -1,0 +1,32 @@
+// Run Coach as a self-hosted Cloudflare Worker (remote MCP server).
+// Keep changes rare: deployed copies get resource IDs written into this file,
+// so upstream edits can conflict when users update. Never rename the bindings
+// or the Durable Object class; migrations are append-only.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "run-coach",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // `npm run build` copies dist/app.html here
+  "assets": { "directory": "build/worker-assets", "binding": "ASSETS" },
+  "durable_objects": { "bindings": [{ "name": "VAULT", "class_name": "GarminVault" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GarminVault"] }],
+  // The OAuth provider's clients and grants (created on first deploy)
+  "kv_namespaces": [{ "binding": "OAUTH_KV" }],
+  // Health data: Cloudflare stores no logs of this Worker (`wrangler tail` still works live)
+  "observability": { "enabled": false, "logs": { "enabled": false, "invocation_logs": false } },
+  "upload_source_maps": false,
+  "env": {
+    // `npm run deploy:dev`: a separate Worker with logs on, for debugging. Bindings
+    // aren't inherited by environments, so they're repeated here.
+    "dev": {
+      "name": "run-coach-dev",
+      "assets": { "directory": "build/worker-assets", "binding": "ASSETS" },
+      "durable_objects": { "bindings": [{ "name": "VAULT", "class_name": "GarminVault" }] },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GarminVault"] }],
+      "kv_namespaces": [{ "binding": "OAUTH_KV" }],
+      "observability": { "enabled": true },
+    },
+  },
+}

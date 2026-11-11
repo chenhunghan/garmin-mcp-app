@@ -1,0 +1,4 @@
+# A long password only you know; asked once when you connect Claude or ChatGPT
+OWNER_PASSPHRASE=
+# Encrypts your Garmin sign-in at rest. Generate one with: openssl rand -hex 32
+TOKEN_ENCRYPTION_KEY=

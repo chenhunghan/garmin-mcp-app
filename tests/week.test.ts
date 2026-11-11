@@ -89,3 +89,30 @@ describe("buildTrainingWeek", () => {
     expect(week.days[1]!.planned[0]).toMatchObject({ name: "Old plan", steps: [] });
   });
 });
+
+describe("planning prompts on a server in another time zone", () => {
+  it("plan from the user's today, not the server's", async () => {
+    const { Client, InMemoryTransport } = await import("@modelcontextprotocol/client");
+    const { createServer } = await import("../src/server.ts");
+    const { localDeps } = await import("../src/local-deps.ts");
+    const { vi } = await import("vitest");
+    // Tuesday 07:30 in Taipei is still Monday in UTC
+    vi.useFakeTimers({ now: new Date("2026-10-26T23:30:00Z"), toFake: ["Date"] });
+    try {
+      const server = createServer("test", { ...localDeps(), timeZone: "Asia/Taipei" });
+      const [a, b] = InMemoryTransport.createLinkedPair();
+      await server.connect(b);
+      const client = new Client({ name: "test", version: "0" });
+      await client.connect(a);
+      const week = await client.getPrompt({ name: "plan-training-week", arguments: {} });
+      const text = (week.messages[0]!.content as { text: string }).text;
+      expect(text).toContain("starting Monday 2026-11-02");
+      expect(text).toContain('with date "2026-10-27"');
+      const next = await client.getPrompt({ name: "plan-next-run", arguments: {} });
+      expect((next.messages[0]!.content as { text: string }).text).toContain('date "2026-10-27"');
+      await client.close();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

@@ -4,15 +4,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-
-export interface Settings {
-  /**
-   * Fetch real elevation (AWS Terrain Tiles) and map data (OpenStreetMap) for
-   * the area around a run in the replay. Off by default: it sends the run's
-   * area to those services.
-   */
-  realMap: boolean;
-}
+import type { Settings } from "./deps.js";
 
 const DEFAULTS: Settings = { realMap: false };
 

@@ -1,6 +1,6 @@
 # Run Coach — Garmin MCP App
 
-Connect your Garmin watch to Claude Desktop or ChatGPT. Explore interactive charts.
+Connect your Garmin watch to Claude (desktop, web and mobile) or ChatGPT. Explore interactive charts.
 
 <sub>Unofficial. Not affiliated with or endorsed by Garmin. Garmin is a trademark of Garmin Ltd.</sub>
 
@@ -43,6 +43,34 @@ Requires Node.js 20+. Add the server to your client's MCP config:
 Or from the command line: `claude mcp add garmin -- npx -y garmin-mcp-app` (Claude Code), `codex mcp add garmin -- npx -y garmin-mcp-app` (Codex CLI).
 
 Clients that support [MCP Apps](https://modelcontextprotocol.io/docs/extensions/apps) (e.g. VS Code) show the interactive charts and the sign-in form. Other clients still get every Garmin tool as data, but can't show the sign-in form: sign in once from an MCP Apps client — the tokens are saved in `~/.garminconnect` and shared by every client on your computer.
+
+### Claude web and mobile, ChatGPT web: self-host (free)
+
+Run your own copy on Cloudflare's free Workers plan (no credit card) and add it to Claude or ChatGPT as a custom connector. It's yours alone: only someone with your owner passphrase can connect, and only your Garmin account can sign in.
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chenhunghan/garmin-mcp-app)
+
+1. Click **Deploy to Cloudflare** and sign in (or sign up) to Cloudflare. It copies this repository to your GitHub account and deploys it.
+2. Fill in the two secrets it asks for:
+   - **OWNER_PASSPHRASE**: a long password only you know. You enter it once when you connect Claude or ChatGPT.
+   - **TOKEN_ENCRYPTION_KEY**: encrypts your Garmin sign-in at rest. Generate one with `openssl rand -hex 32`.
+3. Open your Worker's address (`https://run-coach.<you>.workers.dev`): the page shows your connector URL, ending in `/mcp`.
+
+**Connect in Claude** (web, desktop or mobile): Settings → Connectors → **Add custom connector**, paste the URL → **Connect** → enter your owner passphrase → sign in to Garmin (and the verification code if Garmin asks). The connector then works on every Claude app where you're signed in, mobile included.
+
+**Connect in ChatGPT** (web): turn on developer mode, add an MCP app with the URL and OAuth, then connect the same way. Whether your ChatGPT plan allows custom MCP servers is up to OpenAI: check its help center.
+
+When Garmin's sign-in expires you never need to reconnect: the app shows its sign-in form, and where it can't, the answer carries a one-time sign-in link (valid 10 minutes).
+
+<details>
+<summary>Forgot the passphrase, updating, limits</summary>
+
+- **Forgot the passphrase:** Cloudflare dashboard → your Worker → Settings → Variables and Secrets → update `OWNER_PASSPHRASE`, then connect again.
+- **Updating your copy:** in your copy of the repository, `git remote add upstream https://github.com/chenhunghan/garmin-mcp-app` once, then `git fetch upstream --tags` and merge the latest release tag (`git merge garmin-mcp-app-vX.Y.Z`) into `main` and push. Cloudflare redeploys automatically.
+- **Free plan limits:** a long-range performance dashboard loads its metrics over several calls, and the 3D replay's real map (elevation and OpenStreetMap) isn't available yet.
+- **Debugging:** production stores no logs. `npx wrangler tail` shows live requests; `npm run deploy:dev` deploys a separate `run-coach-dev` Worker with logs on.
+
+</details>
 
 ## What you can do
 
@@ -114,16 +142,27 @@ Visualize training readiness
 
 ## Privacy & Security
 
-**No data is stored or collected by this app.** Your data flows directly between your machine and the Garmin Connect API — there is no intermediate server.
+**No data is stored or collected by this app's author.** On your computer (Claude Desktop, ChatGPT desktop, `npx`), your data flows directly between your machine and the Garmin Connect API. Self-hosted, it flows through your own Cloudflare Worker.
 
 <details>
 <summary>Learn more</summary>
+
+**On your computer** (`.mcpb`, ChatGPT desktop plugin, `npx`):
 
 - **Your credentials stay private.** You sign in through a secure login form rendered inside Claude Desktop. The login and MFA tools are marked as app-only (`visibility: ["app"]`), meaning Claude (the LLM) cannot call them and **never sees your email, password, or MFA code**.
 - **Claude doesn't know who you are.** The LLM only receives the health/fitness data you ask for (steps, sleep, etc.) — it has no access to your Garmin account credentials, OAuth tokens, or profile (name, email, location).
 - **Your password is never sent in plain text.** The login form encrypts it with a single-use key before it passes through Claude Desktop, so it can't leak into host logs.
 - **Tokens are stored locally.** OAuth tokens are saved on your machine at `~/.garminconnect/` with restrictive file permissions (`0600`). They are never sent anywhere other than the Garmin Connect API.
 - **You can log out anytime.** Logging out clears all saved tokens from your machine.
+
+**Self-hosted** (your Cloudflare Worker):
+
+- **Your Worker, your account.** Garmin tokens are encrypted (AES-GCM, with your `TOKEN_ENCRYPTION_KEY`) in a Durable Object in **your** Cloudflare account. The author never sees them.
+- **Only you can connect.** Connecting a client needs your owner passphrase (locked for 15 minutes after 5 wrong tries), and after the first sign-in only your Garmin account is accepted.
+- **Claude and ChatGPT never see your Garmin password.** You type it on your Worker's own sign-in page or in the app's encrypted form; it's used once and never stored.
+- **No stored logs.** Production keeps Cloudflare's logs off; nothing logs requests, tool calls or results. Your data passes through your Cloudflare account.
+
+**Either way:** Run Coach uses Garmin Connect's unofficial API, which can change or break, and using it may conflict with Garmin's terms.
 
 </details>
 
@@ -187,6 +226,7 @@ Restart Claude Desktop. Ask Claude to check your Garmin auth — it will render 
 - **MCP Server** (`src/server.ts`) — Node.js server over stdio, registers tools + UI resource
 - **React UI** (`src/app.tsx`) — Rendered in host's sandboxed iframe, communicates via `postMessage`
 - **garmin-connect** (`packages/garmin-connect/`) — TypeScript client library for Garmin Connect OAuth + API
+- **Self-hosted Worker** (`src/worker/`) — the same server over Streamable HTTP behind OAuth on Cloudflare Workers (`npm run dev:worker`, `npm run test:worker`); design notes in [`docs/worker-notes.md`](docs/worker-notes.md)
 
 ## Commit Convention
 

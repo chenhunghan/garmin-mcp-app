@@ -1,8 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { registerAppResource, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
-import { readFile } from "node:fs/promises";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { registerAuthTools } from "./tools/auth.js";
 import { registerDataTools } from "./tools/data.js";
@@ -13,10 +10,14 @@ import { registerBriefingTools } from "./tools/briefing.js";
 import { formatLocalDate, mondayOf, registerWeekTools } from "./tools/week.js";
 import { registerDashboardTools } from "./tools/dashboard.js";
 import { registerReplayTools } from "./tools/replay.js";
+import type { ServerDeps } from "./deps.js";
+import { today } from "./today.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-export function createServer(version: string) {
+/**
+ * The MCP server, with `deps` for where it runs: `localDeps()` for the stdio
+ * build (src/local-deps.ts).
+ */
+export function createServer(version: string, deps: ServerDeps) {
   const server = new McpServer({
     name: "garmin-mcp",
     title: "Run Coach",
@@ -36,7 +37,7 @@ export function createServer(version: string) {
         {
           uri: resourceUri,
           mimeType: RESOURCE_MIME_TYPE,
-          text: await readFile(resolve(__dirname, "app.html"), "utf-8"),
+          text: await deps.loadAppHtml(),
           _meta: {
             // Fully self-contained (React and Recharts are bundled): no external
             // domains, so the strictest CSP applies in every host
@@ -50,14 +51,14 @@ export function createServer(version: string) {
     }),
   );
 
-  registerAuthTools(server, resourceUri);
-  registerDataTools(server, resourceUri);
-  registerWorkoutTools(server, resourceUri);
-  registerInsightTools(server);
-  registerBriefingTools(server, resourceUri);
-  registerWeekTools(server, resourceUri);
-  registerDashboardTools(server, resourceUri);
-  registerReplayTools(server, resourceUri);
+  registerAuthTools(server, resourceUri, deps);
+  registerDataTools(server, resourceUri, deps);
+  registerWorkoutTools(server, resourceUri, deps);
+  registerInsightTools(server, deps);
+  registerBriefingTools(server, resourceUri, deps);
+  registerWeekTools(server, resourceUri, deps);
+  registerDashboardTools(server, resourceUri, deps);
+  registerReplayTools(server, resourceUri, deps);
 
   // --- Prompts ---
 
@@ -72,7 +73,7 @@ export function createServer(version: string) {
       }),
     },
     ({ date }) => {
-      const resolvedDate = date || new Date().toISOString().split("T")[0];
+      const resolvedDate = date || today(deps.timeZone);
 
       return {
         description: "Plan your next run",
@@ -188,16 +189,14 @@ The app already shows every number, so don't list them all.`,
       }),
     },
     ({ startDate, goal }) => {
-      // Default: this week if today is Monday, else the coming week
-      const today = new Date();
-      const todayStr = formatLocalDate(today);
+      // Default: this week if today is Monday, else the coming week (today in the user's time zone)
+      const todayStr = today(deps.timeZone);
+      const [y, m, d] = todayStr.split("-").map(Number);
       const weekStart = startDate
         ? mondayOf(startDate)
-        : today.getDay() === 1
+        : mondayOf(todayStr) === todayStr
           ? todayStr
-          : mondayOf(
-              formatLocalDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7)),
-            );
+          : mondayOf(formatLocalDate(new Date(y!, m! - 1, d! + 7)));
 
       return {
         description: "Plan your training week",

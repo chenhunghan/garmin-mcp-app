@@ -71,6 +71,8 @@ function ReplayPlayer({ data }: { data: ReplayData }) {
     useAppActions();
   // Real map (elevation + OpenStreetMap): opt-in, fetched before the scene is built
   const [realMap, setRealMap] = useState<boolean | null>(null);
+  // The server can't fetch map data (self-hosted on the Workers free plan)
+  const [realMapUnavailable, setRealMapUnavailable] = useState(false);
   const [map, setMap] = useState<RunMap | null>(null);
   const [mapState, setMapState] = useState<"idle" | "loading" | "ready" | "failed">("idle");
   const [mapNote, setMapNote] = useState<string | null>(null);
@@ -115,7 +117,10 @@ function ReplayPlayer({ data }: { data: ReplayData }) {
 
   useEffect(() => {
     callTool("garmin-run-map-settings")
-      .then((r) => setRealMap(!!r?.realMap))
+      .then((r) => {
+        setRealMap(!!r?.realMap);
+        setRealMapUnavailable(!!r?.unavailable);
+      })
       .catch(() => setRealMap(false));
   }, [callTool]);
 
@@ -594,7 +599,7 @@ function ReplayPlayer({ data }: { data: ReplayData }) {
           Drag to orbit · scroll to zoom · space to play.
         </span>
         <span className="flex items-center gap-3">
-          {data.hasGps && realMap !== null && (
+          {data.hasGps && realMap !== null && !realMapUnavailable && (
             <button
               type="button"
               onClick={() => (realMap ? void toggleRealMap(false) : setConsent(true))}

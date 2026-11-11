@@ -1,8 +1,8 @@
 /**
- * Minimal PNG decoder (8-bit grayscale/RGB/RGBA, non-interlaced) on Node's
- * zlib — enough for elevation tiles, without a dependency.
+ * Minimal PNG decoder (8-bit grayscale/RGB/RGBA, non-interlaced) on the
+ * standard DecompressionStream (Node and Workers) — enough for elevation
+ * tiles, without a dependency.
  */
-import { inflateSync } from "node:zlib";
 
 export interface Png {
   width: number;
@@ -12,7 +12,7 @@ export interface Png {
   data: Uint8Array;
 }
 
-export function decodePng(buf: Uint8Array): Png {
+export async function decodePng(buf: Uint8Array): Promise<Png> {
   const sig = [137, 80, 78, 71, 13, 10, 26, 10];
   if (sig.some((b, i) => buf[i] !== b)) throw new Error("Not a PNG");
   const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -41,7 +41,7 @@ export function decodePng(buf: Uint8Array): Png {
     }
     pos += 12 + len;
   }
-  const raw = inflateSync(Buffer.concat(idat));
+  const raw = await inflate(idat);
   const stride = width * channels;
   const out = new Uint8Array(height * stride);
   for (let y = 0; y < height; y++) {
@@ -82,4 +82,16 @@ export function decodePng(buf: Uint8Array): Png {
     }
   }
   return { width, height, channels, data: out };
+}
+
+/** zlib-wrapped deflate data, split over IDAT chunks. */
+async function inflate(chunks: Uint8Array[]): Promise<Uint8Array> {
+  const joined = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+  let offset = 0;
+  for (const c of chunks) {
+    joined.set(c, offset);
+    offset += c.length;
+  }
+  const stream = new Response(joined).body!.pipeThrough(new DecompressionStream("deflate"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
 }

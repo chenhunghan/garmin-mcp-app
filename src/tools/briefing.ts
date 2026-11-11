@@ -1,9 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
-import { GarminAuthError, GarminTokenExpiredError } from "garmin-connect";
-import { getClient } from "../garmin.js";
-import { withAuth } from "./data.js";
+import { GarminAuthError, GarminTokenExpiredError, type GarminClient } from "garmin-connect";
+import type { ServerDeps } from "../deps.js";
+import { authed } from "./data.js";
 import {
   buildBriefing,
   shiftDate,
@@ -11,12 +11,7 @@ import {
   type BriefingSources,
 } from "../briefing-model.js";
 import { entrypointIcons, openaiEntrypoint } from "./openai.js";
-
-/** Local calendar day (YYYY-MM-DD) — toISOString() would print the UTC day. */
-function localToday(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+import { today } from "../today.js";
 
 /**
  * Six requests in parallel. The daily summary covers steps, resting HR (with
@@ -24,8 +19,11 @@ function localToday(): string {
  * nights gives the baseline band and a trend; the 20 latest activities give
  * the last activity and the past week's volume.
  */
-async function fetchBriefing(date: string): Promise<Briefing> {
-  const client = getClient();
+async function fetchBriefing(
+  client: GarminClient,
+  date: string,
+  timeZone?: string,
+): Promise<Briefing> {
   const settled = await Promise.allSettled([
     client.getTrainingReadiness(date),
     client.getSleepData(date),
@@ -47,7 +45,7 @@ async function fetchBriefing(date: string): Promise<Briefing> {
     r.status === "fulfilled" ? (r.value ?? undefined) : null,
   );
   const sources: BriefingSources = { readiness, sleep, hrv, summary, activities, trainingStatus };
-  return buildBriefing(date, localToday(), sources);
+  return buildBriefing(date, today(timeZone), sources);
 }
 
 /**
@@ -57,10 +55,10 @@ async function fetchBriefing(date: string): Promise<Briefing> {
 const CACHE_MS = 2 * 60_000;
 const cache = new Map<string, { at: number; briefing: Promise<Briefing> }>();
 
-function cachedBriefing(date: string): Promise<Briefing> {
+function cachedBriefing(client: GarminClient, date: string, timeZone?: string): Promise<Briefing> {
   const hit = cache.get(date);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.briefing;
-  const briefing = fetchBriefing(date);
+  const briefing = fetchBriefing(client, date, timeZone);
   cache.set(date, { at: Date.now(), briefing });
   // Don't keep failures, or briefings where every source failed
   briefing.then(
@@ -72,7 +70,8 @@ function cachedBriefing(date: string): Promise<Briefing> {
   return briefing;
 }
 
-export function registerBriefingTools(server: McpServer, resourceUri: string) {
+export function registerBriefingTools(server: McpServer, resourceUri: string, deps: ServerDeps) {
+  const withAuth = authed(deps);
   registerAppTool(
     server,
     "get-daily-briefing",
@@ -96,8 +95,10 @@ export function registerBriefingTools(server: McpServer, resourceUri: string) {
       _meta: { ui: { resourceUri }, ...openaiEntrypoint("global") },
     },
     async ({ date }) => {
-      const day = date || localToday();
-      return withAuth(() => cachedBriefing(day), "briefing", { date: day });
+      const day = date || today(deps.timeZone);
+      return withAuth(() => cachedBriefing(deps.getClient(), day, deps.timeZone), "briefing", {
+        date: day,
+      });
     },
   );
 }

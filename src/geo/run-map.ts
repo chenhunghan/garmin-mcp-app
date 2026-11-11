@@ -5,6 +5,7 @@
  */
 import { heightGrid, projection, toLocal } from "./dem.js";
 import { fetchOsm } from "./osm.js";
+import type { GeoFetch } from "../deps.js";
 import type { RunMap } from "./types.js";
 
 /** The route every ~120 m: enough for a corridor query a few hundred meters wide. */
@@ -25,6 +26,7 @@ function simplify(fixes: { lat: number; lon: number }[], proj: ReturnType<typeof
 export async function buildRunMap(
   lat: (number | null)[],
   lon: (number | null)[],
+  geoFetch: GeoFetch,
 ): Promise<RunMap | null> {
   const fixes: { lat: number; lon: number }[] = [];
   for (let i = 0; i < lat.length; i++) {
@@ -63,9 +65,9 @@ export async function buildRunMap(
   const attribution: string[] = [];
 
   const [inner, outer, osm] = await Promise.allSettled([
-    heightGrid(proj, square(innerHalf), { maxZoom: 14, maxTiles: 36, maxCells: 720 }),
-    heightGrid(proj, square(outerHalf), { maxZoom: 11, maxTiles: 25, maxCells: 320 }),
-    fetchOsm(proj, simplify(fixes, proj)),
+    heightGrid(proj, square(innerHalf), { maxZoom: 14, maxTiles: 36, maxCells: 720 }, geoFetch),
+    heightGrid(proj, square(outerHalf), { maxZoom: 11, maxTiles: 25, maxCells: 320 }, geoFetch),
+    fetchOsm(proj, simplify(fixes, proj), geoFetch),
   ]);
 
   let dem: RunMap["dem"] = null;

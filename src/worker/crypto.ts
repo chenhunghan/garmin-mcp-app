@@ -17,6 +17,13 @@ export function fromBase64Url(s: string): Uint8Array {
   return Uint8Array.from(bin, (c) => c.charCodeAt(0));
 }
 
+/** 32 random bytes as 64 hex characters: a generated TOKEN_ENCRYPTION_KEY. */
+export function randomKeyHex(): string {
+  return [...crypto.getRandomValues(new Uint8Array(32))]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 /** A random id with 128 bits of entropy, URL-safe. */
 export function randomId(): string {
   return toBase64Url(crypto.getRandomValues(new Uint8Array(16)));
@@ -43,7 +50,7 @@ export async function keyBytes(secret: string | undefined): Promise<Uint8Array> 
 /** A sealed value that can't be opened: tampered with, or sealed under another key. */
 export class UnsealError extends Error {
   constructor(name: string) {
-    super(`Can't open the sealed "${name}" (was TOKEN_ENCRYPTION_KEY changed?)`);
+    super(`Can't open the sealed "${name}" (was the encryption key changed?)`);
     this.name = "UnsealError";
   }
 }
@@ -52,14 +59,15 @@ export class UnsealError extends Error {
 export class Sealer {
   private keys: Promise<{ aes: CryptoKey; hmac: CryptoKey }> | undefined;
 
-  constructor(private secret: string | undefined) {}
+  /** The secret itself, or a function that loads it (the generated key, see keyring). */
+  constructor(private secret: string | undefined | (() => Promise<string | undefined>)) {}
 
   /** Derived on first use, so a missing or short key fails the call that needs it. */
   private derive(): Promise<{ aes: CryptoKey; hmac: CryptoKey }> {
     this.keys ??= (async () => {
       const base = await crypto.subtle.importKey(
         "raw",
-        await keyBytes(this.secret),
+        await keyBytes(typeof this.secret === "function" ? await this.secret() : this.secret),
         { name: "HMAC", hash: "SHA-256" },
         false,
         ["sign"],

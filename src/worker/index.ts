@@ -1,9 +1,12 @@
 /**
  * Run Coach as a self-hosted Cloudflare Worker (remote MCP server). The MCP
  * endpoint `/mcp` sits behind OAuth (workers-oauth-provider: dynamic client
- * registration, PKCE, tokens); `/authorize` asks for the owner passphrase and
- * the Garmin sign-in. The same createServer() as the stdio build, with
- * remoteDeps(). Never logs requests, tool arguments or results.
+ * registration, PKCE, tokens); `/authorize` asks for the owner password or a
+ * household member's invite, and the Garmin sign-in. Each access token belongs
+ * to one person, whose vault serves the request. `/` is the setup page,
+ * `/owner` the owner's page (household, updates), `/join` an invite's page.
+ * The same createServer() as the stdio build, with remoteDeps(). Never logs
+ * requests, tool arguments or results.
  */
 import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import { createMcpHandler } from "@modelcontextprotocol/server";
@@ -12,7 +15,9 @@ import { createServer } from "../server.js";
 import { clientKey, handleAuthorize, handleSignInLink } from "./authorize.js";
 import { remoteDeps } from "./deps.js";
 import { vaultOf, type Env } from "./env.js";
+import { joinPage } from "./join.js";
 import { landing } from "./landing.js";
+import { handleOwner } from "./owner.js";
 
 export { GarminVault } from "./vault-do.js";
 
@@ -51,17 +56,33 @@ async function limitRegistration(request: Request, env: Env): Promise<Response |
 }
 
 const mcp: ExportedHandler<Env> & { fetch: NonNullable<ExportedHandler<Env>["fetch"]> } = {
-  async fetch(request, env) {
-    const deps = await remoteDeps(env, new URL(request.url).origin);
+  async fetch(request, env, ctx) {
+    const person = personOf(ctx);
+    // A removed member's grants are revoked; this also covers one that slipped through
+    if (person !== "owner" && !(await vaultOf(env).getMember(person))) {
+      return Response.json(
+        { error: "invalid_token", error_description: "This household member was removed" },
+        { status: 401, headers: { "WWW-Authenticate": 'Bearer error="invalid_token"' } },
+      );
+    }
+    const deps = await remoteDeps(env, new URL(request.url).origin, person);
     return createMcpHandler(() => createServer(pkg.version, deps)).fetch(request);
   },
 };
+
+/** Whose token this is: grants carry the person; ones from before households are the owner's. */
+function personOf(ctx: ExecutionContext): string {
+  const person = (ctx as ExecutionContext & { props?: { person?: unknown } }).props?.person;
+  return typeof person === "string" && person ? person : "owner";
+}
 
 const site: ExportedHandler<Env> = {
   async fetch(request, env) {
     const { pathname } = new URL(request.url);
     if (pathname === "/authorize") return handleAuthorize(request, env);
     if (pathname === "/signin") return handleSignInLink(request, env);
+    if (pathname === "/owner") return handleOwner(request, env, pkg.version);
+    if (pathname === "/join" && request.method === "GET") return joinPage(request, env);
     if (pathname === "/" && request.method === "GET") return landing(request, env, pkg.version);
     return new Response("Not found", { status: 404 });
   },

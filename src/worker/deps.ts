@@ -1,14 +1,15 @@
 /**
- * ServerDeps for the self-hosted Worker, built per request: Garmin tokens in
- * the vault Durable Object, sign-in through the app or a one-time link, the
+ * ServerDeps for the self-hosted Worker, built per request for the person the
+ * access token belongs to (the owner or a household member): Garmin tokens in
+ * their vault Durable Object, sign-in through the app or a one-time link, the
  * app from static assets, caches in the Cache API.
  */
 import { GarminClient } from "garmin-connect";
 import { SignInRequiredError, type ServerDeps } from "../deps.js";
 import { cacheGeoFetch, cacheReadAsset } from "./cache.js";
 import { Sealer } from "./crypto.js";
-import { vaultOf, type Env } from "./env.js";
-import { WrongAccountError, garminLogin, garminMfa } from "./signin.js";
+import { encryptionKey, personVault, vaultOf, type Env, type Person } from "./env.js";
+import { WrongAccountError, garminLogin, garminMfa, keep } from "./signin.js";
 import { createSignInLink } from "./signin-link.js";
 import { LIMITS } from "./vault.js";
 
@@ -34,13 +35,17 @@ function loadAppHtml(env: Env, origin: string): Promise<string> {
   return appHtml;
 }
 
-export async function remoteDeps(env: Env, origin: string): Promise<ServerDeps> {
-  const vault = vaultOf(env);
+export async function remoteDeps(
+  env: Env,
+  origin: string,
+  person: Person = "owner",
+): Promise<ServerDeps> {
+  const vault = personVault(env, person);
   const timeZone = await vault.getTimeZone();
   let client: GarminClient | undefined;
   const signInRequired = async () =>
     new SignInRequiredError(
-      await createSignInLink(vault, new Sealer(env.TOKEN_ENCRYPTION_KEY), origin),
+      await createSignInLink(vaultOf(env), new Sealer(() => encryptionKey(env)), origin, person),
       LIMITS.signInMs / 60_000,
     );
 
@@ -64,18 +69,19 @@ export async function remoteDeps(env: Env, origin: string): Promise<ServerDeps> 
       issueLoginKey: () => vault.issueLoginKey(),
       login: async (email, encryptedPassword) => {
         const password = await vault.decryptWithLoginKey(encryptedPassword);
-        const result = await garminLogin(vault, email, password);
+        const result = await garminLogin(email, password);
         if (result.status === "needs_mfa") {
           await vault.putAppMfa(result.mfaState);
           return { status: "needs_mfa" };
         }
+        await keep(vault, result.account);
         return { status: "success" };
       },
       submitMfa: async (code) => {
         const state = await vault.getAppMfa();
         if (!state) throw new Error("The sign-in expired, please start again");
         try {
-          await garminMfa(vault, code, state);
+          await keep(vault, await garminMfa(code, state));
         } catch (err) {
           // A mistyped code can be entered again; another account can't
           if (err instanceof WrongAccountError) await vault.clearAppMfa();

@@ -13,6 +13,8 @@ permissions:
 
 jobs:
   release-please:
+    # Releases happen upstream only, not in people's own copies (Deploy to Cloudflare)
+    if: github.repository == 'chenhunghan/garmin-mcp-app'
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -63,7 +65,7 @@ jobs:
   # publisher (this repo + release-please.yml) is configured on npmjs.com.
   npm-and-registry:
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch'
+    if: github.repository == 'chenhunghan/garmin-mcp-app' && (needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: read

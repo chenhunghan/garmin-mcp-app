@@ -1,7 +1,7 @@
 # Self-hosted Worker: design notes
 
-Run Coach also runs as a single-tenant Cloudflare Worker that each user deploys
-to their own account (Deploy button → `wrangler.jsonc` at the repo root). It
+Run Coach also runs as a Cloudflare Worker that each user deploys to their own
+account, for themselves and optionally their household (Deploy button → `wrangler.jsonc` at the repo root). It
 serves the same `createServer()` as the stdio build, with `remoteDeps()` instead
 of `localDeps()`. The stdio channels (`.mcpb`, ChatGPT desktop plugin, npm,
 MCP Registry) are unchanged: `dist/` is still stdio-only and a test checks that
@@ -13,10 +13,11 @@ the stdio bundle contains nothing from `src/worker/`.
 | --- | --- |
 | `src/deps.ts` | `ServerDeps`: everything that depends on where the server runs. Tools never import a Garmin client, `node:*` or local-only modules (`tests/deps.test.ts`). |
 | `src/local-deps.ts` | stdio: `~/.garminconnect`, `~/.cache/run-coach`, in-memory login key, `waitForAuth`. |
-| `src/worker/index.ts` | `OAuthProvider` (per request origin) → `/mcp` (`createMcpHandler`, stateless), `/authorize`, `/signin`, `/`. |
-| `src/worker/vault.ts`, `vault-do.ts` | All state in one SQLite Durable Object (`idFromName("owner")`), sealed with AES-GCM. Plain class + thin DO wrapper, so it's unit-tested in Node. |
-| `src/worker/authorize.ts` | Passphrase → Garmin email/password → MFA; one-time `/signin` links reuse the Garmin steps. |
-| `src/worker/signin.ts` | Signs in with in-memory tokens, checks the Garmin `profileId` against the recorded owner, only then saves to the vault. |
+| `src/worker/index.ts` | `OAuthProvider` (per request origin) → `/mcp` (`createMcpHandler`, stateless, for the token's person), `/authorize`, `/signin`, `/owner`, `/join`, `/`. |
+| `src/worker/vault.ts`, `vault-do.ts` | SQLite Durable Objects of one class, sealed with AES-GCM: `owner` (the owner's Garmin data, plus what the server shares: sign-ins, links, invites, members, sessions, rate limits), `member:<id>` (a member's Garmin data), `keyring` (the generated key). Plain class + thin DO wrapper, so it's unit-tested in Node. |
+| `src/worker/authorize.ts` | Owner: password → Garmin → MFA. Member: invite code (first time) → Garmin → MFA, recognized by Garmin `profileId`. One-time `/signin` links reuse the Garmin steps for one person. |
+| `src/worker/signin.ts` | Signs in with in-memory tokens and reads the Garmin `profileId`; `keep()` saves to a vault only if that vault is unclaimed or the same account. |
+| `src/worker/owner.ts`, `join.ts`, `landing.ts` | Owner page (password, 30-min session, CSRF token: household, invites, removal, update check), invite page, setup page. |
 | `src/worker/deps.ts` | `remoteDeps()`: vault token storage, Cache API caches, app from `ASSETS`, request budget 40, time zone. |
 
 ## Decisions taken while implementing
@@ -50,8 +51,29 @@ the stdio bundle contains nothing from `src/worker/`.
   owner. On `/authorize` (passphrase already checked) signing in with another
   account offers to switch to it; a one-time link refuses it.
 - **A changed TOKEN_ENCRYPTION_KEY** makes the sealed records unreadable: they're
-  dropped (sign in to Garmin again), while a missing or short key fails loudly
-  and the landing page says so.
+  dropped (sign in to Garmin again), while a short key fails loudly and the
+  landing page says so.
+- **Generated key:** without `TOKEN_ENCRYPTION_KEY` (or with an empty one, as the
+  Deploy button may set), the `keyring` Durable Object creates 32 random bytes on
+  first use and every vault asks it for them. Deploying asks only for the
+  password. It protects less than a secret would (the key sits in the same
+  account's storage), but anyone who controls the account could deploy code that
+  reads a secret too.
+- **Household:** grants carry `props.person` ("owner" or a member id, also the
+  grant's `userId`); grants from before households have no props and are the
+  owner's. A member joins with a one-time invite (8 characters, 40 bits, a week,
+  sealed at rest; wrong codes count toward the per-IP passphrase lockout) and is
+  recognized afterwards by their Garmin account, so they have no password. The
+  owner's Garmin account on the member path is the owner (Garmin credentials
+  already give its data); a member's account can't become the owner's or
+  another member's. Removing a member takes them off the list first (the MCP
+  handler refuses tokens of people not on it), wipes their vault and revokes
+  their grants. At most 8 members and 5 open invites.
+- **Updates:** `.github/workflows/update-run-coach.yml` runs in copies only
+  (`github.repository` check): weekly, it copies the latest release tag over the
+  copy (not `.github/`, since `GITHUB_TOKEN` can't change workflows), three-way
+  merges `wrangler.jsonc` (yours / the release you had / the new one) and pushes;
+  Workers Builds redeploys. Upstream CI and release jobs skip copies.
 - **`form-action` must include the client's redirect origin**: browsers apply it
   to the redirect after the last form POST, which goes to claude.ai/chatgpt.com.
 - **Sign-in through the AuthAdapter.** `garmin-login`/`garmin-submit-mfa` call
@@ -108,6 +130,8 @@ the stdio bundle contains nothing from `src/worker/`.
 - [ ] S4: Deploy button from the repo root on a free account without a card (npm workspaces, `npm run build`).
 - [ ] S5: UI rendering on Claude web, Claude desktop (remote connector), Claude iOS/Android, ChatGPT web; text fallback everywhere.
 - [ ] Wrong passphrase rejected, lockout, second Garmin account rejected (also covered by `test:worker`).
+- [ ] Household on real devices: invite from the owner page on a phone, a second person joins from Claude iOS/Android, sees only their data; removal disconnects them.
+- [ ] The updater in a real copy: weekly run, manual run, Workers Builds redeploys after its push.
 - [ ] Garmin token revoked → sign-in form where the UI renders, working one-time link elsewhere, no reconnect.
 - [ ] No tool exceeds the free plan's CPU limit (replay data, briefing), nor
       `resources/read` of the 6.5 MB `app.html` (serializing it took 14–19 ms
@@ -137,8 +161,8 @@ the stdio bundle contains nothing from `src/worker/`.
 
 ## Later
 
-- Update delivery to deployed copies (manual merge documented in the README; a
-  template "Update Run Coach" workflow or a landing-page notice are options).
-  Keep `wrangler.jsonc` stable, migrations append-only, never rename bindings or
-  `GarminVault`.
+- Keep `wrangler.jsonc` stable, migrations append-only, never rename bindings or
+  `GarminVault`: the updater merges it, but a clash stops updates for everyone.
+- Check with a real Deploy-button copy: Actions enabled, the updater's push
+  triggers Workers Builds, scheduled runs keep running.
 - Real map in the browser; hardening the sign-in pages against look-alike sites.

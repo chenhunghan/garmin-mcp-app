@@ -10,6 +10,8 @@ Connect your Garmin watch to Claude (desktop, web and mobile) or ChatGPT. Explor
 
 ## Install
 
+[![Install in ChatGPT Desktop](https://img.shields.io/badge/Install%20in%20ChatGPT-Desktop-10a37f?style=for-the-badge)](#chatgpt-desktop-app)
+
 ### Claude Desktop
 
 1. Download the latest `.mcpb` file from [Releases](https://github.com/chenhunghan/garmin-mcp-app/releases)
@@ -20,11 +22,21 @@ Connect your Garmin watch to Claude (desktop, web and mobile) or ChatGPT. Explor
 
 Requires Node.js 20+.
 
-1. In the ChatGPT desktop app, open **Settings → Plugins → Add marketplace**
-2. **Source:** `chenhunghan/garmin-mcp-app` (leave Git ref and sparse paths empty) → **Add marketplace**
-3. Restart the app, open the Plugins Directory, choose the **Run Coach** marketplace and install **Coach**
+1. In the ChatGPT desktop app, open **Settings → Plugins → Add marketplace**.
+2. Enter `chenhunghan/garmin-mcp-app` as the source and select **Add marketplace**. Leave Git ref and sparse paths empty.
+3. Restart ChatGPT, then open the Plugins Directory and select **Run Coach → Coach → Install**.
 
-Or with the [Codex CLI](https://developers.openai.com/codex): `codex plugin marketplace add chenhunghan/garmin-mcp-app` then `codex plugin add garmin@garmin-mcp`.
+Once the **Run Coach** marketplace is added, paste this desktop link into your browser's address bar to open the **Coach** install screen directly.
+
+```text
+codex://plugins/install/garmin?marketplace=garmin-mcp
+```
+
+If you already have the [Codex CLI](https://developers.openai.com/codex), you can add the marketplace and install Coach in one command.
+
+```sh
+codex plugin marketplace add chenhunghan/garmin-mcp-app && codex plugin add garmin@garmin-mcp
+```
 
 **Coach** then appears in the sidebar (daily briefing and performance dashboard) and as a **Training Week** tab in conversations; or just ask "@Coach how am I today?". It runs on your computer, so it works in the desktop app only.
 

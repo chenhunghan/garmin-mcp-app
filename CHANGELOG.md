@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.12.0...garmin-mcp-app-v0.13.0) (2026-11-18)
+
+
+### Features
+
+* **worker:** household members, generated encryption key, self-updating copies ([#57](https://github.com/chenhunghan/garmin-mcp-app/issues/57)) ([4caf554](https://github.com/chenhunghan/garmin-mcp-app/commit/4caf5540f5efd13e3561516debaa6b6b55b84333))
+
 ## [0.12.0](https://github.com/chenhunghan/garmin-mcp-app/compare/garmin-mcp-app-v0.11.0...garmin-mcp-app-v0.12.0) (2026-11-11)
 
 

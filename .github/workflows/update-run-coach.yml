@@ -1,0 +1,103 @@
+name: Update Run Coach
+
+# Keeps your own copy of Run Coach (made by the Deploy to Cloudflare button)
+# up to date: every Monday it copies the latest release into your repository
+# and pushes it, and Cloudflare redeploys your Worker. Your data, password and
+# connected apps stay as they are.
+#
+# - wrangler.jsonc (where Cloudflare wrote your resource IDs) is merged, not
+#   replaced: if a release changes it in a way that clashes with yours, this
+#   run fails and changes nothing.
+# - Other files are replaced by the release's, so edits you made to them are
+#   overwritten. `.github/` isn't touched (GitHub doesn't let workflows change
+#   workflows).
+# - To update right away: Actions → Update Run Coach → Run workflow.
+on:
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-run-coach
+  cancel-in-progress: false
+
+jobs:
+  update:
+    # Only in people's own copies, never upstream
+    if: github.repository != 'chenhunghan/garmin-mcp-app'
+    runs-on: ubuntu-latest
+    env:
+      UPSTREAM: chenhunghan/garmin-mcp-app
+    steps:
+      - name: Check out your copy
+        uses: actions/checkout@v4
+
+      - name: Find the latest release
+        id: version
+        run: |
+          set -euo pipefail
+          current=$(node -p "require('./package.json').version")
+          latest=$(curl -fsSL "https://raw.githubusercontent.com/$UPSTREAM/main/package.json" | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")
+          newer=$(node -e '
+            const [a, b] = process.argv.slice(1).map((v) => v.split(".").map(Number));
+            let r = false;
+            for (let i = 0; i < 3; i++) if (a[i] !== b[i]) { r = a[i] > b[i]; break; }
+            console.log(r);
+          ' "$latest" "$current")
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "newer=$newer" >> "$GITHUB_OUTPUT"
+          if [ "$newer" = true ]; then
+            echo "Run Coach $latest is out (you have $current)."
+          else
+            echo "Up to date (Run Coach $current)."
+          fi
+
+      - name: Copy the release in
+        if: steps.version.outputs.newer == 'true'
+        env:
+          CURRENT: ${{ steps.version.outputs.current }}
+          LATEST: ${{ steps.version.outputs.latest }}
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          mkdir -p "$work/new" "$work/base"
+          tarball() { echo "https://codeload.github.com/$UPSTREAM/tar.gz/refs/tags/garmin-mcp-app-v$1"; }
+          if ! curl -fsSL "$(tarball "$LATEST")" | tar -xz -C "$work/new" --strip-components=1; then
+            echo "Release $LATEST isn't tagged yet; trying again next time."
+            exit 0
+          fi
+
+          # wrangler.jsonc: three-way merge of yours, the release you had and the new one
+          cp wrangler.jsonc "$work/ours.jsonc"
+          if curl -fsSL "$(tarball "$CURRENT")" | tar -xz -C "$work/base" --strip-components=1; then
+            if ! git merge-file -p "$work/ours.jsonc" "$work/base/wrangler.jsonc" "$work/new/wrangler.jsonc" > "$work/merged.jsonc"; then
+              echo "::error::Run Coach $LATEST changes wrangler.jsonc in a way that clashes with your copy. Nothing was changed. Merge wrangler.jsonc from the release by hand, or open an issue at https://github.com/$UPSTREAM/issues."
+              exit 1
+            fi
+          elif cmp -s "$work/ours.jsonc" "$work/new/wrangler.jsonc"; then
+            cp "$work/ours.jsonc" "$work/merged.jsonc"
+          else
+            echo "::warning::Couldn't find release $CURRENT to merge wrangler.jsonc against; keeping yours unchanged."
+            cp "$work/ours.jsonc" "$work/merged.jsonc"
+          fi
+
+          rsync -a --delete \
+            --exclude .git --exclude .github --exclude wrangler.jsonc \
+            --exclude .dev.vars --exclude .wrangler --exclude node_modules \
+            "$work/new/" ./
+          cp "$work/merged.jsonc" wrangler.jsonc
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to change."
+            exit 0
+          fi
+          git -c user.name="Run Coach updater" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "chore: update Run Coach to $LATEST"
+          git push
+          echo "Updated to Run Coach $LATEST. Cloudflare redeploys your Worker in a few minutes."

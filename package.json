@@ -100,10 +100,7 @@
   "cloudflare": {
     "bindings": {
       "OWNER_PASSPHRASE": {
-        "description": "A long password only you know. You enter it once when you connect Claude or ChatGPT to your Run Coach."
-      },
-      "TOKEN_ENCRYPTION_KEY": {
-        "description": "Encrypts your Garmin sign-in at rest. Generate one with `openssl rand -hex 32` (64 hex characters)."
+        "description": "Choose a password for your Run Coach (a long one only you know). You enter it when you connect Claude and to open your owner page, where you invite your household."
       }
     }
   }

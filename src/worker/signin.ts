@@ -1,8 +1,9 @@
 /**
  * Garmin sign-in for the self-hosted server: signs in with tokens held in
- * memory, checks the account is the owner's, and only then keeps the tokens
- * in the vault. The password is used for the one login request and never
- * stored or logged.
+ * memory and reads which Garmin account it is. Only then does the caller pick
+ * the vault (the owner's, a member's) and `keep()` the tokens there, which
+ * checks the account is that vault's. The password is used for the one login
+ * request and never stored or logged.
  */
 import { GarminClient, type MfaState } from "garmin-connect";
 import { memoryTokenStorage, type Tokens } from "./vault.js";
@@ -10,6 +11,15 @@ import { memoryTokenStorage, type Tokens } from "./vault.js";
 export interface SignInVault {
   bindOwner(garminId: string): Promise<boolean>;
   saveTokens(tokens: Tokens): Promise<void>;
+  setName(name: string): Promise<void>;
+}
+
+/** A Garmin account that just signed in, not kept anywhere yet. */
+export interface SignedIn {
+  garminId: string;
+  /** From the Garmin profile, for the owner page */
+  name?: string;
+  tokens: Tokens;
 }
 
 export class WrongAccountError extends Error {
@@ -23,32 +33,43 @@ export class WrongAccountError extends Error {
   }
 }
 
-export type GarminSignIn = { status: "success" } | { status: "needs_mfa"; mfaState: MfaState };
+export type GarminSignIn =
+  | { status: "success"; account: SignedIn }
+  | { status: "needs_mfa"; mfaState: MfaState };
 
-export async function garminLogin(
-  vault: SignInVault,
-  email: string,
-  password: string,
-): Promise<GarminSignIn> {
+export async function garminLogin(email: string, password: string): Promise<GarminSignIn> {
   const storage = memoryTokenStorage();
   const client = new GarminClient({ storage });
   const result = await client.login(email, password);
   if (result.status === "needs_mfa") return { status: "needs_mfa", mfaState: result.mfaState };
-  await keep(vault, client, storage.current());
-  return { status: "success" };
+  return { status: "success", account: await account(client, storage.current()) };
 }
 
-export async function garminMfa(vault: SignInVault, code: string, mfaState: MfaState) {
+export async function garminMfa(code: string, mfaState: MfaState): Promise<SignedIn> {
   const storage = memoryTokenStorage();
   const client = new GarminClient({ storage });
   await client.submitMfa(code, mfaState);
-  await keep(vault, client, storage.current());
+  return account(client, storage.current());
 }
 
-async function keep(vault: SignInVault, client: GarminClient, tokens: Tokens | null) {
-  const profile = (await client.getUserProfile()) as { profileId?: unknown } | null;
+/** Keeps the tokens in `vault`; WrongAccountError if the vault belongs to another account. */
+export async function keep(vault: SignInVault, signedIn: SignedIn): Promise<void> {
+  if (!(await vault.bindOwner(signedIn.garminId))) {
+    throw new WrongAccountError(signedIn.garminId, signedIn.tokens);
+  }
+  await vault.saveTokens(signedIn.tokens);
+  if (signedIn.name) await vault.setName(signedIn.name);
+}
+
+async function account(client: GarminClient, tokens: Tokens | null): Promise<SignedIn> {
+  const profile = (await client.getUserProfile()) as {
+    profileId?: unknown;
+    fullName?: unknown;
+    displayName?: unknown;
+  } | null;
   if (!tokens || profile?.profileId == null) throw new Error("Couldn't read the Garmin account");
-  const garminId = String(profile.profileId);
-  if (!(await vault.bindOwner(garminId))) throw new WrongAccountError(garminId, tokens);
-  await vault.saveTokens(tokens);
+  const name = [profile.fullName, profile.displayName].find(
+    (n): n is string => typeof n === "string" && n.trim() !== "",
+  );
+  return { garminId: String(profile.profileId), ...(name && { name: name.trim() }), tokens };
 }

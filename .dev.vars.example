@@ -1,4 +1,6 @@
-# A long password only you know; asked once when you connect Claude or ChatGPT
+# Choose a password for your Run Coach (a long one only you know). You enter it
+# when you connect Claude and to open your owner page.
 OWNER_PASSPHRASE=
-# Encrypts your Garmin sign-in at rest. Generate one with: openssl rand -hex 32
-TOKEN_ENCRYPTION_KEY=
+# Optional: the key that encrypts Garmin sign-ins at rest (openssl rand -hex 32).
+# Without it, Run Coach generates one on first start and keeps it.
+# TOKEN_ENCRYPTION_KEY=

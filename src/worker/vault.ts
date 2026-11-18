@@ -1,10 +1,14 @@
 /**
- * The self-hosted server's state, kept in one Durable Object (vault-do.ts):
- * Garmin tokens, the owner's Garmin account, settings, sign-ins in progress,
- * one-time sign-in links, the in-app login key, passphrase lockout and rate
- * limits.
- * Everything secret is sealed with AES-GCM (TOKEN_ENCRYPTION_KEY) before it
- * is stored. A plain class over a storage interface, so it's testable in Node.
+ * The self-hosted server's state, in Durable Objects (vault-do.ts). Each person
+ * has their own vault: the owner's is named "owner", a household member's
+ * "member:<id>". A person's vault holds their Garmin tokens and account,
+ * name, settings, time zone, the in-app login key and MFA state.
+ * The owner's vault also keeps what the whole server shares: sign-ins in
+ * progress, one-time sign-in links, invites, the member list, owner-page
+ * sessions, passphrase lockout and rate limits.
+ * Everything secret is sealed with AES-GCM (TOKEN_ENCRYPTION_KEY, else the
+ * generated key) before it is stored. A plain class over a storage interface,
+ * so it's testable in Node.
  */
 import {
   GarminClient,
@@ -33,6 +37,15 @@ export interface Tokens {
 /** A sign-in in progress on the authorize page or a one-time sign-in page. */
 export interface SignInTransaction {
   kind: "authorize" | "signin";
+  /**
+   * authorize: who is connecting. "owner" asks for the passphrase; "member"
+   * signs in to Garmin (with an invite code the first time).
+   */
+  role?: "owner" | "member";
+  /** member: a checked invite code, used up when the Garmin sign-in succeeds */
+  invite?: string;
+  /** signin: whose sign-in the one-time link renews ("owner" or a member id) */
+  person?: string;
   /** authorize: the parsed OAuth request to complete */
   authRequest?: AuthRequest;
   /**
@@ -42,7 +55,7 @@ export interface SignInTransaction {
   client?: { name: string; verified: boolean; host: string; known: boolean };
   /** SHA-256 of the cookie that binds the sign-in to one browser */
   browser: string;
-  stage: "passphrase" | "garmin" | "mfa" | "switch";
+  stage: "passphrase" | "invite" | "garmin" | "mfa" | "switch";
   mfaState?: MfaState;
   /** signin: the one-time link's nonce, used up when the sign-in succeeds */
   linkNonce?: string;
@@ -63,7 +76,54 @@ export const LIMITS = {
   loginKeyMs: 5 * 60_000,
   /** Garmin password attempts per sign-in */
   maxAttempts: 5,
+  /** Invites are good for a week, and used once */
+  inviteMs: 7 * 86_400_000,
+  /** Household members besides the owner (each a Durable Object and Garmin's requests) */
+  maxMembers: 8,
+  /** Open invites at a time */
+  maxInvites: 5,
+  /** Owner page: signed in for 30 minutes */
+  sessionMs: 30 * 60_000,
 } as const;
+
+/** A household member: one Garmin account with its own vault. */
+export interface Member {
+  id: string;
+  garminId: string;
+  /** From the Garmin profile, shown on the owner page */
+  name?: string;
+  joinedAt: number;
+}
+
+export interface Invite {
+  /** Short id for the owner page's buttons (not the code) */
+  id: string;
+  code: string;
+  exp: number;
+  createdAt: number;
+}
+
+/** Invite codes: 8 letters/digits without look-alikes, shown as XXXX-XXXX (40 bits). */
+const INVITE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+export function normalizeInviteCode(input: string): string {
+  return input.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+export function formatInviteCode(code: string): string {
+  return `${code.slice(0, 4)}-${code.slice(4)}`;
+}
+
+function newInviteCode(): string {
+  // 256 % 31 isn't 0: rejection sampling keeps every letter equally likely
+  let code = "";
+  while (code.length < 8) {
+    for (const b of crypto.getRandomValues(new Uint8Array(16))) {
+      if (b < 248 && code.length < 8) code += INVITE_ALPHABET[b % 31];
+    }
+  }
+  return code;
+}
 
 const DEFAULT_SETTINGS: Settings = { realMap: false };
 
@@ -83,7 +143,11 @@ export class Vault {
 
   constructor(
     private storage: VaultStorage,
-    private secrets: { passphrase?: string; encryptionKey?: string },
+    private secrets: {
+      passphrase?: string;
+      /** The key, or a loader for the generated one */
+      encryptionKey?: string | (() => Promise<string | undefined>);
+    },
     private now: () => number = Date.now,
     /** Refreshes the OAuth2 token when it's about to expire (GarminClient.resume) */
     private refresh: (tokens: Tokens) => Promise<Tokens> = refreshWithClient,
@@ -98,16 +162,33 @@ export class Vault {
    * Per client (a hash of the IP), so nobody can lock the owner out.
    */
   checkPassphrase(input: string, client = ""): Promise<PassphraseResult> {
+    return this.guarded(client, async () => {
+      const passphrase = this.secrets.passphrase;
+      return !!passphrase && (await constantTimeEqual(input, passphrase));
+    });
+  }
+
+  /**
+   * Whether `code` is an open invite. Wrong codes count toward the same
+   * lockout as wrong passphrases, so guesses can't alternate between them.
+   */
+  checkInvite(code: string, client = ""): Promise<PassphraseResult> {
+    return this.guarded(client, async () => (await this.findInvite(code)) !== null);
+  }
+
+  /** Runs `test` under the per-client failure count and lockout. */
+  private guarded(client: string, test: () => Promise<boolean>): Promise<PassphraseResult> {
     // The comparison awaits WebCrypto, which lets other requests in between
     // reading the failure count and writing it back.
-    const run = this.passphraseQueue.then(() => this.checkPassphraseNow(input, client));
+    const run = this.passphraseQueue.then(() => this.guardedNow(client, test));
     this.passphraseQueue = run.catch(() => undefined);
     return run;
   }
 
-  private async checkPassphraseNow(input: string, client: string): Promise<PassphraseResult> {
-    const passphrase = this.secrets.passphrase;
-    if (!passphrase) return { ok: false };
+  private async guardedNow(
+    client: string,
+    test: () => Promise<boolean>,
+  ): Promise<PassphraseResult> {
     const key = `passphrase:${client}`;
     const now = this.now();
     const saved = await this.storage.get<{ failures: number; lockedUntil?: number; exp: number }>(
@@ -118,7 +199,7 @@ export class Vault {
     if (state.lockedUntil && state.lockedUntil > now) {
       return { ok: false, retryAfterMs: state.lockedUntil - now };
     }
-    if (await constantTimeEqual(input, passphrase)) {
+    if (await test()) {
       await this.storage.delete(key);
       return { ok: true };
     }
@@ -157,7 +238,7 @@ export class Vault {
       return await this.sealer.open<Tokens>("tokens", sealed);
     } catch (err) {
       if (!(err instanceof UnsealError)) throw err;
-      // Sealed under another TOKEN_ENCRYPTION_KEY: useless now, sign in again
+      // Sealed under another key: useless now, sign in again
       await this.storage.delete("tokens");
       return null;
     }
@@ -211,6 +292,11 @@ export class Vault {
     return owner === garminId;
   }
 
+  /** The Garmin account this vault belongs to, once someone signed in. */
+  async getOwner(): Promise<string | undefined> {
+    return this.storage.get<string>("owner");
+  }
+
   /** Links this server to another Garmin account (the owner confirmed it with the passphrase). */
   async setOwner(garminId: string): Promise<void> {
     await this.storage.put("owner", garminId);
@@ -235,6 +321,142 @@ export class Vault {
 
   async setTimeZone(timeZone: string): Promise<void> {
     await this.storage.put("time-zone", timeZone);
+  }
+
+  /** The account's name from its Garmin profile, for the owner page. */
+  async getName(): Promise<string | undefined> {
+    return this.storage.get<string>("name");
+  }
+
+  async setName(name: string): Promise<void> {
+    await this.storage.put("name", name);
+  }
+
+  /** Deletes everything in this vault (a member who was removed). */
+  async wipe(): Promise<void> {
+    this.tokenGeneration++;
+    for (const key of (await this.storage.list({ prefix: "" })).keys()) {
+      await this.storage.delete(key);
+    }
+  }
+
+  // ── Household (owner's vault) ─────────────────────
+
+  /** A new invite code, good for a week and used once. Null when too many are open. */
+  async createInvite(): Promise<Invite | null> {
+    const open = await this.listInvites();
+    if (open.length >= LIMITS.maxInvites) return null;
+    const code = newInviteCode();
+    const id = (await sha256Hex(code)).slice(0, 16);
+    const createdAt = this.now();
+    const exp = createdAt + LIMITS.inviteMs;
+    await this.storage.put(`invite:${id}`, {
+      exp,
+      createdAt,
+      sealed: await this.sealer.seal(`invite:${id}`, code),
+    });
+    return { id, code, exp, createdAt };
+  }
+
+  /** Open invites, newest first. */
+  async listInvites(): Promise<Invite[]> {
+    await this.sweep("invite:");
+    const invites: Invite[] = [];
+    const recs = await this.storage.list<{ exp: number; createdAt: number; sealed: string }>({
+      prefix: "invite:",
+    });
+    for (const [key, rec] of recs) {
+      const id = key.slice("invite:".length);
+      try {
+        const code = await this.sealer.open<string>(key, rec.sealed);
+        invites.push({ id, code, exp: rec.exp, createdAt: rec.createdAt });
+      } catch (err) {
+        if (!(err instanceof UnsealError)) throw err;
+        await this.storage.delete(key);
+      }
+    }
+    return invites.sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  async cancelInvite(id: string): Promise<void> {
+    await this.storage.delete(`invite:${id}`);
+  }
+
+  /** The open invite with this code, else null. */
+  async findInvite(input: string): Promise<Invite | null> {
+    const code = normalizeInviteCode(input);
+    if (code.length !== 8) return null;
+    const id = (await sha256Hex(code)).slice(0, 16);
+    const rec = await this.storage.get<{ exp: number; createdAt: number }>(`invite:${id}`);
+    if (!rec || rec.exp <= this.now()) return null;
+    return { id, code, exp: rec.exp, createdAt: rec.createdAt };
+  }
+
+  /** True once per open invite. */
+  async consumeInvite(input: string): Promise<boolean> {
+    const invite = await this.findInvite(input);
+    if (!invite) return false;
+    await this.storage.delete(`invite:${invite.id}`);
+    return true;
+  }
+
+  async listMembers(): Promise<Member[]> {
+    const recs = await this.storage.list<Member>({ prefix: "member:" });
+    return [...recs.values()].sort((a, b) => a.joinedAt - b.joinedAt);
+  }
+
+  async getMember(id: string): Promise<Member | null> {
+    return (await this.storage.get<Member>(`member:${id}`)) ?? null;
+  }
+
+  async findMemberByGarmin(garminId: string): Promise<Member | null> {
+    return (await this.listMembers()).find((m) => m.garminId === garminId) ?? null;
+  }
+
+  /** Adds a member for a Garmin account; null when the household is full. */
+  async addMember(garminId: string, name?: string): Promise<Member | null> {
+    const existing = await this.findMemberByGarmin(garminId);
+    if (existing) return existing;
+    if ((await this.listMembers()).length >= LIMITS.maxMembers) return null;
+    const member: Member = {
+      id: randomId(),
+      garminId,
+      joinedAt: this.now(),
+      ...(name && { name }),
+    };
+    await this.storage.put(`member:${member.id}`, member);
+    return member;
+  }
+
+  async renameMember(id: string, name: string): Promise<void> {
+    const member = await this.getMember(id);
+    if (member) await this.storage.put(`member:${id}`, { ...member, name });
+  }
+
+  async removeMember(id: string): Promise<void> {
+    await this.storage.delete(`member:${id}`);
+  }
+
+  // ── Owner page sessions ───────────────────────────
+
+  /** A new owner-page session; the browser keeps the returned secret in a cookie. */
+  async createSession(): Promise<string> {
+    const secret = randomId();
+    await this.sweep("session:");
+    await this.storage.put(`session:${await sha256Hex(secret)}`, {
+      exp: this.now() + LIMITS.sessionMs,
+    });
+    return secret;
+  }
+
+  async checkSession(secret: string): Promise<boolean> {
+    if (!secret) return false;
+    const rec = await this.storage.get<{ exp: number }>(`session:${await sha256Hex(secret)}`);
+    return !!rec && rec.exp > this.now();
+  }
+
+  async endSession(secret: string): Promise<void> {
+    await this.storage.delete(`session:${await sha256Hex(secret)}`);
   }
 
   // ── Sign-ins in progress ──────────────────────────
@@ -382,6 +604,11 @@ async function refreshWithClient(tokens: Tokens): Promise<Tokens> {
   const storage = memoryTokenStorage(tokens);
   await new GarminClient({ storage }).resume();
   return storage.current() ?? tokens;
+}
+
+async function sha256Hex(s: string): Promise<string> {
+  const d = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
+  return [...d].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function toBase64(bytes: Uint8Array): string {

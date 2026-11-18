@@ -58,27 +58,28 @@ Clients that support [MCP Apps](https://modelcontextprotocol.io/docs/extensions/
 
 ### Claude web and mobile, ChatGPT web: self-host (free)
 
-Run your own copy on Cloudflare's free Workers plan (no credit card) and add it to Claude or ChatGPT as a custom connector. It's yours alone: only someone with your owner passphrase can connect, and only your Garmin account can sign in.
+Run your own Run Coach on Cloudflare's free plan (no credit card) and add it to Claude. It works in Claude on the web, on your computer and on your phone. One Run Coach can serve your household: everyone signs in with their own Garmin account and sees only their own data.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chenhunghan/garmin-mcp-app)
 
-1. Click **Deploy to Cloudflare** and sign in (or sign up) to Cloudflare. It copies this repository to your GitHub account and deploys it.
-2. Fill in the two secrets it asks for:
-   - **OWNER_PASSPHRASE**: a long password only you know. You enter it once when you connect Claude or ChatGPT.
-   - **TOKEN_ENCRYPTION_KEY**: encrypts your Garmin sign-in at rest. Generate one with `openssl rand -hex 32`.
-3. Open your Worker's address (`https://run-coach.<you>.workers.dev`): the page shows your connector URL, ending in `/mcp`.
+1. Click **Deploy to Cloudflare**, sign in or sign up (Cloudflare, and GitHub for your copy of the code).
+2. When it asks for **OWNER_PASSPHRASE**, choose a password only you know.
+3. Open your Run Coach's address when the deploy finishes (`https://run-coach.<you>.workers.dev`). The page walks you through adding it to Claude: copy the address, add it under Claude's *Customize → Connectors → Add custom connector*, then connect with your password and your Garmin sign-in.
 
-**Connect in Claude** (web, desktop or mobile): Settings → Connectors → **Add custom connector**, paste the URL → **Connect** → enter your owner passphrase → sign in to Garmin (and the verification code if Garmin asks). The connector then works on every Claude app where you're signed in, mobile included.
+**Your household:** open the **Owner page** (linked from that page), choose **Invite someone** and send them the message. They add the same address in their own Claude, choose *I'm a household member*, enter the invite code and sign in with their own Garmin account. Later they connect with their Garmin sign-in alone. You can remove someone anytime, which deletes their sign-in and disconnects their apps.
 
-**Connect in ChatGPT** (web): turn on developer mode, add an MCP app with the URL and OAuth, then connect the same way. Whether your ChatGPT plan allows custom MCP servers is up to OpenAI: check its help center.
+**Updates install themselves:** your copy checks for a new release every Monday and Cloudflare redeploys it. The owner page shows your version. To update right away: GitHub → your copy → Actions → **Update Run Coach** → Run workflow.
 
 When Garmin's sign-in expires you never need to reconnect: the app shows its sign-in form, and where it can't, the answer carries a one-time sign-in link (valid 10 minutes).
 
 <details>
-<summary>Forgot the passphrase, updating, limits</summary>
+<summary>Forgot the password, ChatGPT, limits</summary>
 
-- **Forgot the passphrase:** Cloudflare dashboard → your Worker → Settings → Variables and Secrets → update `OWNER_PASSPHRASE`, then connect again.
-- **Updating your copy:** in your copy of the repository, `git remote add upstream https://github.com/chenhunghan/garmin-mcp-app` once, then `git fetch upstream --tags` and merge the latest release tag (`git merge garmin-mcp-app-vX.Y.Z`) into `main` and push. Cloudflare redeploys automatically.
+- **Forgot the password:** Cloudflare dashboard → your Worker → Settings → Variables and Secrets → change `OWNER_PASSPHRASE`. Apps that are already connected keep working.
+- **ChatGPT** (web): turn on developer mode, add an app with your Run Coach address and OAuth, then connect the same way. Whether your plan allows custom MCP servers is up to OpenAI.
+- **Encryption key:** Run Coach generates the key that encrypts Garmin sign-ins on first start. To use your own instead, add a `TOKEN_ENCRYPTION_KEY` secret (`openssl rand -hex 32`) before anyone signs in; changing it later means everyone signs in to Garmin again.
+- **Updates:** the updater replaces every file except `wrangler.jsonc` (merged, so the IDs Cloudflare wrote into it stay) and `.github/`. If a release clashes with your `wrangler.jsonc`, the run fails and changes nothing.
+- **Household size:** up to 8 members besides you, each with their own encrypted vault.
 - **Free plan limits:** a long-range performance dashboard loads its metrics over several calls, and the 3D replay's real map (elevation and OpenStreetMap) isn't available yet.
 - **Debugging:** production stores no logs. `npx wrangler tail` shows live requests; `npm run deploy:dev` deploys a separate `run-coach-dev` Worker with logs on.
 
@@ -169,8 +170,9 @@ Visualize training readiness
 
 **Self-hosted** (your Cloudflare Worker):
 
-- **Your Worker, your account.** Garmin tokens are encrypted (AES-GCM, with your `TOKEN_ENCRYPTION_KEY`) in a Durable Object in **your** Cloudflare account. The author never sees them.
-- **Only you can connect.** Connecting a client needs your owner passphrase (locked for 15 minutes after 5 wrong tries), and after the first sign-in only your Garmin account is accepted.
+- **Your Worker, your account.** Garmin tokens are encrypted (AES-GCM, with a key generated in your Worker or your own `TOKEN_ENCRYPTION_KEY`) in Durable Objects in **your** Cloudflare account, one per person. The author never sees them.
+- **Only you and the people you invite can connect.** You connect with your password (locked for 15 minutes after 5 wrong tries, wrong invite codes included); a household member joins with a one-time invite code and their own Garmin account, which is how they're recognized afterwards. A Garmin account that wasn't invited is refused.
+- **Household members trust the owner.** Each member's data is kept apart, but it sits encrypted in the owner's Cloudflare account, so whoever controls that account could reach it. The invite page says so.
 - **Claude and ChatGPT never see your Garmin password.** You type it on your Worker's own sign-in page or in the app's encrypted form; it's used once and never stored.
 - **No stored logs.** Production keeps Cloudflare's logs off; nothing logs requests, tool calls or results. Your data passes through your Cloudflare account.
 

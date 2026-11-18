@@ -353,3 +353,103 @@ describe("today", () => {
     expect(today("Not/AZone", now)).toBe(today(undefined, now));
   });
 });
+
+describe("household", () => {
+  it("invite codes are readable, work once and expire after a week", async () => {
+    const { vault, advance } = setup();
+    const invite = (await vault.createInvite())!;
+    expect(invite.code).toMatch(/^[A-HJKMNP-Z2-9]{8}$/);
+    expect(await vault.listInvites()).toEqual([invite]);
+    // Typed in lower case, with or without the dash
+    const typed = `${invite.code.slice(0, 4).toLowerCase()}-${invite.code.slice(4)}`;
+    expect((await vault.findInvite(typed))?.id).toBe(invite.id);
+    expect(await vault.consumeInvite(typed)).toBe(true);
+    expect(await vault.consumeInvite(typed)).toBe(false);
+
+    const later = (await vault.createInvite())!;
+    advance(LIMITS.inviteMs + 1);
+    expect(await vault.findInvite(later.code)).toBeNull();
+    expect(await vault.listInvites()).toEqual([]);
+  });
+
+  it("caps open invites, and the owner can cancel one", async () => {
+    const { vault } = setup();
+    const invites = [];
+    for (let i = 0; i < LIMITS.maxInvites; i++) invites.push(await vault.createInvite());
+    expect(await vault.createInvite()).toBeNull();
+    await vault.cancelInvite(invites[0]!.id);
+    expect(await vault.findInvite(invites[0]!.code)).toBeNull();
+    expect(await vault.createInvite()).not.toBeNull();
+  });
+
+  it("keeps invite codes sealed at rest", async () => {
+    const { vault, storage } = setup();
+    const invite = (await vault.createInvite())!;
+    expect(JSON.stringify([...storage.map])).not.toContain(invite.code);
+  });
+
+  it("wrong invite codes count toward the passphrase lockout", async () => {
+    const { vault } = setup();
+    const invite = (await vault.createInvite())!;
+    for (let i = 0; i < LIMITS.maxFailures - 1; i++) {
+      expect((await vault.checkInvite("AAAA-AAAA", "ip")).ok).toBe(false);
+    }
+    expect((await vault.checkPassphrase("wrong", "ip")).ok).toBe(false);
+    // Locked out now, even with the right code
+    const locked = await vault.checkInvite(invite.code, "ip");
+    expect(locked.ok).toBe(false);
+    expect(locked.ok === false && locked.retryAfterMs).toBeGreaterThan(0);
+    expect((await vault.checkInvite(invite.code, "other-ip")).ok).toBe(true);
+  });
+
+  it("adds members once per Garmin account, up to the limit", async () => {
+    const { vault } = setup();
+    const a = (await vault.addMember("g1", "Alex"))!;
+    expect(await vault.addMember("g1")).toEqual(a);
+    expect(await vault.findMemberByGarmin("g1")).toEqual(a);
+    for (let i = 2; i <= LIMITS.maxMembers; i++) await vault.addMember(`g${i}`);
+    expect(await vault.addMember("one-too-many")).toBeNull();
+    await vault.removeMember(a.id);
+    expect(await vault.getMember(a.id)).toBeNull();
+    expect(await vault.addMember("one-too-many")).not.toBeNull();
+  });
+
+  it("owner-page sessions last 30 minutes and can end early", async () => {
+    const { vault, advance } = setup();
+    const s = await vault.createSession();
+    expect(await vault.checkSession(s)).toBe(true);
+    expect(await vault.checkSession("guess")).toBe(false);
+    expect(await vault.checkSession("")).toBe(false);
+    await vault.endSession(s);
+    expect(await vault.checkSession(s)).toBe(false);
+    const t = await vault.createSession();
+    advance(LIMITS.sessionMs + 1);
+    expect(await vault.checkSession(t)).toBe(false);
+  });
+
+  it("wipe deletes everything in a member's vault", async () => {
+    const { vault, storage } = setup();
+    await vault.saveTokens(tokens(2_000_000_000));
+    await vault.bindOwner("g1");
+    await vault.setName("Alex");
+    await vault.wipe();
+    expect(storage.map.size).toBe(0);
+    expect(await vault.loadTokens()).toBeNull();
+  });
+
+  it("seals with a key loaded on first use (the generated key)", async () => {
+    let loads = 0;
+    const loader = async () => {
+      loads++;
+      return KEY;
+    };
+    const storage = mapStorage();
+    const lazy = new Vault(storage, { encryptionKey: loader });
+    await lazy.saveTokens(tokens(2_000_000_000));
+    // Same key as a string: the records open
+    const { vault } = setup({ storage });
+    expect(await vault.loadTokens()).not.toBeNull();
+    expect(loads).toBe(1);
+    expect(await new Sealer(loader).open("x", await new Sealer(KEY).seal("x", 1))).toBe(1);
+  });
+});

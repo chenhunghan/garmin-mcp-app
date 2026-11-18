@@ -1,20 +1,21 @@
 /**
- * The sign-in pages. `/authorize` connects an MCP client (Claude, ChatGPT):
- * owner passphrase, then Garmin email + password and, if asked, the
- * verification code — the Garmin step is skipped when the vault already has
- * tokens. `/signin?t=…` (a one-time link) is the Garmin step alone, for when
- * Garmin's sign-in expired. Each sign-in lives in the vault for 10 minutes,
- * bound to the browser that started it by a cookie. Nothing else is written
- * before the passphrase (or, for a link, the owner's Garmin sign-in) is right,
- * and starting sign-ins is rate-limited per IP.
+ * The sign-in pages. `/authorize` connects an MCP client (Claude, ChatGPT).
+ * The owner enters the Run Coach password, then signs in to Garmin (skipped
+ * when their vault already has tokens). A household member signs in to Garmin,
+ * with an invite code the first time: their Garmin account says who they are.
+ * `/signin?t=…` (a one-time link) is the Garmin step alone, for when one
+ * person's Garmin sign-in expired. Each sign-in lives in the owner's vault for
+ * 10 minutes, bound to the browser that started it by a cookie. Nothing else is
+ * written before the password, the invite or the person's own Garmin sign-in
+ * is right, and starting sign-ins is rate-limited per IP.
  */
 import { AuthorizationError, type AuthRequest } from "@cloudflare/workers-oauth-provider";
 import { Sealer, ipNetwork, randomId } from "./crypto.js";
-import { vaultOf, type Env, type VaultStub } from "./env.js";
+import { encryptionKey, personVault, vaultOf, type Env, type Person } from "./env.js";
 import { escapeHtml, page } from "./html.js";
 import { checkSignInLink } from "./signin-link.js";
-import { WrongAccountError, garminLogin, garminMfa } from "./signin.js";
-import { LIMITS, type SignInTransaction } from "./vault.js";
+import { WrongAccountError, garminLogin, garminMfa, keep, type SignedIn } from "./signin.js";
+import { LIMITS, formatInviteCode, normalizeInviteCode, type SignInTransaction } from "./vault.js";
 
 const COOKIE = "__Host-rc-";
 
@@ -53,11 +54,19 @@ export async function handleAuthorize(request: Request, env: Env): Promise<Respo
 export async function handleSignInLink(request: Request, env: Env): Promise<Response> {
   if (request.method === "POST") return continueSignIn(request, env);
   const token = new URL(request.url).searchParams.get("t") ?? "";
-  const sealer = new Sealer(env.TOKEN_ENCRYPTION_KEY);
+  const sealer = new Sealer(() => encryptionKey(env));
   // Opening the link doesn't use it up (previews, reloads): signing in does
-  const linkNonce = await checkSignInLink(vaultOf(env), sealer, token);
-  if (!linkNonce) return linkUsedPage();
-  return startSignIn(request, env, { kind: "signin", stage: "garmin", linkNonce });
+  const link = await checkSignInLink(vaultOf(env), sealer, token);
+  // A member who was removed meanwhile has nothing to sign in to
+  if (!link || (link.person !== "owner" && !(await vaultOf(env).getMember(link.person)))) {
+    return linkUsedPage();
+  }
+  return startSignIn(request, env, {
+    kind: "signin",
+    stage: "garmin",
+    linkNonce: link.nonce,
+    person: link.person,
+  });
 }
 
 async function startSignIn(
@@ -102,18 +111,50 @@ async function continueSignIn(request: Request, env: Env): Promise<Response> {
   }
 
   if (tx.stage === "passphrase") {
+    // "I'm a household member"
+    if (form.get("as") === "member") {
+      tx.stage = "invite";
+      tx.role = "member";
+      await vault.putSignIn(id, tx);
+      return render(id, tx);
+    }
     const check = await vault.checkPassphrase(
       String(form.get("passphrase") ?? ""),
       await clientKey(request),
     );
     if (!check.ok) {
       const error = check.retryAfterMs
-        ? `Too many wrong passphrases. Try again in ${Math.ceil(check.retryAfterMs / 60_000)} minutes.`
-        : "That passphrase isn't right.";
+        ? `Too many wrong tries. Try again in ${Math.ceil(check.retryAfterMs / 60_000)} minutes.`
+        : "That password isn't right.";
       return render(id, tx, error);
     }
+    tx.role = "owner";
     // Already signed in to Garmin (e.g. connecting a second app): done
-    if (await vault.loadTokens()) return finish(env, vault, id, tx);
+    if (await vault.loadTokens()) return finish(env, "owner", id, tx);
+    tx.stage = "garmin";
+    await vault.putSignIn(id, tx);
+    return render(id, tx);
+  }
+
+  if (tx.stage === "invite") {
+    if (form.get("as") === "owner") {
+      tx.stage = "passphrase";
+      delete tx.role;
+      await vault.putSignIn(id, tx);
+      return render(id, tx);
+    }
+    const code = normalizeInviteCode(String(form.get("invite") ?? ""));
+    // No code: someone who already joined, recognized by their Garmin account
+    if (code) {
+      const check = await vault.checkInvite(code, await clientKey(request));
+      if (!check.ok) {
+        const error = check.retryAfterMs
+          ? `Too many wrong tries. Try again in ${Math.ceil(check.retryAfterMs / 60_000)} minutes.`
+          : "That invite code isn't valid. It may have expired or been used: ask for a new one.";
+        return render(id, tx, error);
+      }
+      tx.invite = code;
+    }
     tx.stage = "garmin";
     await vault.putSignIn(id, tx);
     return render(id, tx);
@@ -124,7 +165,7 @@ async function continueSignIn(request: Request, env: Env): Promise<Response> {
     if (form.get("switch") === "yes" && tx.switchTo) {
       await vault.setOwner(tx.switchTo.garminId);
       await vault.saveTokens(tx.switchTo.tokens);
-      return finish(env, vault, id, tx);
+      return finish(env, "owner", id, tx);
     }
     tx.stage = "garmin";
     delete tx.switchTo;
@@ -142,10 +183,10 @@ async function continueSignIn(request: Request, env: Env): Promise<Response> {
     return errorPage("Too many attempts. Start again.", 429);
   }
   tx.attempts++;
+  let signedIn: SignedIn;
   try {
     if (tx.stage === "garmin") {
       const result = await garminLogin(
-        vault,
         String(form.get("email") ?? "").trim(),
         String(form.get("password") ?? ""),
       );
@@ -155,50 +196,124 @@ async function continueSignIn(request: Request, env: Env): Promise<Response> {
         await vault.putSignIn(id, tx);
         return render(id, tx);
       }
+      signedIn = result.account;
     } else {
       if (!tx.mfaState) throw new Error("No verification pending");
-      await garminMfa(vault, String(form.get("code") ?? "").trim(), tx.mfaState);
+      signedIn = await garminMfa(String(form.get("code") ?? "").trim(), tx.mfaState);
     }
   } catch (err) {
-    if (err instanceof WrongAccountError) {
-      // Only the passphrase holder may move this server to another account
-      if (tx.kind === "authorize") {
-        tx.stage = "switch";
-        tx.switchTo = { garminId: err.garminId, tokens: err.tokens };
-        delete tx.mfaState;
-        await vault.putSignIn(id, tx);
-        return render(id, tx);
-      }
-      await vault.deleteSignIn(id);
-      return errorPage(err.message, 403);
-    }
     await vault.putSignIn(id, tx);
     const what = tx.stage === "mfa" ? "verification code" : "sign-in";
     return render(id, tx, `Garmin didn't accept the ${what}: ${errorMessage(err)}`);
   }
-  return finish(env, vault, id, tx);
+
+  const placed = await place(env, tx, signedIn);
+  if ("error" in placed) {
+    await vault.deleteSignIn(id);
+    return errorPage(placed.error, 403);
+  }
+  if ("switchTo" in placed) {
+    // Only the passphrase holder may move this server to another account
+    tx.stage = "switch";
+    tx.switchTo = placed.switchTo;
+    delete tx.mfaState;
+    await vault.putSignIn(id, tx);
+    return render(id, tx);
+  }
+  return finish(env, placed.person, id, tx);
+}
+
+type Placement =
+  | { person: Person }
+  | { error: string }
+  | { switchTo: NonNullable<SignInTransaction["switchTo"]> };
+
+/**
+ * Whose vault a Garmin account that just signed in goes to, and keeps its
+ * tokens there: the person a one-time link was for; the owner; or, for a
+ * household member, the member with this Garmin account (or a new one, with
+ * an invite).
+ */
+async function place(env: Env, tx: SignInTransaction, signedIn: SignedIn): Promise<Placement> {
+  const site = vaultOf(env);
+  const keepIn = async (person: Person): Promise<Placement> => {
+    try {
+      await keep(personVault(env, person), signedIn);
+      return { person };
+    } catch (err) {
+      if (!(err instanceof WrongAccountError)) throw err;
+      if (tx.kind === "authorize" && person === "owner") {
+        return { switchTo: { garminId: err.garminId, tokens: err.tokens } };
+      }
+      return { error: err.message };
+    }
+  };
+  const member = await site.findMemberByGarmin(signedIn.garminId);
+
+  if (tx.kind === "signin") {
+    const person = tx.person ?? "owner";
+    if (person === "owner" && member) return { error: memberAccountError(member.name) };
+    return keepIn(person);
+  }
+
+  if (tx.role === "owner") {
+    // A member's Garmin account can't become the owner's
+    if (member) return { error: memberAccountError(member.name) };
+    return keepIn("owner");
+  }
+
+  // Household member: their Garmin account says who they are
+  if ((await site.getOwner()) === signedIn.garminId) return keepIn("owner");
+  if (member) return keepIn(member.id);
+  if (!tx.invite) {
+    return {
+      error:
+        "This Garmin account hasn't joined this Run Coach yet. Ask the person who runs it for an invite code, then connect again and enter it.",
+    };
+  }
+  if (!(await site.findInvite(tx.invite))) {
+    return { error: "The invite code expired or was used meanwhile. Ask for a new one." };
+  }
+  const added = await site.addMember(signedIn.garminId, signedIn.name);
+  if (!added) {
+    return { error: `This Run Coach already has ${LIMITS.maxMembers} household members.` };
+  }
+  await site.consumeInvite(tx.invite);
+  return keepIn(added.id);
+}
+
+function memberAccountError(name: string | undefined): string {
+  return `This Garmin account belongs to ${name ? shortName(name) : "a household member"} on this Run Coach. Sign in with the owner's Garmin account.`;
+}
+
+/** Names go into plain-text messages that pages escape; keep them short. */
+function shortName(name: string): string {
+  return name.slice(0, 60);
 }
 
 async function finish(
   env: Env,
-  vault: VaultStub,
+  person: Person,
   id: string,
   tx: SignInTransaction,
 ): Promise<Response> {
+  const vault = vaultOf(env);
   await vault.deleteSignIn(id);
   if (tx.linkNonce) await vault.consumeLinkNonce(tx.linkNonce);
-  // The owner's own browser: "today" for the tools is their day, not UTC's
-  if (tx.timeZone) await vault.setTimeZone(tx.timeZone);
+  // The person's own browser: "today" for the tools is their day, not UTC's
+  if (tx.timeZone) await personVault(env, person).setTimeZone(tx.timeZone);
   const clear = `${COOKIE}${id}=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0`;
   if (tx.kind === "authorize") {
     const request = tx.authRequest!;
-    // One owner; Claude and ChatGPT each get their own grant
+    // Grants belong to the person (removing a member revokes theirs); each
+    // app (Claude, ChatGPT) gets its own. Grants from before households have
+    // no props: they're the owner's.
     const { redirectTo } = await env.OAUTH_PROVIDER.completeAuthorization({
       request,
-      userId: "owner",
+      userId: person,
       metadata: {},
       scope: request.scope,
-      props: {},
+      props: { person },
     });
     return new Response(null, {
       status: 302,
@@ -216,7 +331,7 @@ function render(id: string, tx: SignInTransaction, error?: string): Response {
   const err = error ? `<p class="error" role="alert">${escapeHtml(error)}</p>` : "";
   const c = tx.kind === "authorize" ? tx.client : undefined;
   const who = c
-    ? `<div class="who"><strong>${escapeHtml(c.name)}</strong>${c.verified ? "" : ` <span class="muted">(name not verified)</span>`} wants to use your Run Coach. When you're done, you go back to <strong>${escapeHtml(c.host)}</strong>.</div>${
+    ? `<div class="who"><strong>${escapeHtml(c.name)}</strong>${c.verified ? "" : ` <span class="muted">(name not verified)</span>`} wants to use Run Coach. When you're done, you go back to <strong>${escapeHtml(c.host)}</strong>.</div>${
         c.known
           ? ""
           : `<p class="error" role="alert">${escapeHtml(c.host)} isn't Claude or ChatGPT. Continue only if you're connecting an app there yourself: whoever runs it gets access to your Garmin data.</p>`
@@ -227,14 +342,27 @@ function render(id: string, tx: SignInTransaction, error?: string): Response {
   let title: string;
   let fields: string;
   if (tx.stage === "passphrase") {
-    title = "Connect to your Run Coach";
-    fields = `<p class="muted">Enter the owner passphrase you set when you deployed this server.</p>
-<label for="passphrase">Owner passphrase</label>
+    title = "Connect to Run Coach";
+    fields = `<label for="passphrase">Run Coach password</label>
 <input id="passphrase" name="passphrase" type="password" autocomplete="current-password" required autofocus>
-<button type="submit">Continue</button>`;
+<p class="muted">The password chosen when this Run Coach was set up.</p>
+<button type="submit">Continue</button>
+</form><form method="post" action="${action}">${hidden}<input type="hidden" name="as" value="member">
+<button type="submit" class="secondary">I'm a household member</button>`;
+  } else if (tx.stage === "invite") {
+    title = "Join as a household member";
+    fields = `<label for="invite">Invite code</label>
+<input id="invite" name="invite" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX" autofocus>
+<p class="muted">First time? Enter the code you were sent. Already joined? Leave it empty and continue: your Garmin sign-in is enough.</p>
+<button type="submit">Continue</button>
+</form><form method="post" action="${action}">${hidden}<input type="hidden" name="as" value="owner">
+<button type="submit" class="secondary">I run this Run Coach</button>`;
   } else if (tx.stage === "garmin") {
     title = "Sign in to Garmin Connect";
-    fields = `<p class="muted">Your password goes to Garmin only, once. This server keeps the sign-in tokens Garmin returns, encrypted, in your Cloudflare account.</p>
+    const joining = tx.invite
+      ? `<p class="muted">Invite ${escapeHtml(formatInviteCode(tx.invite))} accepted. Sign in with your own Garmin account.</p>`
+      : "";
+    fields = `${joining}<p class="muted">Your password goes to Garmin only, once. Run Coach keeps the sign-in Garmin returns, encrypted.</p>
 <label for="email">Garmin email</label>
 <input id="email" name="email" type="email" autocomplete="username" required autofocus>
 <label for="password">Garmin password</label>
@@ -242,7 +370,7 @@ function render(id: string, tx: SignInTransaction, error?: string): Response {
 <button type="submit">Sign in</button>`;
   } else if (tx.stage === "switch") {
     title = "Another Garmin account";
-    fields = `<p>This Run Coach is linked to another Garmin account. Switch it to the account you just signed in with? Every app connected to it will then see this account's data.</p>
+    fields = `<p>This Run Coach is linked to another Garmin account. Switch it to the account you just signed in with? Every app connected as the owner will then see this account's data.</p>
 <button type="submit" name="switch" value="yes">Switch to this account</button>
 <button type="submit" name="switch" value="no" class="secondary">Sign in with the linked account</button>`;
   } else {

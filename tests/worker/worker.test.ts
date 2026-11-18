@@ -1,8 +1,9 @@
 /**
  * The self-hosted Worker end to end in workerd (Miniflare): OAuth with the
  * owner passphrase, Garmin sign-in (and MFA, wrong account, one-time links)
- * against a fake Garmin that answers the Worker's outbound requests, and the
- * MCP endpoint through a real MCP client.
+ * against a fake Garmin that answers the Worker's outbound requests, the MCP
+ * endpoint through a real MCP client, the owner page and household members.
+ * No TOKEN_ENCRYPTION_KEY: the Worker runs on the key it generates.
  *
  * Run with `npm run test:worker` (bundles the Worker with wrangler first).
  */
@@ -24,8 +25,21 @@ const APP_HTML = "<!doctype html><title>stub app</title>";
 
 // ── Fake Garmin ─────────────────────────────────────
 
-/** Garmin account per email: other@ is a second account, mfa@ needs a code. */
-const profileId = (email: string) => (email.startsWith("other") ? 2 : 1);
+/**
+ * Garmin account per email: other@ is a second account, member@ a household
+ * member, stranger@ someone without an invite; mfa@ (account 1) needs a code.
+ */
+const profileId = (email: string) =>
+  email.startsWith("other")
+    ? 2
+    : email.startsWith("member")
+      ? 3
+      : email.startsWith("stranger")
+        ? 4
+        : 1;
+const NAMES: Record<number, string> = { 1: "Owner Runner", 3: "Member Runner" };
+/** Each account's steps, so tests can tell whose data a token reads */
+const STEPS: Record<number, number> = { 1: 9000, 3: 5000 };
 const garminCalls: string[] = [];
 let ssoPassword = "";
 
@@ -82,10 +96,12 @@ async function garmin(request: Request): Promise<Response> {
     }
     const email = (request.headers.get("Authorization") ?? "").replace(/^Bearer acc-/, "");
     if (url.pathname === "/userprofile-service/socialProfile") {
-      return Response.json({ profileId: profileId(email), displayName: "runner" });
+      const id = profileId(email);
+      return Response.json({ profileId: id, displayName: "runner", fullName: NAMES[id] ?? null });
     }
     if (url.pathname.startsWith("/usersummary-service/stats/steps/daily/")) {
-      return Response.json([{ calendarDate: "2026-10-01", totalSteps: 9000, stepGoal: 8000 }]);
+      const totalSteps = STEPS[profileId(email)] ?? 1;
+      return Response.json([{ calendarDate: "2026-10-01", totalSteps, stepGoal: 8000 }]);
     }
   }
   return new Response("not found", { status: 404 });
@@ -115,7 +131,7 @@ beforeAll(async () => {
       modules: true,
       scriptPath: join(out, "index.js"),
       modulesRoot: out,
-      bindings: { OWNER_PASSPHRASE: PASSPHRASE, TOKEN_ENCRYPTION_KEY: "c".repeat(64) },
+      bindings: { OWNER_PASSPHRASE: PASSPHRASE },
       assets: { ...workerOptions.assets!, directory: assets },
       outboundService: garmin,
     } as Parameters<typeof convertV4MiniflareOptions>[0]),
@@ -132,10 +148,16 @@ const fetchWorker = (input: string | URL, init?: RequestInit): Promise<Response>
 
 const b64url = (b: Buffer) => b.toString("base64url");
 
+let registrations = 0;
+
 async function registerClient(): Promise<string> {
   const res = await fetchWorker("/register", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    // Each from its own address: registrations are limited per IP
+    headers: {
+      "Content-Type": "application/json",
+      "CF-Connecting-IP": `198.18.0.${++registrations}`,
+    },
     body: JSON.stringify({
       client_name: "Test Client",
       redirect_uris: [REDIRECT],
@@ -239,6 +261,54 @@ type ToolResult = {
   structuredContent?: { view?: string };
 };
 
+async function stepsOf(token: string): Promise<number> {
+  const client = await mcpClient(token);
+  const steps = (await client.callTool({
+    name: "get-steps",
+    arguments: { date: "2026-10-01" },
+  })) as ToolResult;
+  await client.close();
+  expect(steps.isError, steps.content[0]?.text).toBeFalsy();
+  return JSON.parse(steps.content[0]!.text)[0].totalSteps as number;
+}
+
+/** Signed in to the owner page. */
+async function ownerPage(): Promise<Browser & { csrf(): string }> {
+  const browser = new Browser("203.0.113.50");
+  const res = await browser.send("/owner", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ action: "login", passphrase: PASSPHRASE }),
+  });
+  expect(res.status).toBe(303);
+  await browser.send("/owner");
+  return Object.assign(browser, {
+    csrf: () => /name="csrf" value="([^"]+)"/.exec(browser.html)![1]!,
+  });
+}
+
+async function ownerAction(browser: Browser & { csrf(): string }, fields: Record<string, string>) {
+  const res = await browser.send("/owner", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ csrf: browser.csrf(), ...fields }),
+  });
+  return res;
+}
+
+/** A household member connects a new client: member path, optional invite, Garmin. */
+async function memberConnect(email: string, invite = "") {
+  const id = await registerClient();
+  const { browser, verifier } = await startAuthorize(id, { ip: "203.0.113.77" });
+  await browser.post("/authorize", { as: "member" });
+  expect(browser.html).toContain('name="invite"');
+  const step = await browser.post("/authorize", { invite });
+  if (step.status !== 200) return { res: step, browser };
+  const res = await browser.post("/authorize", { email, password: "pw-m" });
+  if (res.status !== 302) return { res, browser };
+  return { res, browser, token: await exchangeCode(id, res.headers.get("Location")!, verifier) };
+}
+
 // ── Tests (in order: they share the one vault) ──────
 
 describe("self-hosted Worker", () => {
@@ -268,7 +338,7 @@ describe("self-hosted Worker", () => {
     expect(browser.html).toContain("client.example isn't Claude or ChatGPT");
     const res = await browser.post("/authorize", { passphrase: "nope" });
     expect(res.status).toBe(400);
-    expect(browser.html).toContain("passphrase isn&#39;t right");
+    expect(browser.html).toContain("password isn&#39;t right");
     expect(browser.html).not.toContain('name="password"');
   });
 
@@ -485,10 +555,163 @@ describe("self-hosted Worker", () => {
     const { browser } = await startAuthorize(clientId, { ip: "198.51.100.7" });
     for (let i = 0; i < 5; i++) await browser.post("/authorize", { passphrase: "nope" });
     await browser.post("/authorize", { passphrase: PASSPHRASE });
-    expect(browser.html).toContain("Too many wrong passphrases");
+    expect(browser.html).toContain("Too many wrong tries");
     // The owner, elsewhere, still gets in (another client: a new grant replaces the old one)
     const owner = await startAuthorize(await registerClient());
     expect((await owner.browser.post("/authorize", { passphrase: PASSPHRASE })).status).toBe(302);
+  });
+
+  it("the owner page needs the password", async () => {
+    const anon = new Browser();
+    await anon.send("/owner");
+    expect(anon.html).toContain('name="passphrase"');
+    expect(anon.html).not.toContain("Household");
+    const wrong = await anon.send("/owner", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ action: "login", passphrase: "nope" }),
+    });
+    expect(wrong.status).toBe(400);
+    // Without a session, actions go nowhere
+    const forged = await anon.send("/owner", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ action: "invite", csrf: "x" }),
+    });
+    expect(forged.status).toBe(303);
+    const owner = await ownerPage();
+    expect(owner.html).toContain("Connected as Owner Runner");
+    expect(owner.html).toContain("Invite someone");
+    // A wrong form token is ignored
+    const bad = await owner.send("/owner", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ action: "invite", csrf: "wrong" }),
+    });
+    expect(bad.headers.get("Location")).toBe("/owner");
+  });
+
+  let memberToken: string;
+  let inviteCode: string;
+
+  it("a household member joins with an invite and their own Garmin, and sees only their data", async () => {
+    const owner = await ownerPage();
+    const res = await ownerAction(owner, { action: "invite" });
+    expect(res.headers.get("Location")).toMatch(/^\/owner\?new=/);
+    await owner.send(res.headers.get("Location")!);
+    inviteCode = /\/join\?code=([A-Z0-9]{8})/.exec(owner.html)![1]!;
+    expect(owner.html).toContain("Copy message");
+
+    const join = new Browser();
+    await join.send(`/join?code=${inviteCode}`);
+    expect(join.html).toContain("Owner Runner invited you");
+    expect(join.html).toContain(`${inviteCode.slice(0, 4)}-${inviteCode.slice(4)}`);
+
+    // A wrong code counts as a failed try
+    const wrong = await memberConnect("member@example.com", "AAAA-BBBB");
+    expect(wrong.res.status).toBe(400);
+    expect(wrong.browser.html).toContain("invite code isn&#39;t valid");
+
+    const joined = await memberConnect("member@example.com", inviteCode.toLowerCase());
+    expect(joined.res.status).toBe(302);
+    memberToken = joined.token!;
+    expect(await stepsOf(memberToken)).toBe(5000);
+    expect(await stepsOf(accessToken)).toBe(9000);
+  });
+
+  it("an invite works once; members reconnect with Garmin alone; strangers can't", async () => {
+    expect((await new Browser().send(`/join?code=${inviteCode}`)).status).toBe(410);
+    const again = await memberConnect("stranger@example.com", inviteCode);
+    expect(again.res.status).toBe(400);
+
+    const back = await memberConnect("member@example.com");
+    expect(back.res.status).toBe(302);
+    expect(await stepsOf(back.token!)).toBe(5000);
+
+    const stranger = await memberConnect("stranger@example.com");
+    expect(stranger.res.status).toBe(403);
+    expect(stranger.browser.html).toContain("hasn&#39;t joined");
+
+    // The owner's Garmin account on the member path is the owner
+    const ownerViaGarmin = await memberConnect("owner@example.com");
+    expect(ownerViaGarmin.res.status).toBe(302);
+    expect(await stepsOf(ownerViaGarmin.token!)).toBe(9000);
+  });
+
+  it("a member's expired Garmin sign-in renews through a link to their own vault", async () => {
+    const client = await mcpClient(memberToken);
+    await client.callTool({ name: "garmin-logout" });
+    const steps = (await client.callTool({
+      name: "get-steps",
+      arguments: { date: "2026-10-01" },
+    })) as ToolResult;
+    await client.close();
+    const link = (JSON.parse(steps.content[0]!.text) as { signInUrl: string }).signInUrl;
+    // The owner still has their data
+    expect(await stepsOf(accessToken)).toBe(9000);
+    const wrongAccount = new Browser();
+    await wrongAccount.send(link);
+    expect(
+      (await wrongAccount.post("/signin", { email: "owner@example.com", password: "x" })).status,
+    ).toBe(403);
+    const member = new Browser();
+    await member.send(link);
+    expect(
+      (await member.post("/signin", { email: "member@example.com", password: "x" })).status,
+    ).toBe(200);
+    expect(await stepsOf(memberToken)).toBe(5000);
+
+    // The owner's link: a member's Garmin account can't become the owner's
+    const owner = await mcpClient(accessToken);
+    await owner.callTool({ name: "garmin-logout" });
+    const ownerSteps = (await owner.callTool({
+      name: "get-steps",
+      arguments: { date: "2026-10-01" },
+    })) as ToolResult;
+    await owner.close();
+    const ownerLink = (JSON.parse(ownerSteps.content[0]!.text) as { signInUrl: string }).signInUrl;
+    const taken = new Browser();
+    await taken.send(ownerLink);
+    expect(
+      (await taken.post("/signin", { email: "member@example.com", password: "x" })).status,
+    ).toBe(403);
+    expect(taken.html).toContain("belongs to Member Runner");
+    expect(await stepsOf(memberToken)).toBe(5000);
+    const back = new Browser();
+    await back.send(ownerLink);
+    expect((await back.post("/signin", { email: "owner@example.com", password: "x" })).status).toBe(
+      200,
+    );
+    expect(await stepsOf(accessToken)).toBe(9000);
+  });
+
+  it("removing a member deletes their sign-in and disconnects their apps", async () => {
+    const owner = await ownerPage();
+    expect(owner.html).toContain("Member Runner");
+    const id =
+      /name="action" value="remove-ask"><input type="hidden" name="id" value="([^"]+)"/.exec(
+        owner.html,
+      )![1]!;
+    const ask = await ownerAction(owner, { action: "remove-ask", id });
+    expect(ask.status).toBe(200);
+    expect(owner.html).toContain("Remove Member Runner?");
+    await ownerAction(owner, { action: "remove", id });
+    await owner.send("/owner");
+    expect(owner.html).not.toContain("Member Runner");
+
+    const res = await fetchWorker("/mcp", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${memberToken}`,
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
+    });
+    expect(res.status).toBe(401);
+    // Joining again needs a new invite
+    expect((await memberConnect("member@example.com")).res.status).toBe(403);
+    expect(await stepsOf(accessToken)).toBe(9000);
   });
 
   it("the owner can switch the server to another Garmin account", async () => {
